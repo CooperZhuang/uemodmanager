@@ -311,6 +311,29 @@ public sealed class ModManager
         }
     }
 
+    /// <summary>
+    /// Gives a mod another name and version, as the install review would have. Only the mod list changes: the
+    /// library keeps a mod's files under its id, and the game's files keep their names, so this works while the
+    /// game runs.
+    /// </summary>
+    /// <param name="version">Null or blank for none.</param>
+    public void Rename(string id, string name, string? version)
+    {
+        lock (gate)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ModException($"Give the mod a name.");
+            var mod = Find(id);
+            var (oldName, oldVersion) = (mod.Name, mod.Version);
+            mod.Name = name.Trim();
+            mod.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+            if (mod.Name == oldName && mod.Version == oldVersion)
+                return;
+            Commit(undo: () => (mod.Name, mod.Version) = (oldName, oldVersion));
+            Log.Info($"Renamed \"{oldName}\" ({oldVersion ?? "no version"}) to \"{mod.Name}\" ({mod.Version ?? "no version"}).");
+        }
+    }
+
     public void SetEnabled(string id, bool enabled)
     {
         lock (gate)

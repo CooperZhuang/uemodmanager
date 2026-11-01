@@ -38,11 +38,14 @@
     <SolidColorBrush x:Key="Brush.Success" Color="#86B793" />
     <SolidColorBrush x:Key="Brush.Warning" Color="#D9A84E" />
     <SolidColorBrush x:Key="Brush.Danger" Color="#E5485F" />
+    <!-- Edit: a box that changes something by hand, such as a mod's name. -->
+    <SolidColorBrush x:Key="Brush.Edit" Color="#6EA4D8" />
 
     <!-- Faint fills in the same tones, for boxes that carry a state. -->
     <SolidColorBrush x:Key="Brush.SuccessWash" Color="#1A86B793" />
     <SolidColorBrush x:Key="Brush.WarningWash" Color="#24D9A84E" />
     <SolidColorBrush x:Key="Brush.DangerWash" Color="#1FE5485F" />
+    <SolidColorBrush x:Key="Brush.EditWash" Color="#246EA4D8" />
     <SolidColorBrush x:Key="Brush.TextMutedWash" Color="#0FA59C90" />
 
     <!-- A short cinnabar stroke under page titles, fading out like a brush lifting off paper. -->

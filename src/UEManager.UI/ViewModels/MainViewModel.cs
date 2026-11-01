@@ -654,6 +654,17 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     internal void CloseModDetails() => ModDetails = null;
 
+    /// <summary>Gives a mod another name and version; the list sorts it anew.</summary>
+    /// <returns>Whether the name was saved.</returns>
+    internal async Task<bool> RenameModAsync(ModRecord mod, string name, string version)
+    {
+        if (manager is null)
+            return false;
+        var saved = await RunAsync(L.T("Saving…"), () => Task.Run(() => manager.Rename(mod.Id, name, version)));
+        RefreshMods();
+        return saved;
+    }
+
     /// <summary>Opens the player's mod sets.</summary>
     [RelayCommand]
     private void ShowModSets()

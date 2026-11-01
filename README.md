@@ -313,6 +313,11 @@ settings file the player may change, changed outside the manager, or missing;
 the full path is its tooltip. The state is checked by size, as the list does,
 not by checksum. A disabled mod lists its files as not in the game.
 
+The blue **Edit** box next to the name changes the mod's name and version, as the install
+review sets them (Enter saves, Esc cancels). Only the mod list changes: the
+library keeps each mod under its id, and the game's files keep their names, so
+it also works while the game runs.
+
 ## Test without mods
 
 **Test without mods** on the Mods page turns every enabled mod off, all or none,

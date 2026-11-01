@@ -41,7 +41,7 @@
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Version', Tracked=True}" />
-                            <TextBox Margin="0,6,0,0" Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" Tag="Optional" />
+                            <TextBox Margin="0,6,0,0" Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Optional'}" />
                         </StackPanel>
                     </Grid>
 

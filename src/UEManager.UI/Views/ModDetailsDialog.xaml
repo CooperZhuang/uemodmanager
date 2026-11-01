@@ -10,8 +10,46 @@
     <Border Style="{StaticResource Dialog}" Width="820">
         <StackPanel>
             <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Mod details', Tracked=True}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
-            <TextBlock Margin="0,6,0,16" Style="{StaticResource Text.Body}" Text="{Binding Summary}" />
+            <DockPanel Margin="0,8,0,0" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">
+                <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}"
+                        Command="{Binding RenameCommand}" ToolTip="{ui:Loc 'Change the name or version'}"
+                        Foreground="{StaticResource Brush.Edit}" BorderBrush="{StaticResource Brush.Edit}" Background="{StaticResource Brush.EditWash}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Edit'}" />
+                        <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE70F;" />
+                    </StackPanel>
+                </Button>
+                <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Title}" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
+            </DockPanel>
+            <TextBlock Margin="0,6,0,16" Style="{StaticResource Text.Body}" Text="{Binding Summary}"
+                       Visibility="{Binding IsShowing, Converter={StaticResource Visible}}" />
+
+            <!-- Rename: the name and version as the install review has them; Enter saves, Esc cancels. -->
+            <Grid Margin="0,10,0,16" Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="160" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Name', Tracked=True}" />
+                    <TextBox x:Name="NameBox" Margin="0,6,0,0" Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
+                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Version', Tracked=True}" />
+                    <TextBox Margin="0,6,0,0" Text="{Binding NewVersion, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Optional'}">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
+                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                </StackPanel>
+            </Grid>
 
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -83,9 +121,17 @@
                 </ScrollViewer>
             </Border>
 
-            <StackPanel Margin="0,20,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}" Command="{Binding CloseCommand}" IsCancel="True" />
-            </StackPanel>
+            <Grid Margin="0,20,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">
+                    <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}" Command="{Binding CloseCommand}" IsCancel="True" />
+                </StackPanel>
+                <!-- While renaming, in place of Close; Esc cancels the rename, not the window. -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
+                    <Button Content="{ui:Loc 'Cancel'}" Command="{Binding CancelRenameCommand}" IsCancel="True" />
+                    <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Save'}" ui:Icon.Glyph="&#xE74E;"
+                            Command="{Binding SaveRenameCommand}" />
+                </StackPanel>
+            </Grid>
         </StackPanel>
     </Border>
 </UserControl>

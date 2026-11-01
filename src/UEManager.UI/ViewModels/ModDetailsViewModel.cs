@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UEManager.Core.Mods;
 using UEManager.UI.Services;
@@ -55,6 +56,44 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
 
     [RelayCommand]
     private void Close() => owner.CloseModDetails();
+
+    /// <summary>The name and version can be changed in place of the title; the bottom row then saves or cancels.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsShowing))]
+    private bool isRenaming;
+
+    public bool IsShowing => !IsRenaming;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveRenameCommand))]
+    private string newName = "";
+
+    [ObservableProperty]
+    private string newVersion = "";
+
+    [RelayCommand]
+    private void Rename()
+    {
+        NewName = mod.Name;
+        NewVersion = mod.Version ?? "";
+        IsRenaming = true;
+    }
+
+    [RelayCommand]
+    private void CancelRename() => IsRenaming = false;
+
+    private bool CanSaveRename() => !string.IsNullOrWhiteSpace(NewName);
+
+    [RelayCommand(CanExecute = nameof(CanSaveRename))]
+    private async Task SaveRename()
+    {
+        if (await owner.RenameModAsync(mod, NewName, NewVersion))
+        {
+            IsRenaming = false;
+            OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(Summary));
+        }
+    }
 
     /// <summary>
     /// The files as a tree of their folders, by <see cref="ModFileItem.Place"/>: folders first, each by name. A folder
