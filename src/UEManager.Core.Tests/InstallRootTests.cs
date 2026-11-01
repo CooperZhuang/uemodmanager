@@ -142,4 +142,32 @@ public class InstallRootTests : IDisposable
         Assert.Equal(ModTypes.GameFiles, mod.TypeLabel);
         Assert.Equal("the mod's keybindings", File.ReadAllText(InstalledFile));
     }
+
+    [Fact]
+    public void Saves_logs_and_crash_reports_are_never_installed()
+    {
+        folder.File(@"Downloads\Saves\TestGame\Saved\SaveGames\Steam\1\save.sav", "someone's save");
+        folder.File(@"Downloads\Saves\TestGame\Saved\Logs\TestGame.log", "a log");
+        folder.File(@"Downloads\Saves\TestGame\Saved\Crashes\crash.dmp", "a crash");
+        folder.File(@"Downloads\Saves\TestGame\Saved\EnhancedInputUserSettings.sav", "the mod's keybindings");
+
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Saves"));
+
+        Assert.Equal(["TestGame/Saved/EnhancedInputUserSettings.sav"], Assert.Single(preview.Packages).RelativePaths);
+        Assert.Equal(3, preview.IgnoredFileCount);
+    }
+
+    [Fact]
+    public void A_file_the_game_changed_is_backed_up_before_the_old_one_comes_back()
+    {
+        folder.File($@"Game\{SavedFile}", "the player's own keybindings");
+        var mod = Install(Download());
+        File.WriteAllText(InstalledFile, "the mod's keybindings, changed in the game");
+
+        manager.SetEnabled(mod.Id, false);
+
+        Assert.Equal("the player's own keybindings", File.ReadAllText(InstalledFile));
+        var backup = Assert.Single(Directory.GetFiles(folder.Combine("Data", "games", "test-game", "backups"), "EnhancedInputUserSettings.sav", SearchOption.AllDirectories));
+        Assert.Equal("the mod's keybindings, changed in the game", File.ReadAllText(backup));
+    }
 }

@@ -1242,19 +1242,37 @@ public sealed class ModManager
     }
 
     /// <summary>Puts the game's own file back where a mod replaced it; the saved copy stays in the library.</summary>
+    /// <exception cref="IOException">The file could not be written, as when the game holds the place.</exception>
     private void RestoreReplaced(ModRecord mod, ModFileRecord file, string place)
     {
         var saved = ReplacedPath(mod, file);
         if (!File.Exists(saved))
             return;
-        try
+        Directory.CreateDirectory(Path.GetDirectoryName(place)!);
+        File.Copy(saved, place, overwrite: true);
+    }
+
+    /// <summary>
+    /// Copies the game files of mods that the game or another tool changed since the mod placed them, such as key
+    /// bindings or a ReShade.ini, into the backups folder: removing the mod takes them out of the game.
+    /// </summary>
+    private void BackUpChangedGameFiles(IEnumerable<ModFileRecord> files, IReadOnlyList<ModRecord> group)
+    {
+        foreach (var mod in group)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(place)!);
-            File.Copy(saved, place, overwrite: true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Log.Warn($"The game's own {file.FileName} could not be put back: {ex.Message}");
+            var changed = mod.Files
+                .Where(f => f.IsGameFile && files.Contains(f) && f.DeployedPath is not null && File.Exists(f.DeployedPath) && !Matches(f.DeployedPath, f))
+                .ToList();
+            if (changed.Count == 0)
+                continue;
+            var folder = Path.Combine(paths.BackupDir(Game.Profile.Id), $"{DateTime.Now:yyyyMMdd-HHmmss} {FileSystem.SafeName(mod.Name, mod.Id)}");
+            foreach (var file in changed)
+            {
+                var target = Path.Combine(folder, Local(file.FileName));
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(file.DeployedPath!, target, overwrite: true);
+            }
+            Log.Info($"Backed up {changed.Count} game file(s) of \"{mod.Name}\" that changed in the game to '{folder}'.");
         }
     }
 
@@ -1349,6 +1367,7 @@ public sealed class ModManager
             throw new ModException($"These files were changed outside the manager, so nothing was removed: {string.Join(", ", changed)}.");
         foreach (var mod in group)
             SaveEditedSettings(mod);
+        BackUpChangedGameFiles(files, group);
 
         // Several mods leaving together may share one copy of a library.
         var deployed = files.Where(f => f.DeployedPath is not null && File.Exists(f.DeployedPath)).Select(f => f.DeployedPath!)
@@ -1363,7 +1382,17 @@ public sealed class ModManager
             removal.Disable(mod);
         foreach (var (mod, file, place) in replaced)
         {
-            RestoreReplaced(mod, file, place);
+            // The mod's library folder, with the saved copy, goes on uninstall: an original that cannot come back
+            // now would be lost, so nothing changes then.
+            try
+            {
+                RestoreReplaced(mod, file, place);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                removal.PutBack();
+                throw new ModException($"The game's own {file.FileName} could not be put back, so nothing was removed. Close the game, then try again. ({ex.Message})");
+            }
             removal.Restored(place);
         }
         return removal;
@@ -1559,9 +1588,20 @@ public sealed class ModManager
             {
                 FileSystem.TryDeleteFile(file.DeployedPath!);
                 if (file.IsGameFile)
-                    RestoreReplaced(mod, file, file.DeployedPath!);
+                {
+                    try
+                    {
+                        RestoreReplaced(mod, file, file.DeployedPath!);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Log.Warn($"The game's own {file.FileName} could not be put back: {ex.Message}");
+                    }
+                }
                 else
+                {
                     RemoveEmptyFolders(file, file.DeployedPath!);
+                }
             }
             file.DeployedPath = null;
         }

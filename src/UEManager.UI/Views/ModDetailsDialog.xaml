@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="clr-namespace:UEManager.UI"
              xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
+             xmlns:views="clr-namespace:UEManager.UI.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:ModDetailsViewModel}">
     <Border Style="{StaticResource Dialog}" Width="820">
@@ -84,42 +85,7 @@
             </Grid>
 
             <TextBlock Margin="0,14,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Files in the game', Tracked=True}" />
-            <!-- The files in the tree of their folders in the game. -->
-            <Border MaxHeight="360" Padding="14,8" CornerRadius="2" BorderThickness="1"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:ModTreeRow}">
-                                <Grid Margin="0,3">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="80" />
-                                        <ColumnDefinition Width="220" />
-                                    </Grid.ColumnDefinitions>
-                                    <DockPanel Margin="0,0,12,0">
-                                        <Rectangle DockPanel.Dock="Left" Width="{Binding Indent}" />
-                                        <TextBlock x:Name="Icon" DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Text.Icon}" FontSize="12"
-                                                   Foreground="{StaticResource Brush.TextMuted}" Text="{Binding Glyph}" />
-                                        <TextBlock x:Name="Label" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" FontSize="11"
-                                                   Foreground="{StaticResource Brush.Text}" TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Name}" ToolTip="{Binding File.FullPath}" />
-                                    </DockPanel>
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding File.Size}" />
-                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
-                                               Foreground="{Binding File.Tone, Converter={StaticResource Tone}}" Text="{Binding File.State}" />
-                                </Grid>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsFolder}" Value="True">
-                                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource Brush.Accent}" />
-                                        <Setter TargetName="Label" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Border>
+            <views:FileTree MaxHeight="360" DataContext="{Binding Rows}" />
 
             <Grid Margin="0,20,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">

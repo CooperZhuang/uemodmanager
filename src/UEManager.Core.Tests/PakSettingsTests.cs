@@ -86,16 +86,26 @@ public class PakSettingsTests : IDisposable
     public void Settings_are_told_from_documents_by_name(string name, bool settings) =>
         Assert.Equal(settings, SettingsFiles.IsPakSettings(name));
 
+    /// <summary>
+    /// The layout of KintaroModding/phantombladezero_animationcancel 1.0: the pak trio and its .txt loose at the top of
+    /// the zip. The .txt goes into ~mods with the pak, whatever its name, and is the mod's settings for the gear button.
+    /// </summary>
     [Fact]
-    public void A_settings_file_outside_a_mods_folder_is_not_installed()
+    public void A_settings_file_loose_next_to_the_pak_is_installed_with_it_whatever_its_name()
     {
-        folder.File(@"Downloads\Flat\Flat_P.pak", "pak");
-        folder.File(@"Downloads\Flat\info.json", "{}");
+        folder.File(@"Downloads\Flat\phantombladezero_animationcancel_P.pak", "pak");
+        folder.File(@"Downloads\Flat\phantombladezero_animationcancel_P.utoc", "utoc");
+        folder.File(@"Downloads\Flat\phantombladezero_animationcancel_P.ucas", "ucas");
+        folder.File(@"Downloads\Flat\Cancel settings.txt", "Cancel=1");
+        folder.File(@"Downloads\Flat\README.txt", "how to install by hand");
 
         using var preview = manager.Inspect(folder.Combine("Downloads", "Flat"));
+        var mod = manager.Install(preview, preview.Packages.ToList(), "Animation Cancel", null);
 
-        Assert.Equal(["Flat_P.pak"], Assert.Single(preview.Packages).RelativePaths);
-        Assert.Equal(1, preview.IgnoredFileCount);
+        Assert.Contains("Cancel settings.txt", Assert.Single(preview.Packages).RelativePaths);
+        Assert.Equal(["Flat/README.txt"], preview.IgnoredFiles);
+        var settings = Assert.Single(mod.Files, f => f.IsSettingsFile);
+        Assert.Equal(Path.Combine(game.ModsPath, "Cancel settings.txt"), settings.DeployedPath);
     }
 
     [Fact]

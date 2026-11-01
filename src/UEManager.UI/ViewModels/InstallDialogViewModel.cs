@@ -37,12 +37,13 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
 
         // Archives often ship variants of one package in separate folders. Those
         // deploy to the same place, so only the first of each is selected to begin with.
+        // Files for the exe folder that do not look like a loader wait for the player.
         selecting = true;
         var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var option in Packages)
         {
             var names = option.Package.RelativePaths.Select(p => $"{option.Package.Target}|{p}").ToList();
-            option.IsSelected = !names.Any(taken.Contains);
+            option.IsSelected = !option.Package.IsUncertain && !names.Any(taken.Contains);
             if (option.IsSelected)
                 taken.UnionWith(names);
         }
@@ -166,6 +167,53 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         ConfirmText = old is null ? L.T("Install") : L.T("Update");
         CanInstall = check.CanInstall;
         NeedsUe4ss = check.NeedsUe4ss;
+        Rows = ModDetailsViewModel.Tree(FilesOf(Packages.Where(p => p.IsSelected).Select(p => p.Package)));
+    }
+
+    /// <summary>The files of the ticked parts, in the tree of their folders in the game.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRows))]
+    private IReadOnlyList<ModTreeRow> rows = [];
+
+    public bool HasRows => Rows.Count > 0;
+
+    /// <summary>The download's files that are not installed, by name, so a file that matters cannot go unnoticed.</summary>
+    public string? IgnoredText
+    {
+        get
+        {
+            const int shown = 8;
+            var ignored = preview.IgnoredFiles;
+            if (ignored.Count == 0)
+                return null;
+            var names = string.Join(", ", ignored.Take(shown));
+            if (ignored.Count > shown)
+                names += "  " + L.Plural(ignored.Count - shown, "…and {0} more file", "…and {0} more files");
+            return L.F($"Not installed: {names}");
+        }
+    }
+
+    /// <summary>Each file of the parts where it goes in the game, with its size and what it is there.</summary>
+    private IEnumerable<ModFileItem> FilesOf(IEnumerable<PackageGroup> packages)
+    {
+        var root = manager.Game.RootPath;
+        var placed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var package in packages)
+        {
+            for (var i = 0; i < package.Files.Count; i++)
+            {
+                var relative = package.RelativePaths[i];
+                var path = Path.Combine(manager.TargetFolder(package.Target), relative.Replace('/', Path.DirectorySeparatorChar));
+                // A shared library that several parts bring lands once.
+                if (!placed.Add(path))
+                    continue;
+                var (state, tone) = SettingsFiles.Is(package.Target, relative) ? (L.T("Settings you may change"), "good")
+                    : package.Target is DeployTarget.InstallRoot or DeployTarget.ExeFolder && File.Exists(path)
+                        ? (L.T("Takes the place of the game's file, which is kept"), "warn")
+                    : ("", "");
+                yield return new ModFileItem(Path.GetRelativePath(root, path), path, Format.Size(new FileInfo(package.Files[i]).Length), state, tone);
+            }
+        }
     }
 }
 
@@ -187,6 +235,9 @@ public sealed partial class PackageOptionViewModel(PackageGroup package, Action<
         : package.RelativePaths);
 
     public string SizeText => Format.Size(package.Size);
+
+    /// <summary>Files for the exe folder that do not look like a loader; see <see cref="PackageGroup.IsUncertain"/>.</summary>
+    public bool IsUncertain => package.IsUncertain;
 
     [ObservableProperty]
     private bool isSelected;

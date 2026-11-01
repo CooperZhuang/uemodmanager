@@ -129,4 +129,20 @@ public class ExeFolderTests : IDisposable
         Assert.False(check.CanInstall);
         Assert.Contains(check.Problems, p => p.ToString().Contains("belongs to UE4SS"));
     }
+
+    [Fact]
+    public void A_known_loader_is_certain_and_another_dll_waits_for_the_player()
+    {
+        folder.File(@"Downloads\Tools\extras\helper.dll", "some tool");
+        folder.File(@"Downloads\Tools\Tools_P.pak", "pak");
+
+        var (_, loader) = Inspect(Download());
+        var (_, tools) = Inspect(folder.Combine("Downloads", "Tools"));
+
+        Assert.False(Assert.Single(loader.Packages).IsUncertain);
+        Assert.True(Assert.Single(tools.Packages, p => p.Target == DeployTarget.ExeFolder).IsUncertain);
+        Assert.False(Assert.Single(tools.Packages, p => p.Target == DeployTarget.Mods).IsUncertain);
+        loader.Dispose();
+        tools.Dispose();
+    }
 }

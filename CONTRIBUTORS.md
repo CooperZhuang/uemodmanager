@@ -5,6 +5,7 @@ every contributor is named in every release.
 
 - KintaroModding: creator and maintainer
 - Null993: Simplified Chinese translation and the live language switch
+- CooperZhuang: game files in the game's own folders and next to the exe (ReShade and other loader mods)
 
 Your name goes here with your first merged contribution: code, a game profile, a
 translation, or a bug report that led to a fix. See CONTRIBUTING.md.

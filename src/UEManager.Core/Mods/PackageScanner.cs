@@ -102,6 +102,13 @@ public sealed class PackageGroup
     /// <summary>Shared by the packages that are variants of each other; null for other packages.</summary>
     public string? VariantOf { get; internal set; }
 
+    /// <summary>
+    /// Files for the exe folder that do not look like a loader: a DLL with no known proxy name, no ReShade add-on and
+    /// no .asi. Windows may load a DLL next to the game's exe when the game starts, so the review leaves the part
+    /// unticked and the player decides.
+    /// </summary>
+    public bool IsUncertain { get; internal init; }
+
     public string TypeLabel => ModTypes.Label(RelativePaths.Select(p => (Target, p)));
 
     internal static PackageGroup Packaged(string name, string folder, IReadOnlyList<string> files, DeployTarget target)
@@ -167,19 +174,45 @@ public sealed class PackageGroup
             .OrderBy(f => f.Place, StringComparer.OrdinalIgnoreCase)
             .ToList();
         return new PackageGroup(name, folderInDownload, placed.Select(f => f.File).ToList(),
-            placed.Select(f => f.Place).ToList(), PackageKind.ExeFiles, DeployTarget.ExeFolder);
+            placed.Select(f => f.Place).ToList(), PackageKind.ExeFiles, DeployTarget.ExeFolder)
+        {
+            IsUncertain = !placed.Any(f => IsKnownLoader(f.Place)),
+        };
+    }
+
+    /// <summary>
+    /// Proxy DLLs that loader mods such as ReShade, OptiScaler and .asi loaders put next to a game's exe, so Windows
+    /// loads them in place of its own.
+    /// </summary>
+    private static readonly string[] ProxyDllNames =
+    [
+        "dxgi", "d3d9", "d3d11", "d3d12", "dinput8", "version", "winmm", "winhttp", "dsound", "xinput1_3", "xinput1_4",
+        "opengl32", "nvngx",
+    ];
+
+    /// <summary>A file in the exe folder that is clearly a loader: a known proxy DLL, a ReShade add-on, an .asi.</summary>
+    private static bool IsKnownLoader(string place)
+    {
+        var name = Path.GetFileName(place);
+        return FileSystem.HasExtension(name, [".addon64", ".addon32", ".asi"])
+            || (FileSystem.HasExtension(name, [".dll"])
+                && ProxyDllNames.Contains(Path.GetFileNameWithoutExtension(name), StringComparer.OrdinalIgnoreCase));
     }
 }
 
+/// <param name="IgnoredFiles">The download's other files, such as readmes and screenshots: their paths from its top, in order.</param>
 public sealed record ScanResult(
     IReadOnlyList<PackageGroup> Packages,
-    int IgnoredFileCount,
+    IReadOnlyList<string> IgnoredFiles,
     int NestedArchiveCount,
-    bool ContainsUe4ssRuntime);
+    bool ContainsUe4ssRuntime)
+{
+    public int IgnoredFileCount => IgnoredFiles.Count;
+}
 
 /// <summary>
 /// Finds the installable parts of a staged download. Readmes, images and the like are ignored, and so
-/// are settings files, unless they sit next to a package in a folder named like a mods folder.
+/// are settings files, unless they sit next to a package in the same folder.
 /// </summary>
 public static class PackageScanner
 {
@@ -239,11 +272,11 @@ public static class PackageScanner
             drafts.Add(new Draft(Path.GetFileNameWithoutExtension(first), RelativeFolder(root, Path.GetDirectoryName(first)!), group.ToList(), null));
         }
 
-        // A settings file in one of the game's mods folders, such as SpeakerHighlight.json next to its pak in
-        // ~mods, goes with a package there: the mod reads it at that place. Readmes stay out, also in such a folder.
+        // A settings file next to a package, such as SpeakerHighlight.json or a .txt an asset mod reads, goes with
+        // it into ~mods: the mod reads it next to its pak. Its name and the folder's do not matter, as many downloads
+        // keep the files loose at the top. Readmes, licenses and change logs stay out.
         var packaged = drafts.Where(d => d.Ue4ssRoot is null).ToList();
-        foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f)
-                     && IsModsFolder(Path.GetDirectoryName(f)!) && !ue4ssRoots.Any(r => IsInside(f, r))))
+        foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f) && !ue4ssRoots.Any(r => IsInside(f, r))))
         {
             var name = Path.GetFileNameWithoutExtension(file);
             var owner = packaged
@@ -338,10 +371,11 @@ public static class PackageScanner
         }
 
         // Shared libraries can go with several UE4SS mods; they count once.
-        var used = packages.SelectMany(p => p.Files).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        var used = packages.SelectMany(p => p.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var ignored = files.Where(f => !used.Contains(f)).Select(f => RelativePath(root, f)).Order(NaturalOrder.Instance).ToList();
         var nestedArchives = files.Count(f => FileSystem.HasExtension(f, FileSystem.ArchiveExtensions));
         var runtime = files.Any(f => Path.GetFileName(f).Equals("UE4SS.dll", StringComparison.OrdinalIgnoreCase));
-        return new ScanResult(packages, files.Count - used, nestedArchives, runtime);
+        return new ScanResult(packages, ignored, nestedArchives, runtime);
     }
 
     /// <summary>
@@ -393,11 +427,6 @@ public static class PackageScanner
     private static bool IsInside(string path, string folder) =>
         path.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>A folder named like one of the game's mods folders, where a mod's files are meant to land as they are.</summary>
-    private static bool IsModsFolder(string folder) =>
-        Path.GetFileName(folder) is var name
-        && (name.Equals("~mods", StringComparison.OrdinalIgnoreCase) || name.Equals("LogicMods", StringComparison.OrdinalIgnoreCase));
-
     private static bool IsLogicMod(string folder) =>
         folder.Split('/').Any(part => part.Equals("LogicMods", StringComparison.OrdinalIgnoreCase));
 
@@ -417,6 +446,9 @@ public static class PackageScanner
     /// installed over the game's own. A download may wrap its files in a folder of its own, so both are looked for at
     /// any depth.
     /// </summary>
+    /// <summary>The folders below Saved that hold the player's saves, the game's logs and crash reports.</summary>
+    private static readonly string[] NotGameFiles = ["SaveGames", "Logs", "Crashes"];
+
     private static string? GameFilePath(string relativePath, string? projectFolder, string? exeFolder)
     {
         var parts = relativePath.Split('/');
@@ -424,7 +456,14 @@ public static class PackageScanner
         {
             if (!string.IsNullOrWhiteSpace(projectFolder) && parts[i].Equals(projectFolder, StringComparison.OrdinalIgnoreCase)
                 && (parts[i + 1].Equals("Saved", StringComparison.OrdinalIgnoreCase) || parts[i + 1].Equals("Config", StringComparison.OrdinalIgnoreCase)))
+            {
+                // Saves, logs and crash reports are the player's and the game's: a mod never replaces them, as its
+                // copy would put back an old save when the mod leaves.
+                if (parts[i + 1].Equals("Saved", StringComparison.OrdinalIgnoreCase) && i + 3 < parts.Length
+                    && NotGameFiles.Contains(parts[i + 2], StringComparer.OrdinalIgnoreCase))
+                    return null;
                 return string.Join('/', parts[i..]);
+            }
             if (!string.IsNullOrWhiteSpace(exeFolder) && StartsAt(parts, i, exeFolder!))
                 return string.Join('/', parts[i..]);
         }

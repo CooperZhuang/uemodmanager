@@ -73,7 +73,13 @@ the path it has below the install folder. The game may have that file already:
 the install review says so, the manager saves the game's own copy into the mod's
 folder, and puts it back when the mod is disabled, updated or removed. The game
 writes these files while it runs, so their content is never compared, and their
-folders are never removed.
+folders are never removed. When the game changed such a file while the mod was
+on, as with new key bindings or a ReShade.ini, that version is copied into
+`Data/games/<id>/backups/` before the mod's file leaves. The player's saves,
+logs and crash reports (`Saved/SaveGames`, `Saved/Logs`, `Saved/Crashes`) are
+never installed: a mod's copy would bring back an old save when the mod leaves.
+If the game's own copy cannot be put back, as when the game holds the file,
+nothing is removed.
 
 Exe files are the other way round: a proxy DLL such as `dxgi.dll`, a ReShade
 add-on or an `.asi` loader has to be next to the game's executable when it
@@ -84,7 +90,12 @@ carries when they name the exe folder (`platform/steam/dxgi.dll`). A file of the
 same name that the game or another tool had there is saved into the mod's folder
 and put back when the mod is disabled or removed, and the install review says so
 first. A file that belongs to UE4SS's own installation is refused: overwriting it
-would break UE4SS and every mod on it.
+would break UE4SS and every mod on it. Windows may load any DLL next to the
+game's exe when the game starts, so the review ticks such a part only when it is
+clearly a loader: a known proxy name (`dxgi`, `d3d9`/`11`/`12`, `dinput8`,
+`version`, `winmm`, `winhttp`, `dsound`, `xinput1_3`/`1_4`, `opengl32`,
+`nvngx`), a ReShade add-on or an `.asi`. Any other DLL, such as a tool in an
+`extras` folder, shows unticked with a note, and the player decides.
 
 UE4SS sits next to the game's exe, which most Unreal games keep in
 `<Project>/Binaries/Win64` and Phantom Blade Zero in `platform/<store>` (see
@@ -115,6 +126,12 @@ A download with several folders that hold the same files (options such as
 `x1.5/`, `x2/`, `x10/`) offers them as one choice, sorted by number; the chosen
 variant is recorded with the mod.
 
+Below the parts, the install review shows where the ticked parts' files go, in
+the same tree of folders as the mod details, and follows each tick. A settings
+file says so, and a file that takes the place of one the game has says that the
+game's file is kept. The download's other files are named below the tree ("Not
+installed: …"), so a file that matters cannot pass as a readme.
+
 ### Safety
 
 - Nothing in the game folder changes while the game runs: every install,
@@ -131,10 +148,12 @@ variant is recorded with the mod.
   `Scripts/config` or `Scripts/settings` file (`.lua`, `.json`, `.ini`, `.cfg`,
   `.toml`, `.yaml` or `.txt`, such as `Scripts/config.json`), or a `.json`,
   `.ini`, `.cfg`, `.toml`, `.yaml` or
-  `.txt` file that a download keeps next to its pak in a `~mods` or
-  `LogicMods` folder (such as a mod that reads its color from `~mods`). Files
-  named like a readme, license or change log are no settings, and neither are
-  other files beside the packages: they are not installed. Disabling keeps the player's
+  `.txt` file that a download keeps in the same folder as its pak, whatever
+  the folder and the file are called (such as a mod that reads its color from
+  `~mods`, or an asset mod's `.txt` loose at the top of the zip). It goes into
+  `~mods` or `LogicMods` with the pak. Files named like a readme, license or
+  change log are no settings, and neither are other files beside the packages:
+  they are not installed. Disabling keeps the player's
   version for the next enable. An update asks whether to keep it (the default) or take the new
   defaults. Before an update or an uninstall replaces it, a copy goes to
   `Data/games/<id>/backups/`. On the Mods page, **Edit settings** opens it in

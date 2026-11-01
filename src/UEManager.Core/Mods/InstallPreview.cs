@@ -11,7 +11,7 @@ public sealed class InstallPreview : IDisposable
         Source = source;
         StagingDir = stagingDir;
         Packages = scan.Packages;
-        IgnoredFileCount = scan.IgnoredFileCount;
+        IgnoredFiles = scan.IgnoredFiles;
         NestedArchiveCount = scan.NestedArchiveCount;
         ContainsUe4ssRuntime = scan.ContainsUe4ssRuntime;
         SuggestedName = suggestedName;
@@ -26,8 +26,10 @@ public sealed class InstallPreview : IDisposable
 
     public IReadOnlyList<PackageGroup> Packages { get; }
 
-    /// <summary>Files in the download that are not packages, such as readmes and screenshots.</summary>
-    public int IgnoredFileCount { get; }
+    /// <summary>Files in the download that are not packages, such as readmes and screenshots: their paths from its top.</summary>
+    public IReadOnlyList<string> IgnoredFiles { get; }
+
+    public int IgnoredFileCount => IgnoredFiles.Count;
 
     public int NestedArchiveCount { get; }
 
