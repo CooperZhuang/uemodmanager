@@ -43,6 +43,12 @@ To add a language, copy `zh-CN.json` to `<code>.json`, set `$name` and
 `{1:N0}`; their order may change. The build finds the new files, and the app
 lists the language.
 
+The changelog has one file per language too, `Localization/changelog.<code>.md`,
+with the same `## <version> (<date>)` headings as `CHANGELOG.md` and the lines
+translated. A release it does not have yet shows in English, so a translation
+may come later; a test checks that each heading names a real release. The
+**Changelog** link itself stays English in every language.
+
 In code, a text the player sees goes through `L.T("English text")`,
 `L.F($"English text {value}")` or `L.Plural(count, "{0} mod", "{0} mods")`;
 `L.Join` puts sentences one after another. Core writes its messages in English,
@@ -456,6 +462,11 @@ deleted and the publish fails with "came out broken". Publish it again.
 ./publish.ps1
 ```
 
+Before a release, add its section at the top of `CHANGELOG.md`
+(`## <version> (<yyyy-mm-dd>)`, then one short `- ` line per change): a test
+checks that the newest section is the app's version, so the publish stops
+without it.
+
 Publishes the app for one GitHub release, after running the tests:
 
 ```text
@@ -487,6 +498,9 @@ At every start the app asks GitHub for the newest release of
 version, at the bottom of the sidebar:
 
 - **Up to date** (green): the newest release is not newer than this version.
+  Its **Changelog** link shows what changed in each version, newest first, one
+  short line per change, from `CHANGELOG.md` built into the exe (so it works
+  offline too).
 - **Update available** (orange): a click opens the update window.
 - **Update check failed** (grey): offline, no release yet, or GitHub's limit
   of 60 requests per hour; the tooltip says which. Nothing else happens.

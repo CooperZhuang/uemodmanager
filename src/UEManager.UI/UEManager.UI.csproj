@@ -30,6 +30,11 @@
     <EmbeddedResource Include="Licenses\*.txt" LogicalName="UEManager.UI.Licenses.%(Filename)%(Extension)" />
     <!-- The app's own license, additional terms and contributors, shown on the About page. -->
     <EmbeddedResource Include="..\..\LICENSE;..\..\NOTICE.md;..\..\CONTRIBUTORS.md" LogicalName="UEManager.UI.Legal.%(Filename)%(Extension)" />
+    <!-- What changed in each release, shown by the Changelog link in the sidebar. -->
+    <EmbeddedResource Include="..\..\CHANGELOG.md" LogicalName="UEManager.UI.Changelog.md" />
+    <!-- The changelog's lines in other languages, one file each, such as changelog.zh-CN.md. WithCulture="false" keeps
+         them in the exe: a name like "x.zh-CN.md" would otherwise go into a zh-CN satellite assembly next to it. -->
+    <EmbeddedResource Include="Localization\changelog.*.md" LogicalName="UEManager.UI.Localization.%(Filename).md" WithCulture="false" />
     <!-- One file per language besides English, such as zh-CN.json. -->
     <EmbeddedResource Include="Localization\*.json" LogicalName="UEManager.UI.Localization.%(Filename).json" />
     <!-- The settings editor's colours per file type. -->

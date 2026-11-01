@@ -96,17 +96,32 @@
                         <!-- The update check: green when up to date; orange, and a click opens the update, when not.
                              After the banner for a new version, the box flashes once. -->
                         <Grid Margin="0,12,0,0" DataContext="{Binding Update}">
-                            <Button Style="{StaticResource Button.StatusBox}"
+                            <Button Style="{StaticResource Button.StatusBox}" HorizontalContentAlignment="Stretch"
                                     Command="{Binding ShowCommand}" IsEnabled="{Binding IsAvailable}" ToolTip="{Binding StatusHint}"
                                     ToolTipService.ShowOnDisabled="True"
                                     Foreground="{Binding StatusTone, Converter={StaticResource Tone}}"
                                     BorderBrush="{Binding StatusTone, Converter={StaticResource Tone}}"
                                     Background="{Binding StatusTone, Converter={StaticResource Tone}, ConverterParameter=wash}">
-                                <StackPanel Orientation="Horizontal">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="{Binding StatusGlyph}" />
-                                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{Binding StatusText}" />
-                                </StackPanel>
+                                    <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" TextWrapping="Wrap"
+                                               Text="{Binding StatusText}" />
+                                    <!-- Room for the Changelog link above it, so a long status wraps instead of running under it. -->
+                                    <TextBlock Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" Opacity="0"
+                                               Text="Changelog" Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}" />
+                                </Grid>
                             </Button>
+                            <!-- Up to date: what changed in each version, on the right of the green box. "Changelog" stays English
+                                 in every language: everyone knows the word, and it keeps the box short. -->
+                            <Button Margin="0,0,11,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Link}"
+                                    Foreground="{StaticResource Brush.Success}" Content="Changelog"
+                                    Command="{Binding ShowChangelogCommand}" ToolTip="{ui:Loc 'What changed in each version'}"
+                                    Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}" />
                             <Border CornerRadius="2" IsHitTestVisible="False" Opacity="0" Background="{StaticResource Brush.Warning}">
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#D9A84E" />
@@ -308,6 +323,12 @@
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding Update.IsDialogOpen, Converter={StaticResource Visible}}">
             <views:UpdateDialog DataContext="{Binding Update}" Margin="40" />
+        </Grid>
+
+        <!-- ===== Changelog ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding Update.IsChangelogOpen, Converter={StaticResource Visible}}">
+            <views:ChangelogDialog DataContext="{Binding Update}" Margin="40" />
         </Grid>
 
         <!-- ===== Pre-release ===== -->

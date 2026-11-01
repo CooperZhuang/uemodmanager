@@ -1533,7 +1533,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || IsPreReleaseDialogOpen;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

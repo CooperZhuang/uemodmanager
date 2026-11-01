@@ -41,8 +41,12 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
     private AppRelease? release;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusTone), nameof(StatusGlyph), nameof(StatusHint), nameof(IsAvailable))]
+    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusTone), nameof(StatusGlyph), nameof(StatusHint), nameof(IsAvailable), nameof(IsUpToDate))]
     private UpdateState state = UpdateState.Checking;
+
+    /// <summary>The changelog window: what changed in each release, newest first.</summary>
+    [ObservableProperty]
+    private bool isChangelogOpen;
 
     [ObservableProperty]
     private bool isDialogOpen;
@@ -88,6 +92,29 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
     };
 
     public bool IsAvailable => State == UpdateState.Available;
+
+    /// <summary>The green box, which carries the Changelog link.</summary>
+    public bool IsUpToDate => State == UpdateState.UpToDate;
+
+    /// <summary>
+    /// The releases in CHANGELOG.md, built into the exe, so the list shows offline too; in the app's language where
+    /// it has its own lines. A change of language reads them again.
+    /// </summary>
+    public IReadOnlyList<ChangelogRelease> Releases
+    {
+        get
+        {
+            if (releases is null || releasesLanguage != L.Current.Language)
+            {
+                releasesLanguage = L.Current.Language;
+                releases = Changelog.Load(releasesLanguage);
+            }
+            return releases;
+        }
+    }
+
+    private IReadOnlyList<ChangelogRelease>? releases;
+    private string? releasesLanguage;
 
     public string BannerTitle => L.F($"Version {release?.Version} is available");
 
@@ -166,6 +193,16 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
 
     [RelayCommand]
     private void OpenReleasePage() => owner.OpenPath(release?.PageUrl ?? AppInfo.ReleasesPageUrl);
+
+    [RelayCommand]
+    private void ShowChangelog() => IsChangelogOpen = true;
+
+    [RelayCommand]
+    private void CloseChangelog() => IsChangelogOpen = false;
+
+    /// <summary>Every release on GitHub, with its full notes and files.</summary>
+    [RelayCommand]
+    private void OpenAllReleases() => owner.OpenPath(AppInfo.ProjectUrl + "/releases");
 
     /// <summary>A link in the release notes; only http and https links get here.</summary>
     [RelayCommand]
