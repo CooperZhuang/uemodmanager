@@ -1,6 +1,7 @@
 <UserControl x:Class="UEManager.UI.Views.FileTree"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:UEManager.UI"
              xmlns:vm="clr-namespace:UEManager.UI.ViewModels">
     <!-- Files in the tree of their folders in the game, each with its size and state; the DataContext is the rows.
          The mod details show a mod's files, the install review the files of the parts that are ticked. -->
@@ -28,6 +29,14 @@
                             <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding File.Size}" />
                             <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
                                        Foreground="{Binding File.Tone, Converter={StaticResource Tone}}" Text="{Binding File.State}" />
+                            <!-- A folder in the mod details opens in Explorer; the install review has none. -->
+                            <StackPanel Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" Orientation="Horizontal"
+                                        Visibility="{Binding OpenFolder, Converter={StaticResource VisibleIfSet}}">
+                                <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="11"
+                                           Foreground="{StaticResource Brush.TextMuted}" Text="&#xE838;" />
+                                <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Text}"
+                                        Content="{ui:Loc 'Open folder'}" Command="{Binding OpenFolder}" ToolTip="{Binding FolderPath}" />
+                            </StackPanel>
                         </Grid>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsFolder}" Value="True">

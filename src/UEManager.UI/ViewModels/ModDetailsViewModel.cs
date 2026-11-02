@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UEManager.Core.Mods;
@@ -14,7 +15,9 @@ public sealed record ModFileItem(string Place, string FullPath, string Size, str
 /// <summary>A line of a mod's files as a tree of their folders in the game: a folder, or a file with its size and state.</summary>
 /// <param name="Depth">How far the line is indented: 0 for the top folders.</param>
 /// <param name="File">The file; null for a folder.</param>
-public sealed record ModTreeRow(int Depth, string Name, ModFileItem? File)
+/// <param name="FolderPath">For a folder in the mod details, the folder in the game; null elsewhere.</param>
+/// <param name="OpenFolder">Opens <paramref name="FolderPath"/> in Explorer; null where the row has none.</param>
+public sealed record ModTreeRow(int Depth, string Name, ModFileItem? File, string? FolderPath = null, ICommand? OpenFolder = null)
 {
     public bool IsFolder => File is null;
 
@@ -28,8 +31,9 @@ public sealed record ModTreeRow(int Depth, string Name, ModFileItem? File)
 /// game with its state, as the player or a helper needs it to check a mod by hand.
 /// </summary>
 /// <param name="changedFiles">The files changed outside the manager, as the player knows them, such as Scripts/main.lua.</param>
+/// <param name="gameRoot">The game's install folder, which <see cref="ModFileItem.Place"/> is relative to.</param>
 public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord mod, IReadOnlyList<ModFileItem> files,
-    IReadOnlyList<string> changedFiles) : LocalizedObservableObject
+    IReadOnlyList<string> changedFiles, string gameRoot) : LocalizedObservableObject
 {
     /// <summary>
     /// Files up to this size are compared by checksum here, so a change that keeps the size shows too; bigger ones
@@ -58,8 +62,23 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
 
     public IReadOnlyList<ModFileItem> Files => files;
 
-    /// <summary>The files in the tree of their folders in the game.</summary>
-    public IReadOnlyList<ModTreeRow> Rows { get; } = Tree(files);
+    /// <summary>The files in the tree of their folders in the game; each folder opens in Explorer.</summary>
+    public IReadOnlyList<ModTreeRow> Rows { get; } = Tree(files, gameRoot, folder => owner.OpenPath(NearestFolder(folder, gameRoot)));
+
+    /// <summary>
+    /// The folder, or the nearest one above it that is there: a disabled mod's own folder is gone from the game.
+    /// Never above the game's folder.
+    /// </summary>
+    internal static string NearestFolder(string folder, string gameRoot)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(gameRoot));
+        for (var place = Path.GetFullPath(folder); place.Length > root.Length; place = Path.GetDirectoryName(place)!)
+        {
+            if (Directory.Exists(place))
+                return place;
+        }
+        return root;
+    }
 
     [RelayCommand]
     private void Close() => owner.CloseModDetails();
@@ -113,8 +132,9 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     /// <summary>
     /// The files as a tree of their folders, by <see cref="ModFileItem.Place"/>: folders first, each by name. A folder
     /// that holds only one folder shares its line with it, as "platform\steam\ue4ss\Mods", so the tree stays short.
+    /// With <paramref name="gameRoot"/> and <paramref name="open"/>, each folder line can open its folder in the game.
     /// </summary>
-    internal static IReadOnlyList<ModTreeRow> Tree(IEnumerable<ModFileItem> files)
+    internal static IReadOnlyList<ModTreeRow> Tree(IEnumerable<ModFileItem> files, string? gameRoot = null, Action<string>? open = null)
     {
         var root = new TreeFolder("");
         foreach (var file in files)
@@ -126,11 +146,11 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
             folder.Files.Add((parts[^1], file));
         }
         var rows = new List<ModTreeRow>();
-        AddRows(root, 0, rows);
+        AddRows(root, 0, rows, "", gameRoot, open);
         return rows;
     }
 
-    private static void AddRows(TreeFolder folder, int depth, List<ModTreeRow> rows)
+    private static void AddRows(TreeFolder folder, int depth, List<ModTreeRow> rows, string place, string? gameRoot, Action<string>? open)
     {
         foreach (var child in folder.Folders.OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -141,8 +161,10 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
                 shown = shown.Folders[0];
                 name += Path.DirectorySeparatorChar + shown.Name;
             }
-            rows.Add(new ModTreeRow(depth, name, null));
-            AddRows(shown, depth + 1, rows);
+            var path = Path.Combine(place, name);
+            var inGame = gameRoot is null || open is null ? null : Path.Combine(gameRoot, path);
+            rows.Add(new ModTreeRow(depth, name, null, inGame, inGame is null ? null : new RelayCommand(() => open!(inGame))));
+            AddRows(shown, depth + 1, rows, path, gameRoot, open);
         }
         foreach (var (name, file) in folder.Files.OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
             rows.Add(new ModTreeRow(depth, name, file));

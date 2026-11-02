@@ -655,7 +655,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             var (state, tone) = ModDetailsViewModel.StateOf(mod, file, changed.Contains(file));
             return new ModFileItem(Path.GetRelativePath(Game.RootPath, path), path, Format.Size(file.Size), state, tone);
         }).ToList();
-        ModDetails = new ModDetailsViewModel(this, mod, files, changed.Select(f => SettingsFiles.Name(f.FileName)).ToList());
+        ModDetails = new ModDetailsViewModel(this, mod, files, changed.Select(f => SettingsFiles.Name(f.FileName)).ToList(), Game.RootPath);
     }
 
     /// <summary>

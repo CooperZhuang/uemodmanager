@@ -1,3 +1,4 @@
+using System.IO;
 using UEManager.UI.ViewModels;
 using Xunit;
 
@@ -36,6 +37,39 @@ public class ModTreeTests
             ],
             rows.Select(r => (r.Depth, r.Name, r.IsFolder)));
         Assert.Equal(@"C:\Games\PBZ\platform\steam\ue4ss\Mods\ModConfigUI\Scripts\main.lua", rows[4].File!.FullPath);
+        Assert.All(rows, r => Assert.Null(r.OpenFolder));
+    }
+
+    [Fact]
+    public void In_the_mod_details_each_folder_opens_its_folder_in_the_game()
+    {
+        var opened = new List<string>();
+        var rows = ModDetailsViewModel.Tree(
+            [File(@"platform\steam\ue4ss\Mods\Witch\Scripts\main.lua"), File(@"platform\steam\ue4ss\Mods\Witch\enabled.txt")],
+            @"C:\Games\PBZ", opened.Add);
+
+        Assert.Equal([@"C:\Games\PBZ\platform\steam\ue4ss\Mods\Witch", @"C:\Games\PBZ\platform\steam\ue4ss\Mods\Witch\Scripts"],
+            rows.Where(r => r.IsFolder).Select(r => r.FolderPath));
+        Assert.All(rows.Where(r => !r.IsFolder), r => Assert.Null(r.OpenFolder));
+        rows[1].OpenFolder!.Execute(null);
+        Assert.Equal([@"C:\Games\PBZ\platform\steam\ue4ss\Mods\Witch\Scripts"], opened);
+    }
+
+    [Fact]
+    public void A_folder_that_is_gone_opens_the_nearest_one_above_it_but_never_above_the_game()
+    {
+        var game = Directory.CreateTempSubdirectory("uemm-tree-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(game, "ue4ss", "Mods"));
+
+            Assert.Equal(Path.Combine(game, "ue4ss", "Mods"), ModDetailsViewModel.NearestFolder(Path.Combine(game, "ue4ss", "Mods", "Witch", "Scripts"), game));
+            Assert.Equal(game, ModDetailsViewModel.NearestFolder(Path.Combine(game, "gone"), game + Path.DirectorySeparatorChar));
+        }
+        finally
+        {
+            Directory.Delete(game, recursive: true);
+        }
     }
 
     [Fact]

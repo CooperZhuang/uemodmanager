@@ -2,6 +2,9 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.1 (2026-11-02)
+- Liên kết "Mở thư mục" trong chi tiết mod: mở từng thư mục của mod trong game
+
 ## 1.5.0 (2026-11-02)
 - Tiếng Trung phồn thể (cảm ơn CooperZhuang)
 - Câu chữ tiếng Trung giản thể tự nhiên hơn (cảm ơn CooperZhuang)
