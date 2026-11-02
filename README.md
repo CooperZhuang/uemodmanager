@@ -20,7 +20,7 @@ How to install and use it, for players: [openmods.md](openmods.md).
 
 ## Interface language
 
-In **Settings → Language**, choose **English**, **简体中文** or **Tiếng Việt**. The interface
+In **Settings → Language**, choose **English**, **简体中文**, **繁體中文** or **Tiếng Việt**. The interface
 changes at once, on the page you are on, and the choice is saved in
 `Data/settings.json`. Until you choose, the app is in English. When Windows
 uses a language the app has (its display language, format settings or install
