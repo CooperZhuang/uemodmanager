@@ -4,9 +4,6 @@ A mod manager for Unreal Engine games. The first and, for now, only supported
 game is **Phantom Blade Zero**; the interface is themed for it. The executable
 keeps the file name `UEModManager.exe`.
 
-Its catalog, the openmods page, puts the mods of [openmods](https://openmods.nexus)
-a click away. It is built in, but switched off for now (see Catalog switch).
-
 It keeps its own copy of every mod and records a SHA-256 checksum for every
 file it places. A file it did not place is never overwritten or removed.
 
