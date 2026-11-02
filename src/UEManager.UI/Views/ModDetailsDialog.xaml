@@ -84,6 +84,19 @@
                 <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding SizeText}" />
             </Grid>
 
+            <!-- Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them. -->
+            <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="2" BorderThickness="1"
+                    BorderBrush="{StaticResource Brush.Warning}" Background="{StaticResource Brush.WarningWash}"
+                    Visibility="{Binding HasChangedFiles, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Content="{ui:Loc 'Keep my version'}"
+                            ui:Icon.Glyph="&#xE73E;" Command="{Binding KeepChangedFilesCommand}"
+                            ToolTip="{ui:Loc 'From then on the manager treats your version like a settings file: it keeps it when the mod is turned off, asks about it on an update and backs it up on an uninstall. Reset settings brings back the mod\'s own version.'}" />
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
+                               TextWrapping="Wrap" TextTrimming="None" Text="{Binding ChangedText}" />
+                </DockPanel>
+            </Border>
+
             <TextBlock Margin="0,14,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Files in the game', Tracked=True}" />
             <views:FileTree MaxHeight="360" DataContext="{Binding Rows}" />
 

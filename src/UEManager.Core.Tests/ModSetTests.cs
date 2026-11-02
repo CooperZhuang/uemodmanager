@@ -131,7 +131,7 @@ public class ModSetTests : IDisposable
         Assert.Throws<ModException>(() => manager.ApplySet("Sharp only"));
         gameRunning = false;
         File.WriteAllText(Deployed("Swift"), "changed by hand");
-        Assert.Throws<ModException>(() => manager.ApplySet("Sharp only"));
+        Assert.Throws<ChangedFilesException>(() => manager.ApplySet("Sharp only"));
 
         Assert.Equal(["Swift"], Enabled());
     }

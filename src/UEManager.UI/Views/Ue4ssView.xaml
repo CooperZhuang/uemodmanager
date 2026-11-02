@@ -15,15 +15,21 @@
         <Style x:Key="Field" TargetType="DockPanel">
             <Setter Property="Margin" Value="0,0,0,10" />
         </Style>
+        <!-- The errors and warnings in a tab of the log, next to its name. -->
+        <DataTemplate x:Key="TabCount" DataType="{x:Type vm:Ue4ssLogTabCount}">
+            <Border Margin="8,0,0,0" Padding="6,0" MinWidth="18" CornerRadius="8" VerticalAlignment="Center"
+                    Background="{Binding Tone, Converter={StaticResource Tone}, ConverterParameter=wash}"
+                    Visibility="{Binding Shows, Converter={StaticResource Visible}}">
+                <TextBlock HorizontalAlignment="Center" FontSize="11.5" Foreground="{Binding Tone, Converter={StaticResource Tone}}" Text="{Binding Text}" />
+            </Border>
+        </DataTemplate>
     </UserControl.Resources>
 
     <StackPanel>
         <StackPanel Margin="0,6,0,0">
             <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Script loader', Tracked=True}" />
             <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Display}" Text="UE4SS" />
-            <Rectangle Width="200" Height="2" Margin="0,14,0,14" HorizontalAlignment="Left" Fill="{StaticResource Brush.Stroke}" />
-            <TextBlock MaxWidth="640" HorizontalAlignment="Left" Style="{StaticResource Text.Body}"
-                       Text="{ui:Loc 'UE4SS lets the game load Lua, C++ (DLL) and Blueprint mods. Packaged mods (.pak, .utoc, .ucas) work without it.'}" />
+            <Rectangle Width="200" Height="2" Margin="0,14,0,0" HorizontalAlignment="Left" Fill="{StaticResource Brush.Stroke}" />
         </StackPanel>
 
         <!-- Runtime -->
@@ -79,11 +85,7 @@
                         <Button Margin="8,0,0,0" Content="{ui:Loc 'Report a problem…'}" ui:Icon.Glyph="&#xE897;"
                                 Command="{Binding DataContext.ShowHelpDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                     </StackPanel>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Log'}" />
-                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}"
-                                   Text="{ui:Loc 'What UE4SS wrote during the last game start. Red lines speak of an error, orange lines of a warning.'}" />
-                    </StackPanel>
+                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Log'}" />
                 </DockPanel>
                 <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
                     <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{Binding SummaryTone, Converter={StaticResource Tone}}" />
@@ -93,39 +95,78 @@
                 <TextBlock Margin="16,6,0,0" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Danger}"
                            TextWrapping="Wrap" Text="{Binding ErrorModsText}"
                            Visibility="{Binding HasErrorMods, Converter={StaticResource Visible}}" />
-                <DockPanel Margin="0,14,0,10" Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
+                <!-- Who wrote the lines: UE4SS, the player's mods, or a Lua script that does not say which mod it is. -->
+                <Border Margin="0,14,0,0" BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1"
+                        Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource Tab}" GroupName="Ue4ssLogTab" IsChecked="{Binding IsUe4ssTab}"
+                                     ToolTip="{ui:Loc 'Lines of UE4SS itself and of the mods it comes with'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="UE4SS" />
+                                <ContentControl Content="{Binding Ue4ssCount}" ContentTemplate="{StaticResource TabCount}" Focusable="False" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource Tab}" GroupName="Ue4ssLogTab" IsChecked="{Binding IsModsTab}"
+                                     ToolTip="{ui:Loc 'Lines of your mods'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{ui:Loc 'Mods'}" />
+                                <ContentControl Content="{Binding ModsCount}" ContentTemplate="{StaticResource TabCount}" Focusable="False" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource Tab}" GroupName="Ue4ssLogTab" IsChecked="{Binding IsUnnamedTab}"
+                                     ToolTip="{ui:Loc 'Lines of a Lua script that does not say which mod it is'}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{ui:Loc 'Unnamed'}" />
+                                <ContentControl Content="{Binding UnnamedCount}" ContentTemplate="{StaticResource TabCount}" Focusable="False" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+                <DockPanel Margin="0,12,0,10" Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
                     <CheckBox DockPanel.Dock="Left" VerticalAlignment="Center" Content="{ui:Loc 'Only errors and warnings'}" IsChecked="{Binding OnlyProblems}" />
                     <TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="320" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="Ctrl+F" Tag="{ui:Loc 'Search the log, such as a mod name'}" />
                     <TextBlock Margin="16,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource Text.Small}"
                                Text="{Binding FoundText}" Visibility="{Binding IsSearching, Converter={StaticResource Visible}}" />
                 </DockPanel>
-                <ItemsControl x:Name="LogLines" Height="380" ItemsSource="{Binding ShownLines}" Focusable="False"
-                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel"
-                              Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
-                    <ItemsControl.Template>
-                        <ControlTemplate TargetType="ItemsControl">
-                            <Border Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}"
-                                    BorderThickness="1" CornerRadius="2">
-                                <ScrollViewer x:Name="LogScroll" Padding="12,8" CanContentScroll="True" Focusable="False"
-                                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                                    <ItemsPresenter />
-                                </ScrollViewer>
-                            </Border>
-                        </ControlTemplate>
-                    </ItemsControl.Template>
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:Ue4ssLogLineItem}">
-                            <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="12" LineHeight="18"
-                                       Foreground="{Binding Tone, Converter={StaticResource Tone}}" Text="{Binding Text}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <Grid Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
+                    <ItemsControl x:Name="LogLines" Height="380" ItemsSource="{Binding ShownLines}" Focusable="False"
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <Border Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}"
+                                        BorderThickness="1" CornerRadius="2">
+                                    <ScrollViewer x:Name="LogScroll" Padding="12,8" CanContentScroll="True" Focusable="False"
+                                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:Ue4ssLogLineItem}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="12" LineHeight="18"
+                                               Foreground="{Binding Tone, Converter={StaticResource Tone}}" Text="{Binding Text}" />
+                                    <Border Margin="12,0,0,0" Padding="6,0" VerticalAlignment="Center" CornerRadius="2"
+                                            Background="{StaticResource Brush.TextMutedWash}"
+                                            Visibility="{Binding Known, Converter={StaticResource Visible}}"
+                                            ToolTip="{ui:Loc 'UE4SS writes this line at every start with this game. It does no harm, so it does not count as an error.'}">
+                                        <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}"
+                                                   Text="{ui:Loc 'known, harmless'}" />
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Small}"
+                               Text="{ui:Loc 'No lines to show.'}" Visibility="{Binding IsTabEmpty, Converter={StaticResource Visible}}" />
+                </Grid>
             </StackPanel>
         </Border>
     </StackPanel>

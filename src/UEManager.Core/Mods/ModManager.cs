@@ -294,7 +294,8 @@ public sealed class ModManager
                         if (record.Files.Any(f => IsSameFile(f, package.Target, relative)))
                             continue;
                         var kept = keepSettings ? EditedSettingsCopy(old, package.Target, relative) : null;
-                        AddToLibrary(record, package.Target, relative, package.Files[i], kept);
+                        var keptByPlayer = old?.Files.Any(f => f.Kept && IsSameFile(f, package.Target, relative)) == true;
+                        AddToLibrary(record, package.Target, relative, package.Files[i], kept, keptByPlayer);
                     }
                     if (package.Kind == PackageKind.Ue4ss
                         && !package.RelativePaths.Any(p => p.Equals($"{package.Name}/{Ue4ssEnabledMarker}", StringComparison.OrdinalIgnoreCase)))
@@ -662,6 +663,78 @@ public sealed class ModManager
 
     /// <summary>Whether the player changed a settings file of the mod, in the game or (saved there before) in the library copy.</summary>
     public static bool HasEditedSettings(ModRecord mod) => EditedSettings(mod).Count > 0;
+
+    /// <summary>
+    /// Keeps the player's version of the files of a mod that were changed outside the manager, as a value in its
+    /// main.lua: from now on they are handled as settings files (<see cref="ModFileRecord.Kept"/>), so a change no
+    /// longer stops a disable, an update or an uninstall. The mod's own version is kept as the original, which
+    /// <see cref="ResetSettings"/> puts back. Only the library and the mod list change, so the game may run.
+    /// </summary>
+    /// <returns>The files kept; none when no file was changed.</returns>
+    public IReadOnlyList<string> KeepChangedFiles(string id)
+    {
+        lock (gate)
+        {
+            var mod = Find(id);
+            var changed = ChangedFiles(mod);
+            if (changed.Count == 0)
+                return [];
+            var before = changed.Select(file => (Record: file, Library: File.ReadAllBytes(LibraryPath(mod, file)), file.Size, file.Sha256)).ToList();
+            void Undo()
+            {
+                foreach (var (record, library, size, sha256) in before)
+                {
+                    try
+                    {
+                        File.WriteAllBytes(LibraryPath(mod, record), library);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Log.Error($"The manager's copy of {record.FileName} of \"{mod.Name}\" could not be put back.", ex);
+                    }
+                    record.Kept = false;
+                    record.DefaultSha256 = null;
+                    record.Size = size;
+                    record.Sha256 = sha256;
+                }
+            }
+
+            try
+            {
+                foreach (var file in changed)
+                {
+                    // The manager's copy is still the mod's own version: it becomes the original to reset to.
+                    var original = DefaultsPath(mod, file);
+                    Directory.CreateDirectory(Path.GetDirectoryName(original)!);
+                    File.Copy(LibraryPath(mod, file), original, overwrite: true);
+                    file.DefaultSha256 = file.Sha256;
+                    file.Kept = true;
+                }
+                SaveEditedSettings(mod);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Undo();
+                throw new ModException($"Your version of the files of \"{mod.Name}\" could not be kept, so nothing was changed. A file may be in use. ({ex.Message})");
+            }
+            Commit(undo: Undo);
+            Log.Info($"Kept the player's version of {string.Join(", ", changed.Select(f => f.FileName))} of \"{mod.Name}\".");
+            return changed.Select(f => f.FileName).ToList();
+        }
+    }
+
+    /// <summary>
+    /// The files of an enabled mod that were changed outside the manager and so stop a removal, by checksum: not
+    /// settings files or kept ones, the game's own files, or shared libraries. With <paramref name="checksumUpTo"/>,
+    /// a bigger file is compared by size only, for a quick look.
+    /// </summary>
+    public static IReadOnlyList<ModFileRecord> ChangedFiles(ModRecord mod, long checksumUpTo = long.MaxValue) => mod.Enabled
+        ? mod.Files
+            .Where(f => !f.IsPlayerFile && !f.IsGameFile && !f.IsShared && !f.Borrowed
+                && f.DeployedPath is { } path && new FileInfo(path) is { Exists: true } info
+                && (info.Length != f.Size || (f.Size <= checksumUpTo && !Matches(path, f))))
+            .ToList()
+        : [];
 
     /// <summary>
     /// Moves the enabled mods out of <see cref="OtherInstallRoot"/> into this install. They are removed
@@ -1070,7 +1143,7 @@ public sealed class ModManager
 
     /// <summary>
     /// A quick integrity check by file size. Checksums are compared only before files are removed.
-    /// Settings files are not checked: the player may change them. Neither are borrowed shared files.
+    /// Settings files and kept ones are not checked: the player may change them. Neither are borrowed shared files.
     /// </summary>
     public static ModIntegrity Integrity(ModRecord mod)
     {
@@ -1083,7 +1156,7 @@ public sealed class ModManager
                 return ModIntegrity.FilesMissing;
             // A borrowed shared file belongs to whoever put it there, such as UE4SS, which may update it.
             // A game file is written by the game itself, so only its presence is checked.
-            if (!file.IsSettingsFile && !file.Borrowed && !file.IsGameFile && info.Length != file.Size)
+            if (!file.IsPlayerFile && !file.Borrowed && !file.IsGameFile && info.Length != file.Size)
                 return ModIntegrity.FilesChanged;
         }
         return ModIntegrity.Intact;
@@ -1170,7 +1243,7 @@ public sealed class ModManager
             foreach (var file in outside)
             {
                 var here = Path.Combine(folders[file.Target], Local(file.FileName));
-                file.DeployedPath = File.Exists(here) && (file.IsSettingsFile || file.IsGameFile || Matches(here, file)) ? here : null;
+                file.DeployedPath = File.Exists(here) && (file.IsPlayerFile || file.IsGameFile || Matches(here, file)) ? here : null;
             }
             followed++;
         }
@@ -1190,11 +1263,13 @@ public sealed class ModManager
     /// <summary>
     /// Copies one file into the mod's library folder and records it. A null source writes an
     /// empty file. A <paramref name="replacement"/> is copied instead of the source: the player's
-    /// own version of a settings file.
+    /// own version of a settings file. <paramref name="kept"/> marks a file the player kept in the version
+    /// this one replaces (<see cref="ModFileRecord.Kept"/>).
     /// </summary>
-    private void AddToLibrary(ModRecord record, DeployTarget target, string relativePath, string? source, string? replacement = null)
+    private void AddToLibrary(ModRecord record, DeployTarget target, string relativePath, string? source, string? replacement = null,
+        bool kept = false)
     {
-        var file = new ModFileRecord { FileName = relativePath, Target = target };
+        var file = new ModFileRecord { FileName = relativePath, Target = target, Kept = kept };
         var copy = LibraryPath(record, file);
         Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
         if (source is null)
@@ -1203,7 +1278,7 @@ public sealed class ModManager
             File.Copy(replacement ?? source, copy);
         file.Size = new FileInfo(copy).Length;
         file.Sha256 = FileSystem.Sha256(copy);
-        if (file.IsSettingsFile)
+        if (file.IsPlayerFile)
         {
             file.DefaultSha256 = replacement is null || source is null ? file.Sha256 : FileSystem.Sha256(source);
             if (source is not null)
@@ -1371,11 +1446,12 @@ public sealed class ModManager
         var files = group.SelectMany(m => m.Files).Where(f => !Keeps(group, f)).ToList();
         // A game file is written by the game itself: its content says nothing about whether the player changed it.
         var changed = files
-            .Where(f => !f.IsSettingsFile && !f.IsGameFile && f.DeployedPath is not null && File.Exists(f.DeployedPath) && !Matches(f.DeployedPath, f))
-            .Select(f => f.FileName)
+            .Where(f => !f.IsPlayerFile && !f.IsGameFile && f.DeployedPath is not null && File.Exists(f.DeployedPath) && !Matches(f.DeployedPath, f))
             .ToList();
         if (changed.Count > 0)
-            throw new ModException($"These files were changed outside the manager, so nothing was removed: {string.Join(", ", changed)}.");
+            throw new ChangedFilesException(
+                $"These files were changed outside the manager, so nothing was removed: {string.Join(", ", changed.Select(f => f.FileName))}.",
+                group.Where(m => m.Files.Any(changed.Contains)).Select(m => m.Id).ToList());
         foreach (var mod in group)
             SaveEditedSettings(mod);
         BackUpChangedGameFiles(files, group);
@@ -1487,12 +1563,12 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// Copies settings files the player changed in the game into the mod's library copy, so the
+    /// Copies settings files and kept ones the player changed in the game into the mod's library copy, so the
     /// changes survive a disable, come back on enable, and can be kept on an update.
     /// </summary>
     private void SaveEditedSettings(ModRecord mod)
     {
-        foreach (var file in mod.Files.Where(f => f.IsSettingsFile && f.DeployedPath is not null && File.Exists(f.DeployedPath)))
+        foreach (var file in mod.Files.Where(f => f.IsPlayerFile && f.DeployedPath is not null && File.Exists(f.DeployedPath)))
         {
             if (Matches(file.DeployedPath!, file))
                 continue;
@@ -1507,7 +1583,7 @@ public sealed class ModManager
     /// <summary>Settings files of a mod that the player changed: in the game, or (saved there before) in the library copy.</summary>
     private static List<string> EditedSettings(ModRecord mod) => mod.Files
         .Where(f => f.IsEdited
-            || (f.IsSettingsFile && f.DeployedPath is not null && File.Exists(f.DeployedPath) && !Matches(f.DeployedPath, f)))
+            || (f.IsPlayerFile && f.DeployedPath is not null && File.Exists(f.DeployedPath) && !Matches(f.DeployedPath, f)))
         .Select(f => f.FileName)
         .ToList();
 

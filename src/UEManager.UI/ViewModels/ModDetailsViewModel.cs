@@ -27,9 +27,16 @@ public sealed record ModTreeRow(int Depth, string Name, ModFileItem? File)
 /// Everything about one installed mod: where it came from, when it was installed, and each file it placed in the
 /// game with its state, as the player or a helper needs it to check a mod by hand.
 /// </summary>
-public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord mod, IReadOnlyList<ModFileItem> files)
-    : LocalizedObservableObject
+/// <param name="changedFiles">The files changed outside the manager, as the player knows them, such as Scripts/main.lua.</param>
+public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord mod, IReadOnlyList<ModFileItem> files,
+    IReadOnlyList<string> changedFiles) : LocalizedObservableObject
 {
+    /// <summary>
+    /// Files up to this size are compared by checksum here, so a change that keeps the size shows too; bigger ones
+    /// only by size, so the details open at once.
+    /// </summary>
+    internal const long ChecksumUpTo = 1024 * 1024;
+
     public string Name => mod.Name;
 
     public string Summary => string.Join("  ·  ", new[]
@@ -56,6 +63,14 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
 
     [RelayCommand]
     private void Close() => owner.CloseModDetails();
+
+    /// <summary>Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them.</summary>
+    public bool HasChangedFiles => changedFiles.Count > 0;
+
+    public string ChangedText => L.F($"Changed outside the manager: {string.Join(", ", changedFiles)}. Until you keep your version, the mod cannot be turned off, updated or uninstalled.");
+
+    [RelayCommand]
+    private Task KeepChangedFiles() => owner.KeepChangedFilesAsync([mod.Id], mod);
 
     /// <summary>The name and version can be changed in place of the title; the bottom row then saves or cancels.</summary>
     [ObservableProperty]
@@ -151,10 +166,10 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     }
 
     /// <summary>
-    /// The state of a mod's file in the game, by size and with the tones of <see cref="ModManager.Integrity"/>:
-    /// a quick look, not a checksum.
+    /// The state of a mod's file in the game, with the tones of <see cref="ModManager.Integrity"/>. <paramref name="changed"/>
+    /// is the file's place in <see cref="ModManager.ChangedFiles"/>; otherwise a file counts as changed by its size.
     /// </summary>
-    internal static (string State, string Tone) StateOf(ModRecord mod, ModFileRecord file)
+    internal static (string State, string Tone) StateOf(ModRecord mod, ModFileRecord file, bool changed = false)
     {
         if (!mod.Enabled)
             return (L.T("Not in the game"), "");
@@ -163,7 +178,11 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
             return (L.T("Missing"), "warn");
         if (file.IsSettingsFile)
             return (L.T("In the game: settings you may change"), "good");
+        if (file.Kept)
+            return (L.T("In the game: your version, kept"), "good");
         // A borrowed shared file belongs to whoever put it there, such as UE4SS, which may update it.
-        return info.Length == file.Size || file.Borrowed ? (L.T("In the game"), "good") : (L.T("Changed outside the manager"), "bad");
+        return changed || (info.Length != file.Size && !file.Borrowed)
+            ? (L.T("Changed outside the manager"), "bad")
+            : (L.T("In the game"), "good");
     }
 }

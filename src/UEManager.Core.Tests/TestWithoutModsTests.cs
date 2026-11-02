@@ -75,7 +75,7 @@ public class TestWithoutModsTests : IDisposable
         Install("Swift");
         File.WriteAllText(Deployed("Swift"), "changed by hand");
 
-        Assert.Throws<ModException>(() => manager.TurnOffForTest());
+        Assert.Throws<ChangedFilesException>(() => manager.TurnOffForTest());
 
         Assert.True(File.Exists(Deployed("Sharp")));
         Assert.All(manager.Mods, m => Assert.True(m.Enabled));

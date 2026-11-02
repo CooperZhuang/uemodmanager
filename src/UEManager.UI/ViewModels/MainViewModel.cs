@@ -119,7 +119,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var mods = string.Join(", ", manager!.Mods.Where(m => Ue4ssFolders(m).Any(named.Contains)).Select(m => m.Name));
         Log.Info($"After the game closed, UE4SS's log names these mods in errors: {mods}.");
         ShowToast(L.F($"The game closed, and UE4SS reported errors in these mods: {mods}."), isError: true,
-            L.T("Show log"), () => SelectedPage = "Ue4ss");
+            L.T("Show log"), () =>
+            {
+                Ue4ssLogPanel.Tab = Ue4ssLogSource.Mod;
+                SelectedPage = "Ue4ss";
+            });
         if (SelectedPage == "Ue4ss")
             await RefreshUe4ssLogAsync();
     }
@@ -148,7 +152,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         {
             (log, named) = await Task.Run(() =>
             {
-                var read = Ue4ssLog.Read(runtime.LogPath);
+                var read = Ue4ssLog.Read(runtime.LogPath, runtime.ModFolders());
                 return (read, (IReadOnlySet<string>)(read?.ModsNamedInErrors(folders) ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase));
             });
         }
@@ -182,11 +186,12 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         mod.Enabled && ue4ssErrors is { } errors && mod.InstalledAt.LocalDateTime <= errors.WrittenAt
         && Ue4ssFolders(mod).Any(errors.Folders.Contains);
 
-    /// <summary>The UE4SS page, with the log searched for the mod's folder, so its errors show with the lines around them.</summary>
+    /// <summary>The UE4SS page, with the Mods tab of the log searched for the mod's folder, so its errors show with its other lines.</summary>
     internal void ShowUe4ssErrors(ModRecord mod)
     {
         Ue4ssLogPanel.SearchText = Ue4ssFolders(mod).FirstOrDefault(folder => ue4ssErrors?.Folders.Contains(folder) == true) ?? "";
         Ue4ssLogPanel.OnlyProblems = false;
+        Ue4ssLogPanel.Tab = Ue4ssLogSource.Mod;
         SelectedPage = "Ue4ss";
     }
 
@@ -643,13 +648,33 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (manager is null || Game is null)
             return;
+        var changed = ModManager.ChangedFiles(mod, ModDetailsViewModel.ChecksumUpTo);
         var files = mod.Files.Select(file =>
         {
             var path = file.DeployedPath ?? Path.Combine(manager.TargetFolder(file.Target), file.FileName.Replace('/', Path.DirectorySeparatorChar));
-            var (state, tone) = ModDetailsViewModel.StateOf(mod, file);
+            var (state, tone) = ModDetailsViewModel.StateOf(mod, file, changed.Contains(file));
             return new ModFileItem(Path.GetRelativePath(Game.RootPath, path), path, Format.Size(file.Size), state, tone);
         }).ToList();
-        ModDetails = new ModDetailsViewModel(this, mod, files);
+        ModDetails = new ModDetailsViewModel(this, mod, files, changed.Select(f => SettingsFiles.Name(f.FileName)).ToList());
+    }
+
+    /// <summary>
+    /// Keeps the player's version of the files of these mods that were changed outside the manager, so they can be
+    /// turned off, updated and uninstalled again; see <see cref="ModManager.KeepChangedFiles"/>.
+    /// </summary>
+    /// <param name="details">The mod whose details are open, shown again with the new states.</param>
+    internal async Task KeepChangedFilesAsync(IReadOnlyList<string> modIds, ModRecord? details = null)
+    {
+        IReadOnlyList<string> kept = [];
+        var done = await RunAsync(L.T("Keeping your version…"),
+            async () => kept = await Task.Run(() => modIds.SelectMany(manager!.KeepChangedFiles).ToList()));
+        RefreshMods();
+        if (details is not null && ModDetails is not null)
+            ShowModDetails(details);
+        if (done)
+            ShowToast(kept.Count == 0
+                ? L.T("No file of this mod was changed outside the manager.")
+                : L.F($"Your version of {string.Join(", ", kept.Select(SettingsFiles.Name))} is kept. The mod can be turned off, updated and uninstalled again."));
     }
 
     internal void CloseModDetails() => ModDetails = null;
@@ -1504,6 +1529,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         {
             await action();
             return true;
+        }
+        catch (ChangedFilesException ex)
+        {
+            Log.Warn(ex.Message);
+            ShowToast(L.Message(ex), isError: true, L.T("Keep my version"), () => _ = KeepChangedFilesAsync(ex.ModIds));
         }
         catch (ModException ex)
         {

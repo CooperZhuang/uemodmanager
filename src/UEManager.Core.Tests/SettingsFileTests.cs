@@ -116,10 +116,64 @@ public class SettingsFileTests : IDisposable
         var mod = Install(Download("1.0"));
         File.WriteAllText(Main, "edited by hand");
 
-        Assert.Throws<ModException>(() => manager.SetEnabled(mod.Id, false));
+        var error = Assert.Throws<ChangedFilesException>(() => manager.SetEnabled(mod.Id, false));
 
+        Assert.Equal([mod.Id], error.ModIds);
         Assert.True(File.Exists(Config));
         Assert.Equal("edited by hand", File.ReadAllText(Main));
+    }
+
+    [Fact]
+    public void A_kept_main_lua_no_longer_stops_a_removal_and_stays_the_players()
+    {
+        var mod = Install(Download("1.0"));
+        File.WriteAllText(Main, "edited by hand");
+
+        Assert.Equal(["Witch/Scripts/main.lua"], manager.KeepChangedFiles(mod.Id));
+        Assert.Equal(ModIntegrity.Intact, ModManager.Integrity(manager.Mods.Single()));
+        // A later edit needs no second keep, and the settings editor still shows only config.lua.
+        File.WriteAllText(Main, "edited again, a little longer");
+        Assert.Empty(manager.KeepChangedFiles(mod.Id));
+        Assert.Equal(["Witch/Scripts/config.lua"], manager.Mods.Single().Files.Where(f => f.IsSettingsFile).Select(f => f.FileName));
+
+        manager.SetEnabled(mod.Id, false);
+        Assert.False(File.Exists(Main));
+        manager.SetEnabled(mod.Id, true);
+        Assert.Equal("edited again, a little longer", File.ReadAllText(Main));
+
+        var backup = manager.Uninstall(mod.Id);
+        Assert.NotNull(backup);
+        Assert.Equal("edited again, a little longer", File.ReadAllText(Path.Combine(backup, "Witch", "Scripts", "main.lua")));
+    }
+
+    [Fact]
+    public void Reset_settings_puts_back_the_mods_own_version_of_a_kept_file()
+    {
+        var mod = Install(Download("1.0"));
+        File.WriteAllText(Main, "edited by hand");
+        manager.KeepChangedFiles(mod.Id);
+
+        Assert.NotNull(manager.ResetSettings(mod.Id));
+
+        Assert.Equal("main 1.0", File.ReadAllText(Main));
+        Assert.True(manager.Mods.Single().Files.Single(f => f.FileName.EndsWith("main.lua")).Kept);
+    }
+
+    [Fact]
+    public void An_update_asks_about_a_kept_file_and_it_stays_kept()
+    {
+        var mod = Install(Download("1.0"));
+        File.WriteAllText(Main, "edited by hand");
+        manager.KeepChangedFiles(mod.Id);
+
+        using (var preview = manager.Inspect(Download("1.1")))
+        {
+            Assert.Equal(["Witch/Scripts/main.lua"], manager.Check(preview, preview.Packages.ToList()).EditedSettings);
+            manager.Install(preview, preview.Packages.ToList(), "Witch", "1.1", replace: true, keepSettings: true);
+        }
+
+        Assert.Equal("edited by hand", File.ReadAllText(Main));
+        Assert.True(manager.Mods.Single().Files.Single(f => f.FileName.EndsWith("main.lua")).Kept);
     }
 
     [Fact]

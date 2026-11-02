@@ -94,9 +94,23 @@ public sealed class ModFileRecord
     /// <summary>Where the file was deployed, or null while the mod is disabled.</summary>
     public string? DeployedPath { get; set; }
 
-    /// <summary>A file the player is meant to edit; see <see cref="SettingsFiles"/>.</summary>
+    /// <summary>A file the player is meant to edit; see <see cref="SettingsFiles"/>. The settings editor shows these.</summary>
     [JsonIgnore]
     public bool IsSettingsFile => SettingsFiles.Is(Target, FileName);
+
+    /// <summary>
+    /// The player changed this file outside the manager and chose to keep their version, as a value in a mod's
+    /// main.lua. It is then handled as a settings file (<see cref="IsPlayerFile"/>), but the settings editor does not show it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Kept { get; set; }
+
+    /// <summary>
+    /// A file the player may change: a settings file, or a kept one. A change never stops a disable, an update or an
+    /// uninstall; disabling keeps the player's version, an update asks whether to keep it, and uninstalling backs it up.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsPlayerFile => IsSettingsFile || Kept;
 
     /// <summary>
     /// A file in one of the game's own folders, which the game or another tool may write; see
@@ -112,9 +126,9 @@ public sealed class ModFileRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ReplacedSha256 { get; set; }
 
-    /// <summary>A settings file whose manager copy holds the player's changes.</summary>
+    /// <summary>A settings file or a kept one whose manager copy holds the player's changes.</summary>
     [JsonIgnore]
-    public bool IsEdited => IsSettingsFile && !string.Equals(Sha256, DefaultSha256 ?? Sha256, StringComparison.OrdinalIgnoreCase);
+    public bool IsEdited => IsPlayerFile && !string.Equals(Sha256, DefaultSha256 ?? Sha256, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// A Lua library in UE4SS's shared folder ("shared/json/json.lua"), next to UE4SS's own. Several mods may bring

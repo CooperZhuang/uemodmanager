@@ -112,7 +112,8 @@ public class TranslationTests
 
 /// <summary>
 /// The texts the app translates, read from the source as the code writes them: L.T("…"), L.F($"…"),
-/// L.Plural(n, "…", "…") and L.Both(language, "…") in the UI; new ModException($"…"), problems.Add($"…") and warnings.Add($"…") in Core;
+/// L.Plural(n, "…", "…") and L.Both(language, "…") in the UI; new ModException($"…"), new ChangedFilesException($"…", …),
+/// problems.Add($"…") and warnings.Add($"…") in Core;
 /// {ui:Loc '…'} in the XAML; and the names, taglines and UE4SS notes of the game profiles. An interpolated
 /// string counts as its format, "Starting {0}…", as the app looks it up.
 /// </summary>
@@ -127,7 +128,7 @@ internal sealed class SourceTexts
     {
         var texts = new SourceTexts();
         texts.ReadCode(Path.Combine(Root, "UEManager.UI"), ["L.T(", "L.F(", "L.Plural(", "L.Both("]);
-        texts.ReadCode(Path.Combine(Root, "UEManager.Core"), ["ModException(", "problems.Add(", "warnings.Add("]);
+        texts.ReadCode(Path.Combine(Root, "UEManager.Core"), ["ModException(", "ChangedFilesException(", "problems.Add(", "warnings.Add("]);
         texts.ReadXaml(Path.Combine(Root, "UEManager.UI"));
         texts.ReadProfiles(Path.Combine(Root, "UEManager.Core", "Games", "Profiles"));
         return texts;

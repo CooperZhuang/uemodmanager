@@ -144,7 +144,7 @@
                                                 Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
                                         <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE7A7;"
                                                 Command="{Binding ResetSettingsCommand}" ToolTip="{ui:Loc 'Reset the settings to the ones the mod came with'}"
-                                                Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
+                                                Visibility="{Binding CanResetSettings, Converter={StaticResource Visible}}" />
                                         <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
                                                 Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the files of this mod in their folders'}" />
                                         <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE838;"

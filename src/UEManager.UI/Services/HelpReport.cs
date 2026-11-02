@@ -115,7 +115,7 @@ internal static partial class HelpReport
         Ue4ssLog? log;
         try
         {
-            log = Ue4ssLog.Read(ue4ss.LogPath);
+            log = Ue4ssLog.Read(ue4ss.LogPath, ue4ss.ModFolders());
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -129,8 +129,9 @@ internal static partial class HelpReport
         }
         var mods = log.ModsNamedInErrors(ue4ss.ModFolders());
         text.AppendLine($"UE4SS log of {log.WrittenAt:yyyy-MM-dd HH:mm}: {log.ErrorCount} error(s), {log.WarningCount} warning(s)"
+            + (log.KnownCount > 0 ? $", {log.KnownCount} known harmless line(s) left out" : "")
             + (mods.Count > 0 ? $"; errors name: {string.Join(", ", mods)}" : ""));
-        foreach (var line in log.Lines.Where(l => l.Level != Ue4ssLogLevel.Info).TakeLast(LogLines))
+        foreach (var line in log.Lines.Where(l => l.IsProblem).TakeLast(LogLines))
             text.AppendLine("  " + Shorten(line.Text));
     }
 

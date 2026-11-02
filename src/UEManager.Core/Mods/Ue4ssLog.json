@@ -1,0 +1,34 @@
+// What the UE4SS page knows about UE4SS.log. Built into the app; a change needs a new build.
+{
+  // Lines UE4SS writes at every game start that do no harm. They show grey, with "known, harmless", and do not count
+  // as errors. "text" is a part of the line after its time stamp; case does not matter.
+  "known": [
+    {
+      "text": "[.ProcessConsoleExec.] Failed to add hook, detour installation likely failed!",
+      "why": "UE4SS cannot hook ProcessConsoleExec in this engine version. It tries at every start; mods work without it."
+    },
+    {
+      "text": "[Lua] Failed to expose size of 'class RC::Unreal::FObjectPtrProperty', internal value invalid",
+      "why": "UE4SS cannot tell Lua mods the size of this property type in this engine version. Mods that do not read it directly are not affected."
+    }
+  ],
+
+  // Lines of UE4SS itself that start with [Lua] like the lines of a Lua mod. They go to the UE4SS tab.
+  "ue4ssLines": [
+    "[Lua] Exposing size of "
+  ],
+
+  // The mods UE4SS comes with. Their lines go to the UE4SS tab, not to Mods.
+  "ue4ssMods": [
+    "ActorDumperMod",
+    "BPML_GenericFunctions",
+    "BPModLoaderMod",
+    "CheatManagerEnablerMod",
+    "ConsoleCommandsMod",
+    "ConsoleEnablerMod",
+    "jsbLuaProfilerMod",
+    "Keybinds",
+    "LineTraceMod",
+    "SplitScreenMod"
+  ]
+}

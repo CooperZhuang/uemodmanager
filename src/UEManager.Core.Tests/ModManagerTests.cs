@@ -69,7 +69,7 @@ public class ModManagerTests : IDisposable
         var mod = Install(Download("Sharp"));
         File.WriteAllText(Deployed("Sharp_P.pak"), "edited by hand");
 
-        Assert.Throws<ModException>(() => manager.Uninstall(mod.Id));
+        Assert.Throws<ChangedFilesException>(() => manager.Uninstall(mod.Id));
 
         Assert.Equal("edited by hand", File.ReadAllText(Deployed("Sharp_P.pak")));
         Assert.True(File.Exists(Deployed("Sharp_P.utoc")));

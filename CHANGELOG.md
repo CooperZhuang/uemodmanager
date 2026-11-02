@@ -4,6 +4,15 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.0 (2026-11-02)
+- Traditional Chinese (thanks, CooperZhuang)
+- More natural Simplified Chinese texts (thanks, CooperZhuang)
+- Traditional Chinese in a Taiwan font
+- UE4SS log in tabs: UE4SS, Mods and Unnamed
+- Known harmless UE4SS lines no longer count as errors
+- Keep my version: a mod file changed outside the manager no longer blocks the mod
+- Same title size on every page; long contributor lines wrap
+
 ## 1.4.1 (2026-11-01)
 - Changelog link in the update box: what changed in each version
 - A file another program holds gets a clear message, not an error (thanks, CooperZhuang)

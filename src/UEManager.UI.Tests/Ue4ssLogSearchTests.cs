@@ -25,4 +25,22 @@ public class Ue4ssLogSearchTests
         Assert.True(Ue4ssLogViewModel.Shows(Failed, true, "PhantomTweaks"));
         Assert.False(Ue4ssLogViewModel.Shows(Failed, true, "Starting"));
     }
+
+    [Fact]
+    public void Only_errors_and_warnings_leaves_out_known_lines()
+    {
+        var known = new Ue4ssLogLine("[12:40:00] [.ProcessConsoleExec.] Failed to add hook", Ue4ssLogLevel.Error, Known: true);
+
+        Assert.False(Ue4ssLogViewModel.Shows(known, true, ""));
+        Assert.True(Ue4ssLogViewModel.Shows(known, false, ""));
+    }
+
+    [Fact]
+    public void A_mod_line_shows_for_its_folder_name()
+    {
+        var tagged = new Ue4ssLogLine("[12:40:03] [Lua] [Witch Time] 1.8 loaded.", Ue4ssLogLevel.Info, Ue4ssLogSource.Mod, "phantombladezero_witchtime");
+
+        Assert.True(Ue4ssLogViewModel.Shows(tagged, false, "phantombladezero_witchtime"));
+        Assert.False(Ue4ssLogViewModel.Shows(tagged, false, "PassiveRegen"));
+    }
 }

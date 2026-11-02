@@ -23,6 +23,12 @@
     <AssemblyMetadata Include="GameProfile" Value="$(GameProfile)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The known lines of UE4SS.log and UE4SS's own mods; Ue4ssLogRules reads it. -->
+    <None Remove="Mods\Ue4ssLog.json" />
+    <EmbeddedResource Include="Mods\Ue4ssLog.json" LogicalName="UEManager.Core.Mods.Ue4ssLog.json" />
+  </ItemGroup>
+
   <Target Name="CheckGameProfile" BeforeTargets="BeforeBuild">
     <Error Condition="!Exists('Games\Profiles\$(GameProfile).json')"
            Text="Game profile '$(GameProfile)' does not exist: Games\Profiles\$(GameProfile).json" />

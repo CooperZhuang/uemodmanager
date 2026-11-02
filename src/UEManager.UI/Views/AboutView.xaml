@@ -50,10 +50,11 @@
                 <ItemsControl ItemsSource="{Binding Contributors}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
-                                <Rectangle Width="6" Height="6" Margin="2,0,12,0" VerticalAlignment="Center" Fill="{StaticResource Brush.Accent}" />
-                                <TextBlock Foreground="{StaticResource Brush.Text}" Text="{Binding}" />
-                            </StackPanel>
+                            <!-- A long line wraps; the mark stays by its first line. -->
+                            <DockPanel Margin="0,0,0,6">
+                                <Rectangle Width="6" Height="6" Margin="2,7,12,0" VerticalAlignment="Top" Fill="{StaticResource Brush.Accent}" />
+                                <TextBlock Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap" Text="{Binding}" />
+                            </DockPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

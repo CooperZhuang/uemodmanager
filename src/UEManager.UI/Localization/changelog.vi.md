@@ -2,6 +2,15 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.0 (2026-11-02)
+- Tiếng Trung phồn thể (cảm ơn CooperZhuang)
+- Câu chữ tiếng Trung giản thể tự nhiên hơn (cảm ơn CooperZhuang)
+- Tiếng Trung phồn thể hiển thị bằng phông chữ Đài Loan
+- Nhật ký UE4SS chia thành các thẻ: UE4SS, Mod và Không tên
+- Các dòng UE4SS vô hại đã biết không còn tính là lỗi
+- Giữ bản của tôi: tệp mod bị sửa bên ngoài trình quản lý không còn chặn mod
+- Tiêu đề các trang cùng cỡ chữ; dòng người đóng góp dài được xuống dòng
+
 ## 1.4.1 (2026-11-01)
 - Liên kết Changelog trong ô cập nhật: xem thay đổi của từng phiên bản
 - Tệp bị chương trình khác giữ có thông báo rõ ràng thay vì lỗi (cảm ơn CooperZhuang)

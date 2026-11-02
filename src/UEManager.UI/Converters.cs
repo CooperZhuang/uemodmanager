@@ -61,6 +61,7 @@ public sealed class ToneBrushConverter : IValueConverter
             "warn" => "Brush.Warning",
             "bad" or false => "Brush.Danger",
             "accent" => "Brush.Accent",
+            "dim" => "Brush.TextDim",
             _ => "Brush.TextMuted",
         };
         if (parameter is "wash")

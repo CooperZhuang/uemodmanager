@@ -49,6 +49,9 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     /// <summary>The mod has a settings file the player may change, such as Scripts/config.lua.</summary>
     public bool HasSettings => record.Files.Any(f => f.IsSettingsFile);
 
+    /// <summary>The mod has a settings file or one whose changed version the player kept: Reset settings puts back the mod's own.</summary>
+    public bool CanResetSettings => record.Files.Any(f => f.IsPlayerFile);
+
     /// <summary>The settings files in the game, for the settings editor; none while the mod is disabled.</summary>
     public IReadOnlyList<SettingsFileItem> DeployedSettingsFiles =>
         record.Files.Where(f => f.IsSettingsFile && f.DeployedPath is not null)
@@ -99,7 +102,7 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     {
         ModIntegrity.Intact => FilesText,
         ModIntegrity.FilesMissing => L.T("Some deployed files are gone. Disable and enable the mod to put them back."),
-        ModIntegrity.FilesChanged => L.T("A deployed file was changed outside the manager. The manager will not remove it."),
+        ModIntegrity.FilesChanged => L.T("A file was changed outside the manager, so the manager will not remove it. Open the mod's details to keep your version."),
         _ => null,
     };
 
