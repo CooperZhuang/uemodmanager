@@ -93,7 +93,7 @@ public sealed class Localizer : INotifyPropertyChanged
 
     /// <summary>
     /// The app's language closest to a Windows language: the same one, else one of the same script, else one
-    /// of the same language. Chinese (Taiwan) gets Simplified Chinese, for example, and German (Austria) German.
+    /// of the same language. Chinese (Hong Kong) gets Traditional Chinese, for example, and German (Austria) German.
     /// </summary>
     public string Closest(CultureInfo culture)
     {

@@ -59,6 +59,7 @@ public partial class App : Application
         var dataDir = ArgumentAfter(e.Args, "--data-dir");
         var paths = dataDir is null ? AppPaths.NextToApp() : new AppPaths(dataDir);
         L.Current.SetLanguage(AppSettings.Load(paths).Language);
+        LanguageFonts.Follow(Resources);
         try
         {
             paths.EnsureWritable();

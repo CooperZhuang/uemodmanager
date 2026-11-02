@@ -58,7 +58,7 @@
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
                                             <TextBlock Margin="0,0,10,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding SizeText}" />
                                             <Border Style="{StaticResource Badge}">
-                                                <TextBlock FontFamily="{StaticResource Font.Label}" FontSize="11" Text="{Binding KindText}" />
+                                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding KindText}" />
                                             </Border>
                                         </StackPanel>
                                         <StackPanel>

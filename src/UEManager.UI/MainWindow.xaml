@@ -16,7 +16,7 @@
         BorderBrush="{StaticResource Brush.LineStrong}"
         BorderThickness="1"
         Foreground="{StaticResource Brush.Text}"
-        FontFamily="{StaticResource Font.Body}"
+        FontFamily="{DynamicResource Font.Body}"
         FontSize="13"
         UseLayoutRounding="True"
         AllowDrop="True">
@@ -35,7 +35,7 @@
         <!-- ===== Title bar: drag to move, double-click to maximize ===== -->
         <Grid Background="{StaticResource Brush.TitleBar}">
             <Rectangle Height="1" VerticalAlignment="Bottom" Fill="{StaticResource Brush.Line}" />
-            <TextBlock Margin="16,0,0,0" VerticalAlignment="Center" FontFamily="{StaticResource Font.Label}" FontSize="12"
+            <TextBlock Margin="16,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
                        Foreground="{StaticResource Brush.TextMuted}" Text="{Binding AppName}" />
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                 <Button Style="{StaticResource Button.Chrome}" Content="&#xE921;" Click="OnMinimize" ToolTip="{ui:Loc 'Minimize'}" />

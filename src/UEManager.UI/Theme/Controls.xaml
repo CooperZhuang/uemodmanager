@@ -14,7 +14,7 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
         <Setter Property="Background" Value="{StaticResource Brush.Field}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.LineStrong}" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Body}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Body}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="MinHeight" Value="38" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
@@ -91,7 +91,7 @@
     <!-- ===== Text ===== -->
 
     <Style x:Key="Text.Overline" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource Font.Label}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Label}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />

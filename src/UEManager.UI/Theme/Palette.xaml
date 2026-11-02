@@ -54,7 +54,9 @@
         <GradientStop Color="#00C8102E" Offset="1" />
     </LinearGradientBrush>
 
-    <!-- Body text, titles, labels and icons. Font.Heading can point to a font in Theme\Fonts (see Theme\README.md). -->
+    <!-- Body text, titles, labels and icons. Font.Heading can point to a font in Theme\Fonts (see Theme\README.md).
+         For Traditional Chinese, LanguageFonts puts Microsoft JhengHei UI in place of Microsoft YaHei UI, so views
+         take Font.Body, Font.Heading and Font.Label as DynamicResource. -->
     <FontFamily x:Key="Font.Body">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="Font.Heading">Palatino Linotype, Georgia, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="Font.Label">Bahnschrift, Segoe UI, Microsoft YaHei UI</FontFamily>

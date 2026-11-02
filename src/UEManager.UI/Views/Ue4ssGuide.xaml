@@ -19,7 +19,7 @@
             <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
         <Style x:Key="StepNumberText" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource Font.Label}" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Label}" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
