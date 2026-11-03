@@ -17,7 +17,9 @@ internal sealed record HelpFacts(
     IReadOnlyList<string> Unmanaged,
     string? OtherInstall,
     string LogsDir,
-    IReadOnlyList<string>? Ue4ssDiffering = null);
+    IReadOnlyList<string>? Ue4ssDiffering = null,
+    string? RemoteData = null,
+    string? UpdateCheck = null);
 
 /// <summary>
 /// A text for the Discord help channel: the player's own words, then the facts a helper asks for first.
@@ -37,6 +39,9 @@ internal static partial class HelpReport
     {
         var text = new StringBuilder();
         text.AppendLine($"App: {AppInfo.Name} {AppInfo.Version}, Windows {Environment.OSVersion.Version}");
+        // Where the remote data and the update check came from: a host name only, as the app shows it.
+        if (facts.RemoteData is not null || facts.UpdateCheck is not null)
+            text.AppendLine($"Remote data: {facts.RemoteData ?? "unknown"}; update check: {facts.UpdateCheck ?? "unknown"}");
         var game = facts.Game;
         text.AppendLine(game is null
             ? $"Game: {facts.Profile.DisplayName}, not found"

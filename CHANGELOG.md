@@ -4,6 +4,13 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.2 (2026-11-03)
+- Data, app updates and UE4SS downloads from Cloudflare first, GitHub as backup
+- Remote box in the sidebar: where the data came from, with a short explanation
+- "Try again" in that window when no data came at start
+- Help reports name where the data and the update check came from
+- Traditional Chinese: "Open exe folder" names the right folder (thanks, CooperZhuang)
+
 ## 1.5.1 (2026-11-02)
 - Open folder links in the mod details: each folder of a mod opens in the game
 

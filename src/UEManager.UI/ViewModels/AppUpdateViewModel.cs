@@ -60,6 +60,22 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
 
     private ModException? failure;
 
+    /// <summary>
+    /// The update check for a help report, in English like the rest of it: where the release list came from (a host,
+    /// never an address) and what it said.
+    /// </summary>
+    internal string ReportText => State switch
+    {
+        UpdateState.Checking => "still running",
+        UpdateState.Failed => $"failed ({failure?.Message})",
+        _ => $"{RemoteSources.Of(release?.ListUrl ?? "") switch
+            {
+                RemoteSource.Cloudflare => "Cloudflare",
+                RemoteSource.GitHub => "GitHub",
+                _ => "a test copy",
+            }}, {(State == UpdateState.Available ? "update available" : "up to date")} (newest {release?.Version})",
+    };
+
     public string StatusText => State switch
     {
         UpdateState.Checking => L.T("Checking for updates…"),

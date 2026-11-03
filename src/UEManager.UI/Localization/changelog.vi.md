@@ -2,6 +2,13 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.2 (2026-11-03)
+- Dữ liệu, bản cập nhật ứng dụng và tải UE4SS lấy từ Cloudflare trước, GitHub làm dự phòng
+- Ô REMOTE ở thanh bên: cho biết dữ liệu lấy từ đâu, kèm giải thích ngắn
+- Nút "Thử lại" trong cửa sổ đó khi lúc khởi động không lấy được dữ liệu
+- Báo cáo sự cố ghi rõ dữ liệu và kiểm tra cập nhật lấy từ đâu
+- Tiếng Trung phồn thể: nút "Open exe folder" nay ghi đúng thư mục (cảm ơn CooperZhuang)
+
 ## 1.5.1 (2026-11-02)
 - Liên kết "Mở thư mục" trong chi tiết mod: mở từng thư mục của mod trong game
 

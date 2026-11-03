@@ -17,7 +17,9 @@ public sealed record AppReleaseFile(string Name, string Url, long Size, string? 
 /// <summary>A release of the app on GitHub.</summary>
 /// <param name="Version">The version without the tag's "v", such as "1.1.0".</param>
 /// <param name="File">The zip of this build for this game, or null when the release has none.</param>
-public sealed record AppRelease(string Version, string? PageUrl, DateTimeOffset? Date, string? Notes, AppReleaseFile? File);
+/// <param name="ListUrl">The address of the release list that gave it, as Cloudflare's copy or GitHub's API.</param>
+public sealed record AppRelease(string Version, string? PageUrl, DateTimeOffset? Date, string? Notes, AppReleaseFile? File,
+    string? ListUrl = null);
 
 /// <summary>
 /// Reads the app's newest release from GitHub's API ("releases/latest"), or from a copy of that answer next to a
@@ -116,7 +118,7 @@ public static class AppReleases
                 throw new ModException($"The release list answered {(int)response.StatusCode} {response.ReasonPhrase}. Try again later.");
             var listUrl = new Uri(url);
             var release = Parse(await response.Content.ReadAsStringAsync(timeout.Token), filePrefix,
-                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl);
+                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl) with { ListUrl = url };
             Log.Info($"Newest release from '{url}': {release.Version}; file for this build: {release.File?.Name ?? "none"}.");
             return release;
         }

@@ -329,8 +329,21 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>Where the remote data (the UE4SS manifest) came from at this start, shown in the sidebar.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RemoteText), nameof(RemoteTone), nameof(RemoteStateBefore), nameof(RemoteStateHost),
-        nameof(RemoteStateAfter), nameof(RemoteHostTone))]
+        nameof(RemoteStateAfter), nameof(RemoteHostTone), nameof(CanRetryRemote))]
     private RemoteSource remote = RemoteSource.Checking;
+
+    /// <summary>The remote data for a help report, in English: a host name, never an address.</summary>
+    private string RemoteReportText => Remote switch
+    {
+        RemoteSource.Cloudflare => "Cloudflare",
+        RemoteSource.GitHub => "GitHub",
+        RemoteSource.Other => "a test copy",
+        RemoteSource.Offline => "offline",
+        _ => "still checking",
+    };
+
+    /// <summary>No copy answered at start: "Try again" reads the data and checks for updates again, without a restart.</summary>
+    public bool CanRetryRemote => Remote == RemoteSource.Offline;
 
     /// <summary>The sidebar box. It stays English in every language, as "Changelog" does: short, and known everywhere.</summary>
     public string RemoteText => Remote switch
@@ -1353,7 +1366,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         var current = manager;
         var facts = new HelpFacts(Profile, Game, Game is null ? null : Ue4ssRuntime.Detect(Game), installedUe4ssVersion,
-            current?.Mods ?? [], [], current?.OtherInstallRoot, paths.LogsDir, IsUe4ssInstalled ? unofficialUe4ssFiles : null);
+            current?.Mods ?? [], [], current?.OtherInstallRoot, paths.LogsDir, IsUe4ssInstalled ? unofficialUe4ssFiles : null,
+            RemoteReportText, Update.ReportText);
         string? collected = null;
         await RunAsync(L.T("Collecting the facts…"), async () => collected = await Task.Run(() =>
             HelpReport.Collect(facts with { Unmanaged = current?.UnmanagedFiles() ?? [] })));
@@ -1374,6 +1388,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     [RelayCommand]
     private void CloseRemoteInfo() => IsRemoteInfoOpen = false;
+
+    /// <summary>Reads the remote data and checks for an app update again, as at start, such as after the connection came up.</summary>
+    [RelayCommand]
+    private async Task RetryRemote()
+    {
+        Remote = RemoteSource.Checking;
+        await Task.WhenAll(CheckUe4ssManifestAsync(), Update.CheckAsync());
+    }
 
     [RelayCommand]
     private void OpenProjectPage() => TryOpen(AppInfo.ProjectUrl);

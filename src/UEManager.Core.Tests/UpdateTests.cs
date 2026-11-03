@@ -85,6 +85,7 @@ public class UpdateTests
             "uemm_phantom-blade-zero_");
 
         Assert.Equal("https://second.test/app/uemm_phantom-blade-zero_1.5.2.zip", release.File?.Url);
+        Assert.Equal("https://second.test/app/latest.json", release.ListUrl);
         Assert.Equal(["https://first.test/app/latest.json", "https://second.test/app/latest.json"], asked);
     }
 

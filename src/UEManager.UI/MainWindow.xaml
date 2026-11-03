@@ -382,6 +382,9 @@
                         </TextBlock>
                     </StackPanel>
                     <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <!-- Offline at start: read the data again without a restart. -->
+                        <Button Margin="0,0,8,0" Content="{ui:Loc 'Try again'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding RetryRemoteCommand}"
+                                Visibility="{Binding CanRetryRemote, Converter={StaticResource Visible}}" />
                         <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                                 Command="{Binding CloseRemoteInfoCommand}" IsCancel="True" />
                     </StackPanel>
