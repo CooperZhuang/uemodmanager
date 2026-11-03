@@ -870,7 +870,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             await RunAsync(L.T("Downloading UE4SS…"), async () =>
             {
                 var progress = new Progress<double>(share => BusyText = L.F($"Downloading UE4SS…  {share:P0}"));
-                var file = await Ue4ssDownloader.DownloadAsync(Http, release.Url, release.Sha256, folder, progress);
+                var file = await Ue4ssDownloader.DownloadAsync(Http, release.Urls, release.Sha256, folder, progress);
                 BusyText = L.T("Installing UE4SS…");
                 var version = string.IsNullOrEmpty(release.Version) ? null : release.Version;
                 result = await Task.Run(() => manager!.InstallUe4ss(file, version));

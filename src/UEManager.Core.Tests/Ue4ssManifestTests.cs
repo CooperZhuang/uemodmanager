@@ -68,6 +68,31 @@ public class Ue4ssManifestTests : IDisposable
     }
 
     [Fact]
+    public void A_mirror_next_to_the_manifest_comes_first_and_GitHub_stays_the_fallback()
+    {
+        const string json = """
+            { "ue4ss": { "phantom-blade-zero": {
+                "version": "v3.0.1-1195-g1ceefac8",
+                "url": "https://github.com/KintaroModding/ue4ss/releases/download/v3.0.1-1195-g1ceefac8/phantombladezero_ue4ss_v3.0.1-1195-g1ceefac8.zip",
+                "sha256": "abc",
+                "mirror": "ue4ss/phantombladezero_ue4ss_v3.0.1-1195-g1ceefac8.zip" } } }
+            """;
+
+        var release = Ue4ssManifest.Parse(json, "phantom-blade-zero", new Uri("https://metadata.openmods.nexus/uemodmanager/manifest.json"))!;
+
+        Assert.Equal(
+            ["https://metadata.openmods.nexus/uemodmanager/ue4ss/phantombladezero_ue4ss_v3.0.1-1195-g1ceefac8.zip",
+             "https://github.com/KintaroModding/ue4ss/releases/download/v3.0.1-1195-g1ceefac8/phantombladezero_ue4ss_v3.0.1-1195-g1ceefac8.zip"],
+            release.Urls);
+        Assert.Equal("phantombladezero_ue4ss_v3.0.1-1195-g1ceefac8.zip", release.FileName);
+        // Without the manifest's address, as for a manifest read from a file, only GitHub is left.
+        Assert.Single(Ue4ssManifest.Parse(json, "phantom-blade-zero")!.Urls);
+        // A plain http mirror counts only for a test manifest served over http.
+        Assert.Single(Ue4ssManifest.Parse(json.Replace("\"ue4ss/", "\"http://example.test/"), "phantom-blade-zero",
+            new Uri("https://metadata.openmods.nexus/uemodmanager/manifest.json"))!.Urls);
+    }
+
+    [Fact]
     public async Task Several_addresses_are_tried_in_order_until_one_answers()
     {
         var asked = new List<string>();

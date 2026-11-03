@@ -216,8 +216,15 @@ or slow in a region, as GitHub in parts of China, does not stop the check:
 
 ```json
 { "ue4ss": { "<game id>": { "version": "v…", "url": "https://…/….zip", "sha256": "…",
+  "mirror": "ue4ss/….zip",
   "files": { "ue4ss/UE4SS.dll": ["<sha256>"], "dwmapi.dll": ["<sha256>"], … } } } }
 ```
+
+`url` is the release zip on GitHub. The optional `mirror` is a copy of the same
+zip in the metadata repo, relative to the manifest, so it comes from the same
+Cloudflare address; **Download and install** takes it first and `url` when it
+fails, and checks the SHA-256 either way. Versions up to 1.5.1 ignore `mirror`,
+so `url` must stay a full GitHub link.
 
 When the entry's version differs from the recorded one (or none is recorded,
 as for a UE4SS installed by hand), Home and the UE4SS page offer **Update to

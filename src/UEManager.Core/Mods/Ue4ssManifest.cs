@@ -5,13 +5,19 @@ using System.Text.RegularExpressions;
 namespace UEManager.Core.Mods;
 
 /// <summary>A UE4SS release package: its version, where to download it, and its SHA-256.</summary>
+/// <param name="Url">The release file on GitHub.</param>
 /// <param name="Files">
 /// The official builds' files, by their place next to the game's exe ("ue4ss/UE4SS.dll"), each with the SHA-256s
 /// it has in an official release; null when the manifest lists none. See <see cref="Ue4ssBuild"/>.
 /// </param>
-public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IReadOnlyDictionary<string, IReadOnlyList<string>>? Files = null)
+/// <param name="MirrorUrl">A copy of the same file next to the manifest, as on Cloudflare; tried before <paramref name="Url"/>.</param>
+public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IReadOnlyDictionary<string, IReadOnlyList<string>>? Files = null,
+    string? MirrorUrl = null)
 {
     public string FileName => Path.GetFileName(new Uri(Url).AbsolutePath);
+
+    /// <summary>Where the file can be downloaded, in order: the copy first, then GitHub.</summary>
+    public IReadOnlyList<string> Urls => MirrorUrl is null || MirrorUrl == Url ? [Url] : [MirrorUrl, Url];
 }
 
 /// <summary>The manifest as one address answered it: the address, and this game's entry, null when it has none.</summary>
@@ -21,16 +27,18 @@ public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release);
 /// The metadata manifest that names the current UE4SS release per game, so a new
 /// UE4SS build reaches users without a new app build:
 /// <code>{ "ue4ss": { "&lt;game id&gt;": { "version": "...", "url": "https://...", "sha256": "...",
-///   "files": { "ue4ss/UE4SS.dll": ["&lt;sha256&gt;", ...], ... } } } }</code>
-/// "files" is optional; older app versions ignore it.
+///   "mirror": "ue4ss/&lt;file&gt;.zip", "files": { "ue4ss/UE4SS.dll": ["&lt;sha256&gt;", ...], ... } } } }</code>
+/// "files" and "mirror" are optional; older app versions ignore them. "mirror" is a copy of the release file,
+/// relative to the manifest, so it comes from the same host; "url" stays the GitHub link, which older versions need.
 /// </summary>
 public static partial class Ue4ssManifest
 {
     /// <summary>How long one address of the manifest may take before the next one is tried.</summary>
     public static readonly TimeSpan PerAddress = TimeSpan.FromSeconds(5);
     /// <summary>The entry for one game, or null when the manifest has none or it is incomplete.</summary>
+    /// <param name="manifestUrl">Where the manifest came from: its "mirror" is relative to it.</param>
     /// <exception cref="JsonException">The text is not JSON.</exception>
-    public static Ue4ssRelease? Parse(string json, string gameId)
+    public static Ue4ssRelease? Parse(string json, string gameId, Uri? manifestUrl = null)
     {
         using var document = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         if (!document.RootElement.TryGetProperty("ue4ss", out var games)
@@ -42,7 +50,20 @@ public static partial class Ue4ssManifest
         var url = Text(entry, "url");
         if (string.IsNullOrWhiteSpace(version) || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
             return null;
-        return new Ue4ssRelease(version.Trim(), url!, Text(entry, "sha256"), OfficialFiles(entry));
+        return new Ue4ssRelease(version.Trim(), url!, Text(entry, "sha256"), OfficialFiles(entry), Mirror(entry, manifestUrl));
+    }
+
+    /// <summary>The entry's "mirror", relative to the manifest (or a full https link); null without one.</summary>
+    private static string? Mirror(JsonElement entry, Uri? manifestUrl)
+    {
+        if (Text(entry, "mirror") is not { Length: > 0 } text)
+            return null;
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) && (manifestUrl is null || !Uri.TryCreate(manifestUrl, text, out uri)))
+            return null;
+        // A test copy of the manifest on this PC may be served over http, as its mirror then is.
+        return uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && manifestUrl?.Scheme == Uri.UriSchemeHttp)
+            ? uri.AbsoluteUri
+            : null;
     }
 
     /// <summary>The "files" of an entry: each place with one SHA-256 or a list of them. Anything else is left out.</summary>
@@ -87,7 +108,7 @@ public static partial class Ue4ssManifest
                 Log.Warn($"UE4SS manifest '{url}' answered {(int)response.StatusCode}.");
                 return (false, null);
             }
-            var release = Parse(await response.Content.ReadAsStringAsync(cancellation), gameId);
+            var release = Parse(await response.Content.ReadAsStringAsync(cancellation), gameId, new Uri(url));
             Log.Info(release is null
                 ? $"UE4SS manifest '{url}' has no entry for '{gameId}'."
                 : $"UE4SS manifest '{url}': {gameId} -> {release.Version}.");

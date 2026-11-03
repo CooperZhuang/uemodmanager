@@ -44,11 +44,19 @@ public static class Ue4ssDownloader
     /// checksum is given, a file that does not match is deleted and refused.
     /// </summary>
     public static Task<string> DownloadAsync(HttpClient http, string url, string? expectedSha256, string folder,
+        IProgress<double>? progress = null, CancellationToken cancellation = default) =>
+        DownloadAsync(http, [url], expectedSha256, folder, progress, cancellation);
+
+    /// <summary>
+    /// Downloads the file from the first of <paramref name="urls"/> that gives it unchanged, such as a copy on
+    /// Cloudflare and then GitHub, and returns its path. Named after the last address, the release file itself.
+    /// </summary>
+    public static Task<string> DownloadAsync(HttpClient http, IReadOnlyList<string> urls, string? expectedSha256, string folder,
         IProgress<double>? progress = null, CancellationToken cancellation = default)
     {
-        var name = Path.GetFileName(new Uri(url).AbsolutePath);
+        var name = Path.GetFileName(new Uri(urls[^1]).AbsolutePath);
         if (!FileSystem.HasExtension(name, FileSystem.ArchiveExtensions))
             name = "ue4ss.zip";
-        return FileDownloader.DownloadAsync(http, url, name, null, expectedSha256, folder, "UE4SS", progress, cancellation);
+        return FileDownloader.DownloadAsync(http, urls, name, null, expectedSha256, folder, "UE4SS", progress, cancellation);
     }
 }

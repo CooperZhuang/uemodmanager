@@ -367,11 +367,11 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Remote data download', Tracked=True}" />
                     <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'At every start, UE MM reads a small data file from the internet. It says what is new for this game, such as the current UE4SS version. So such changes reach you without a new version of the app.'}" />
+                               Text="{ui:Loc 'Each time UE MM starts, it reads a small online data file. This tells the app what is new for the game, including the current UE4SS version and other details. You can get these changes without a new version of UE MM.'}" />
                     <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'The file is plain text (JSON) and nothing else. It holds no program code and adds nothing to the app: it only decides what the app offers you, and nothing is installed until you click it. A download it names, such as UE4SS, is checked against the checksum in the file before it reaches the game.'}" />
+                               Text="{ui:Loc 'The file is plain text (JSON) only. It contains no executable program code and adds nothing to the app. It only tells the app which downloads are available. Nothing is installed until you click. Every download, including UE4SS and app updates, is checked against a checksum before it is used.'}" />
                     <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'The file comes from Cloudflare, with GitHub as the backup, and so do the app\'s own updates. When neither answers, the app works as before, only without the newest offers.'}" />
+                               Text="{ui:Loc 'The data and app updates come from Cloudflare\'s worldwide network, with GitHub as a backup. If neither is available, UE MM still works as usual, but the latest information and downloads may be missing.'}" />
                     <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
                         <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{Binding RemoteTone, Converter={StaticResource Tone}}" />
                         <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
