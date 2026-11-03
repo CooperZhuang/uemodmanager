@@ -207,8 +207,12 @@ puts every file back.
 
 ### UE4SS manifest
 
-At every start the app reads the profile's `ue4ssManifestUrl`
-(`KintaroModding/metadata`, `uemodmanager/manifest.json`):
+At every start the app reads `uemodmanager/manifest.json` of the
+`KintaroModding/metadata` repo from the profile's `ue4ssManifestUrls`, in order:
+`metadata.openmods.nexus` and `uemm-metadata.pages.dev` (Cloudflare Pages, which
+deploys every push to the repo) and then GitHub itself. Each address gets 5
+seconds; the first that has the game's entry counts, so a host that is blocked
+or slow in a region, as GitHub in parts of China, does not stop the check:
 
 ```json
 { "ue4ss": { "<game id>": { "version": "v…", "url": "https://…/….zip", "sha256": "…",
@@ -490,9 +494,14 @@ app is early in its development and changes often. Releases set it to
 
 ## Updates
 
-At every start the app asks GitHub for the newest release of
-`KintaroModding/uemodmanager` (`releases/latest`) and shows the result below the
-version, at the bottom of the sidebar:
+At every start the app reads the newest release of
+`KintaroModding/uemodmanager` and shows the result below the version, at the
+bottom of the sidebar. It reads a copy first: the release steps put GitHub's
+`releases/latest` answer and the release zip into the `KintaroModding/metadata`
+repo (`uemodmanager/app/`), which Cloudflare Pages serves, as for the UE4SS
+manifest. GitHub's API is the last of the addresses, 5 seconds each. The
+copy's zip link is relative to it, and the copy also names the same zip on
+GitHub, which **Update now** downloads when the copy fails:
 
 - **Up to date** (green): the newest release is not newer than this version.
   Its **Changelog** link shows what changed in each version, newest first, one
@@ -514,7 +523,7 @@ when it is an http or https address.
 The app takes `uemm_<game>_…zip` from the release. The update window offers:
 
 1. **Update now**: downloads that zip, checks its size and SHA-256 (from
-   GitHub's digest), checks that the exe inside carries the announced version,
+   GitHub's digest, which the copy keeps), checks that the exe inside carries the announced version,
    then renames the running exe to `<name>.old`, puts the new one in its place
    and starts it with the same options. Windows refuses to overwrite a running
    exe but lets it be renamed. The next start deletes the `.old` file. If any

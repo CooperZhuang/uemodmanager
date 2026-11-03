@@ -93,9 +93,20 @@
                         </StackPanel>
                         <TextBlock Margin="16,4,0,0" FontSize="11" Foreground="{StaticResource Brush.TextDim}"
                                    Text="{Binding AppVersionText}" />
+                        <!-- Where the remote data came from at this start; a click explains what it is. -->
+                        <Button Margin="0,12,0,0" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowRemoteInfoCommand}"
+                                ToolTip="{ui:Loc 'Where the app\'s remote data comes from'}"
+                                Foreground="{Binding RemoteTone, Converter={StaticResource Tone}}"
+                                BorderBrush="{Binding RemoteTone, Converter={StaticResource Tone}}"
+                                Background="{Binding RemoteTone, Converter={StaticResource Tone}, ConverterParameter=wash}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE753;" />
+                                <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{Binding RemoteText}" />
+                            </StackPanel>
+                        </Button>
                         <!-- The update check: green when up to date; orange, and a click opens the update, when not.
                              After the banner for a new version, the box flashes once. -->
-                        <Grid Margin="0,12,0,0" DataContext="{Binding Update}">
+                        <Grid Margin="0,8,0,0" DataContext="{Binding Update}">
                             <Button Style="{StaticResource Button.StatusBox}" HorizontalContentAlignment="Stretch"
                                     Command="{Binding ShowCommand}" IsEnabled="{Binding IsAvailable}" ToolTip="{Binding StatusHint}"
                                     ToolTipService.ShowOnDisabled="True"
@@ -343,6 +354,36 @@
                     <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Got it'}"
                                 Command="{Binding ClosePreReleaseCommand}" IsCancel="True" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===== Remote data ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding IsRemoteInfoOpen, Converter={StaticResource Visible}}">
+            <!-- Wide, in the shape of the window. -->
+            <Border Style="{StaticResource Dialog}" Width="640">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Remote data download', Tracked=True}" />
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'At every start, UE MM reads a small data file from the internet. It says what is new for this game, such as the current UE4SS version. So such changes reach you without a new version of the app.'}" />
+                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'The file is plain text (JSON) and nothing else. It holds no program code and adds nothing to the app: it only decides what the app offers you, and nothing is installed until you click it. A download it names, such as UE4SS, is checked against the checksum in the file before it reaches the game.'}" />
+                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'The file comes from Cloudflare, with GitHub as the backup, and so do the app\'s own updates. When neither answers, the app works as before, only without the newest offers.'}" />
+                    <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{Binding RemoteTone, Converter={StaticResource Tone}}" />
+                        <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
+                                   FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap">
+                            <Run Text="{Binding RemoteStateBefore, Mode=OneWay}" /><Run
+                                 Text="{Binding RemoteStateHost, Mode=OneWay}" Foreground="{Binding RemoteHostTone, Converter={StaticResource Tone}}" /><Run
+                                 Text="{Binding RemoteStateAfter, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                                Command="{Binding CloseRemoteInfoCommand}" IsCancel="True" />
                     </StackPanel>
                 </StackPanel>
             </Border>

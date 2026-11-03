@@ -11,6 +11,7 @@ using UEManager.Core;
 using UEManager.Core.Games;
 using UEManager.Core.Mods;
 using UEManager.Core.Storage;
+using UEManager.Core.Updates;
 using UEManager.UI.Services;
 
 namespace UEManager.UI.ViewModels;
@@ -46,8 +47,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private string? installedUe4ssVersion;
     private Ue4ssRelease? latestUe4ss;
 
-    /// <summary>Where the UE4SS manifest is read: the game profile's, or a test copy given on the command line.</summary>
-    private readonly string? ue4ssManifestUrl;
+    /// <summary>Where the UE4SS manifest is read, in order: the game profile's copies, or a test copy given on the command line.</summary>
+    private readonly IReadOnlyList<string> ue4ssManifestUrls;
 
     /// <summary>
     /// The installed UE4SS files that differ from every official build; empty for an official build, null while
@@ -66,11 +67,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         Profile = profile;
         this.paths = paths;
-        this.ue4ssManifestUrl = ue4ssManifestUrl ?? profile.Ue4ssManifestUrl;
+        ue4ssManifestUrls = ue4ssManifestUrl is null ? profile.Ue4ssManifestUrls : [ue4ssManifestUrl];
         Art = art;
         settings = AppSettings.Load(paths);
         CreateCatalog(catalogUrl);
-        Update = new AppUpdateViewModel(this, Http, paths, updateUrl ?? AppInfo.LatestReleaseUrl,
+        Update = new AppUpdateViewModel(this, Http, paths, updateUrl is null ? AppInfo.LatestReleaseUrls : [updateUrl],
             $"{AppInfo.ReleaseFilePrefix}_{profile.Id}_");
         Ue4ssLogPanel = new Ue4ssLogViewModel(this);
         ModsView = CollectionViewSource.GetDefaultView(Mods);
@@ -324,6 +325,70 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     [ObservableProperty]
     private bool isPreReleaseDialogOpen;
+
+    /// <summary>Where the remote data (the UE4SS manifest) came from at this start, shown in the sidebar.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RemoteText), nameof(RemoteTone), nameof(RemoteStateBefore), nameof(RemoteStateHost),
+        nameof(RemoteStateAfter), nameof(RemoteHostTone))]
+    private RemoteSource remote = RemoteSource.Checking;
+
+    /// <summary>The sidebar box. It stays English in every language, as "Changelog" does: short, and known everywhere.</summary>
+    public string RemoteText => Remote switch
+    {
+        RemoteSource.Cloudflare => "REMOTE CLOUDFLARE",
+        RemoteSource.GitHub => "REMOTE GITHUB",
+        RemoteSource.Other => "REMOTE TEST COPY",
+        RemoteSource.Offline => "REMOTE OFFLINE",
+        _ => "REMOTE …",
+    };
+
+    public string RemoteTone => Remote switch
+    {
+        RemoteSource.Cloudflare or RemoteSource.GitHub => "good",
+        RemoteSource.Other => "accent",
+        RemoteSource.Offline => "warn",
+        _ => "",
+    };
+
+    /// <summary>
+    /// The line under the explanation, in capitals: "CURRENT DATA RETRIEVED FROM CLOUDFLARE", the host (or "OFFLINE")
+    /// in its own colour. Before, host and after, so a language may put that word anywhere in its sentence.
+    /// </summary>
+    private (string Before, string Host, string After) RemoteState => Remote switch
+    {
+        RemoteSource.Cloudflare => Around(L.T("Current data retrieved from {0}"), "CLOUDFLARE"),
+        RemoteSource.GitHub => Around(L.T("Current data retrieved from {0}"), "GITHUB"),
+        RemoteSource.Other => Around(L.T("Current data retrieved from {0}"), Capitals(L.T("a test copy"))),
+        RemoteSource.Offline => Around(L.T("No current data retrieved: the app works {0}"), Capitals(L.T("offline"))),
+        _ => (Capitals(L.T("Retrieving current data…")), "", ""),
+    };
+
+    /// <summary>A sentence in capitals, split around its {0}, which <paramref name="word"/> fills.</summary>
+    private static (string Before, string Word, string After) Around(string sentence, string word)
+    {
+        var at = sentence.IndexOf("{0}", StringComparison.Ordinal);
+        return at < 0 ? (Capitals(sentence) + " ", word, "") : (Capitals(sentence[..at]), word, Capitals(sentence[(at + 3)..]));
+    }
+
+    private static string Capitals(string text) => text.ToUpper(System.Globalization.CultureInfo.CurrentUICulture);
+
+    public string RemoteStateBefore => RemoteState.Before;
+
+    public string RemoteStateHost => RemoteState.Host;
+
+    public string RemoteStateAfter => RemoteState.After;
+
+    public string RemoteHostTone => Remote switch
+    {
+        RemoteSource.Cloudflare => "cloudflare",
+        RemoteSource.GitHub => "github",
+        RemoteSource.Other => "accent",
+        RemoteSource.Offline => "bad",
+        _ => "",
+    };
+
+    [ObservableProperty]
+    private bool isRemoteInfoOpen;
 
     public bool IsGameFound => Game is not null;
 
@@ -830,9 +895,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>Reads the online manifest once per start. Offline or failing, it stays quiet.</summary>
     private async Task CheckUe4ssManifestAsync()
     {
-        if (string.IsNullOrWhiteSpace(ue4ssManifestUrl))
+        if (ue4ssManifestUrls.Count == 0)
+        {
+            Remote = RemoteSource.Offline;
             return;
-        latestUe4ss = await Ue4ssManifest.FetchAsync(Http, ue4ssManifestUrl, Profile.Id);
+        }
+        var answer = await Ue4ssManifest.FetchAsync(Http, ue4ssManifestUrls, Profile.Id);
+        Remote = answer is null ? RemoteSource.Offline : RemoteSources.Of(answer.Url);
+        latestUe4ss = answer?.Release;
         if (latestUe4ss is null)
             return;
         OnModsChanged();
@@ -1300,6 +1370,12 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private void ClosePreRelease() => IsPreReleaseDialogOpen = false;
 
     [RelayCommand]
+    private void ShowRemoteInfo() => IsRemoteInfoOpen = true;
+
+    [RelayCommand]
+    private void CloseRemoteInfo() => IsRemoteInfoOpen = false;
+
+    [RelayCommand]
     private void OpenProjectPage() => TryOpen(AppInfo.ProjectUrl);
 
     [RelayCommand]
@@ -1563,7 +1639,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

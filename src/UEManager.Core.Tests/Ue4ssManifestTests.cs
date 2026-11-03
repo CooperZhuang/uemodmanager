@@ -3,6 +3,7 @@ using System.Text;
 using UEManager.Core.Games;
 using UEManager.Core.Mods;
 using UEManager.Core.Storage;
+using UEManager.Core.Updates;
 
 namespace UEManager.Core.Tests;
 
@@ -64,6 +65,75 @@ public class Ue4ssManifestTests : IDisposable
         Assert.NotNull(await Ue4ssManifest.FetchAsync(ok, "https://example.test/manifest.json", "mortal-shell-2"));
         Assert.Null(await Ue4ssManifest.FetchAsync(missing, "https://example.test/manifest.json", "mortal-shell-2"));
         Assert.Null(await Ue4ssManifest.FetchAsync(broken, "https://example.test/manifest.json", "mortal-shell-2"));
+    }
+
+    [Fact]
+    public async Task Several_addresses_are_tried_in_order_until_one_answers()
+    {
+        var asked = new List<string>();
+        using var http = new HttpClient(new ByAddress(asked, new()
+        {
+            ["https://first.test/manifest.json"] = (HttpStatusCode.NotFound, ""),
+            ["https://second.test/manifest.json"] = (HttpStatusCode.OK, Manifest),
+            ["https://third.test/manifest.json"] = (HttpStatusCode.OK, Manifest),
+        }));
+
+        var answer = await Ue4ssManifest.FetchAsync(http,
+            ["https://first.test/manifest.json", "https://second.test/manifest.json", "https://third.test/manifest.json"], "mortal-shell-2");
+
+        Assert.Equal("https://second.test/manifest.json", answer?.Url);
+        Assert.Equal("v3.0.1-1181-g83330635", answer?.Release?.Version);
+        Assert.Equal(["https://first.test/manifest.json", "https://second.test/manifest.json"], asked);
+    }
+
+    [Fact]
+    public async Task An_answer_without_the_games_entry_still_counts()
+    {
+        var asked = new List<string>();
+        using var http = new HttpClient(new ByAddress(asked, new()
+        {
+            ["https://first.test/manifest.json"] = (HttpStatusCode.OK, Manifest),
+            ["https://second.test/manifest.json"] = (HttpStatusCode.OK, Manifest),
+        }));
+
+        var answer = await Ue4ssManifest.FetchAsync(http, ["https://first.test/manifest.json", "https://second.test/manifest.json"], "phantom-blade-zero");
+
+        Assert.Equal("https://first.test/manifest.json", answer?.Url);
+        Assert.Null(answer?.Release);
+        Assert.Single(asked);
+    }
+
+    [Theory]
+    [InlineData("https://metadata.openmods.nexus/uemodmanager/manifest.json", RemoteSource.Cloudflare)]
+    [InlineData("https://uemm-metadata.pages.dev/uemodmanager/manifest.json", RemoteSource.Cloudflare)]
+    [InlineData("https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json", RemoteSource.GitHub)]
+    [InlineData("http://127.0.0.1:8765/manifest.json", RemoteSource.Other)]
+    [InlineData("https://notgithub.com.example/manifest.json", RemoteSource.Other)]
+    public void The_source_of_an_answer_is_named_by_its_host(string url, RemoteSource source) =>
+        Assert.Equal(source, RemoteSources.Of(url));
+
+    [Fact]
+    public async Task A_slow_address_is_given_up_after_its_time()
+    {
+        using var http = new HttpClient(new SlowFirst(Manifest));
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var answer = await Ue4ssManifest.FetchAsync(http,
+            ["https://slow.test/manifest.json", "https://fast.test/manifest.json"], "mortal-shell-2", TimeSpan.FromMilliseconds(200));
+
+        Assert.NotNull(answer?.Release);
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"took {clock.Elapsed}");
+    }
+
+    [Fact]
+    public void The_built_in_profile_reads_the_manifest_from_cloudflare_first_and_github_last()
+    {
+        var urls = Assert.Single(UEManager.Core.Games.GameProfile.BuiltIn()).Ue4ssManifestUrls;
+
+        Assert.Equal(3, urls.Count);
+        Assert.StartsWith("https://metadata.openmods.nexus/", urls[0]);
+        Assert.StartsWith("https://raw.githubusercontent.com/", urls[^1]);
+        Assert.All(urls, url => Assert.EndsWith("/uemodmanager/manifest.json", url));
     }
 
     [Fact]
@@ -222,5 +292,28 @@ public class Ue4ssManifestTests : IDisposable
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8) });
+    }
+
+    /// <summary>An answer per address; every address asked is noted.</summary>
+    private sealed class ByAddress(List<string> asked, Dictionary<string, (HttpStatusCode Status, string Body)> answers) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var url = request.RequestUri!.ToString();
+            asked.Add(url);
+            var (status, body) = answers[url];
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8) });
+        }
+    }
+
+    /// <summary>The slow address never answers; any other one answers at once.</summary>
+    private sealed class SlowFirst(string body) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri!.Host == "slow.test")
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8) };
+        }
     }
 }

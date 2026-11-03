@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Text;
 using UEManager.Core.Mods;
 using UEManager.Core.Updates;
 
@@ -36,6 +38,127 @@ public class UpdateTests
         Assert.Equal("uemm_phantom-blade-zero_1.1.0.zip", release.File?.Name);
         Assert.Equal(150, release.File?.Size);
         Assert.Equal(new string('b', 64), release.File?.Sha256);
+    }
+
+    /// <summary>A copy of GitHub's answer next to a copy of the zip, as on Cloudflare.</summary>
+    private const string Copy = """
+        {
+          "tag_name": "v1.5.2",
+          "html_url": "https://github.com/KintaroModding/uemodmanager/releases/tag/v1.5.2",
+          "assets": [
+            { "name": "uemm_phantom-blade-zero_1.5.2.zip", "size": 150,
+              "browser_download_url": "uemm_phantom-blade-zero_1.5.2.zip",
+              "github_download_url": "https://github.com/KintaroModding/uemodmanager/releases/download/v1.5.2/uemm_phantom-blade-zero_1.5.2.zip",
+              "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void A_copy_links_the_zip_next_to_it_and_the_same_zip_on_GitHub()
+    {
+        var release = AppReleases.Parse(Copy, "uemm_phantom-blade-zero_",
+            listUrl: new Uri("https://metadata.openmods.nexus/uemodmanager/app/latest.json"));
+
+        Assert.Equal("1.5.2", release.Version);
+        Assert.Equal(
+            ["https://metadata.openmods.nexus/uemodmanager/app/uemm_phantom-blade-zero_1.5.2.zip",
+             "https://github.com/KintaroModding/uemodmanager/releases/download/v1.5.2/uemm_phantom-blade-zero_1.5.2.zip"],
+            release.File?.Urls);
+        Assert.Equal(new string('c', 64), release.File?.Sha256);
+        // GitHub's own answer has one link only.
+        Assert.Single(AppReleases.Parse(Release, "uemm_phantom-blade-zero_").File!.Urls);
+    }
+
+    [Fact]
+    public async Task The_release_list_is_read_from_the_first_address_that_answers()
+    {
+        var asked = new List<string>();
+        using var http = new HttpClient(new Answers(asked, new()
+        {
+            ["https://first.test/app/latest.json"] = (HttpStatusCode.NotFound, ""),
+            ["https://second.test/app/latest.json"] = (HttpStatusCode.OK, Copy),
+        }));
+
+        var release = await AppReleases.FetchLatestAsync(http,
+            ["https://first.test/app/latest.json", "https://second.test/app/latest.json", "https://third.test/app/latest.json"],
+            "uemm_phantom-blade-zero_");
+
+        Assert.Equal("https://second.test/app/uemm_phantom-blade-zero_1.5.2.zip", release.File?.Url);
+        Assert.Equal(["https://first.test/app/latest.json", "https://second.test/app/latest.json"], asked);
+    }
+
+    [Fact]
+    public async Task When_no_address_answers_the_last_ones_problem_is_reported()
+    {
+        using var http = new HttpClient(new Answers([], new()
+        {
+            ["https://first.test/latest.json"] = (HttpStatusCode.NotFound, ""),
+            ["https://second.test/latest.json"] = (HttpStatusCode.Forbidden, ""),
+        }));
+
+        var error = await Assert.ThrowsAsync<ModException>(() => AppReleases.FetchLatestAsync(http,
+            ["https://first.test/latest.json", "https://second.test/latest.json"], "uemm_"));
+
+        Assert.Contains("403", error.Message);
+    }
+
+    [Fact]
+    public async Task A_download_that_fails_on_the_copy_comes_from_GitHub_and_is_checked()
+    {
+        using var folder = new TestFolder();
+        var zip = Encoding.UTF8.GetBytes("the new app");
+        var sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(zip));
+        using var http = new HttpClient(new Bytes(new()
+        {
+            ["https://copy.test/app.zip"] = (HttpStatusCode.NotFound, []),
+            ["https://github.test/app.zip"] = (HttpStatusCode.OK, zip),
+        }));
+
+        var path = await FileDownloader.DownloadAsync(http, ["https://copy.test/app.zip", "https://github.test/app.zip"],
+            "app.zip", zip.Length, sha256, folder.Combine("downloads"), "UE MM");
+
+        Assert.Equal(zip, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public async Task A_changed_copy_is_refused_and_the_next_address_is_tried()
+    {
+        using var folder = new TestFolder();
+        var zip = Encoding.UTF8.GetBytes("the new app");
+        var sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(zip));
+        using var http = new HttpClient(new Bytes(new()
+        {
+            ["https://copy.test/app.zip"] = (HttpStatusCode.OK, Encoding.UTF8.GetBytes("not the app")),
+            ["https://github.test/app.zip"] = (HttpStatusCode.OK, zip),
+        }));
+
+        var path = await FileDownloader.DownloadAsync(http, ["https://copy.test/app.zip", "https://github.test/app.zip"],
+            "app.zip", null, sha256, folder.Combine("downloads"), "UE MM");
+
+        Assert.Equal(zip, File.ReadAllBytes(path));
+    }
+
+    /// <summary>A text answer per address; every address asked is noted.</summary>
+    private sealed class Answers(List<string> asked, Dictionary<string, (HttpStatusCode Status, string Body)> answers) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var url = request.RequestUri!.ToString();
+            asked.Add(url);
+            var (status, body) = answers[url];
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8) });
+        }
+    }
+
+    /// <summary>A file per address.</summary>
+    private sealed class Bytes(Dictionary<string, (HttpStatusCode Status, byte[] Body)> answers) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var (status, body) = answers[request.RequestUri!.ToString()];
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new ByteArrayContent(body) });
+        }
     }
 
     [Fact]

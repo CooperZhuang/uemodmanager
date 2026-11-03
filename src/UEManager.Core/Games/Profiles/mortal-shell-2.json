@@ -15,7 +15,11 @@
 
   // Same UE4SS download page as the Phantom Blade Zero build, so the guide can be tried here.
   "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
-  "ue4ssManifestUrl": "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json",
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ],
   // Fallback when the manifest cannot be reached: the Mortal Shell II build and its SHA-256 from SHA256SUMS.txt.
   "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v3.0.1-1181-g83330635/mortalshell2_ue4ss_v3.0.1-1181-g83330635.zip",
   "ue4ssPackageSha256": "A155C673506D34AA78E4C20579E39DAB35F62CB68EA04D4263E5EAE39066AC4A",

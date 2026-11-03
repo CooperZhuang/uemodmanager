@@ -12,8 +12,19 @@ internal static class AppInfo
     /// <summary>Where the original lives; works based on it keep linking here (NOTICE.md, term 1).</summary>
     public const string ProjectUrl = "https://github.com/KintaroModding/uemodmanager";
 
-    /// <summary>GitHub's answer for the newest release, read at every start for the update check.</summary>
+    /// <summary>GitHub's answer for the newest release.</summary>
     public const string LatestReleaseUrl = "https://api.github.com/repos/KintaroModding/uemodmanager/releases/latest";
+
+    /// <summary>
+    /// The newest release, read at every start for the update check, in order: copies of GitHub's answer with a copy of
+    /// the zip on Cloudflare Pages (the KintaroModding/metadata repo, deployed on every push), then GitHub itself.
+    /// </summary>
+    public static readonly IReadOnlyList<string> LatestReleaseUrls =
+    [
+        "https://metadata.openmods.nexus/uemodmanager/app/latest.json",
+        "https://uemm-metadata.pages.dev/uemodmanager/app/latest.json",
+        LatestReleaseUrl,
+    ];
 
     public const string ReleasesPageUrl = ProjectUrl + "/releases/latest";
 

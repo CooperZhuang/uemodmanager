@@ -33,7 +33,13 @@
   "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
   "ue4ssNote": "Use the UE4SS release made for Phantom Blade Zero. It adds the files UE4SS needs to read this game's structures.",
   // The current UE4SS release per game, read at every start: one-click install and update offers.
-  "ue4ssManifestUrl": "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json",
+  // Copies of the KintaroModding/metadata repo, tried in order, 5 seconds each: Cloudflare Pages
+  // (deployed on every push), under its own domain and its pages.dev name, then GitHub itself.
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ],
   // Optional fallback when the manifest cannot be reached: a fixed release file and its SHA-256
   // (Get-FileHash <file>). Without either, the user picks the downloaded file.
   // "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/<tag>/<file>.zip",

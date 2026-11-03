@@ -24,9 +24,9 @@ public enum UpdateState
 /// build and game; the app either updates itself from the zip of this build, or the user downloads
 /// it from the release page.
 /// </summary>
-/// <param name="releaseUrl">GitHub's answer for the newest release, or a test copy of it.</param>
+/// <param name="releaseUrls">Where the newest release is read, in order (see <see cref="AppInfo.LatestReleaseUrls"/>), or a test copy.</param>
 /// <param name="filePrefix">The start of the zip name of this build for this game, such as "uemm_phantom-blade-zero_".</param>
-public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient http, AppPaths paths, string releaseUrl, string filePrefix)
+public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient http, AppPaths paths, IReadOnlyList<string> releaseUrls, string filePrefix)
     : LocalizedObservableObject
 {
     /// <summary>How long the banner for a new version stays in the middle of the window.</summary>
@@ -139,15 +139,15 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
         L.F($"Opens the release page. Download {release?.File?.Name ?? L.T("the zip for your app")}, close the app, and replace {ExeName} with the one from the zip.");
 
     /// <summary>
-    /// Asks GitHub for the newest release. A new version is announced once; offline or failing,
-    /// the box says so and nothing else happens.
+    /// Asks for the newest release: Cloudflare's copy first, GitHub last. A new version is announced once; offline or
+    /// failing, the box says so and nothing else happens.
     /// </summary>
     public async Task CheckAsync()
     {
         State = UpdateState.Checking;
         try
         {
-            release = await AppReleases.FetchLatestAsync(http, releaseUrl, filePrefix);
+            release = await AppReleases.FetchLatestAsync(http, releaseUrls, filePrefix);
             State = ModVersion.IsUpdate(AppInfo.Version, release.Version) ? UpdateState.Available : UpdateState.UpToDate;
         }
         catch (ModException ex)
@@ -220,7 +220,7 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
         var replaced = await owner.RunAsync(title, async () =>
         {
             var progress = new Progress<double>(share => owner.BusyText = $"{title}  {share:P0}");
-            var zip = await FileDownloader.DownloadAsync(http, file.Url, file.Name, file.Size, file.Sha256, folder, $"{AppInfo.Name} {release.Version}", progress);
+            var zip = await FileDownloader.DownloadAsync(http, file.Urls, file.Name, file.Size, file.Sha256, folder, $"{AppInfo.Name} {release.Version}", progress);
             owner.BusyText = L.T("Installing the update…");
             await Task.Run(() =>
             {

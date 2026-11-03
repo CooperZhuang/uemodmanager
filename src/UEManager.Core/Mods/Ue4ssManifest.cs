@@ -14,6 +14,9 @@ public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IR
     public string FileName => Path.GetFileName(new Uri(Url).AbsolutePath);
 }
 
+/// <summary>The manifest as one address answered it: the address, and this game's entry, null when it has none.</summary>
+public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release);
+
 /// <summary>
 /// The metadata manifest that names the current UE4SS release per game, so a new
 /// UE4SS build reaches users without a new app build:
@@ -23,6 +26,8 @@ public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IR
 /// </summary>
 public static partial class Ue4ssManifest
 {
+    /// <summary>How long one address of the manifest may take before the next one is tried.</summary>
+    public static readonly TimeSpan PerAddress = TimeSpan.FromSeconds(5);
     /// <summary>The entry for one game, or null when the manifest has none or it is incomplete.</summary>
     /// <exception cref="JsonException">The text is not JSON.</exception>
     public static Ue4ssRelease? Parse(string json, string gameId)
@@ -66,7 +71,11 @@ public static partial class Ue4ssManifest
     /// Fetches the manifest and returns this game's entry. Fresh on every call: a new
     /// UE4SS build may matter. Offline or any other failure returns null quietly.
     /// </summary>
-    public static async Task<Ue4ssRelease?> FetchAsync(HttpClient http, string url, string gameId, CancellationToken cancellation = default)
+    public static async Task<Ue4ssRelease?> FetchAsync(HttpClient http, string url, string gameId, CancellationToken cancellation = default) =>
+        (await ReadAsync(http, url, gameId, cancellation)).Release;
+
+    /// <summary>The manifest from one address: whether it answered with a manifest, and this game's entry in it.</summary>
+    private static async Task<(bool Answered, Ue4ssRelease? Release)> ReadAsync(HttpClient http, string url, string gameId, CancellationToken cancellation)
     {
         try
         {
@@ -76,19 +85,41 @@ public static partial class Ue4ssManifest
             if (!response.IsSuccessStatusCode)
             {
                 Log.Warn($"UE4SS manifest '{url}' answered {(int)response.StatusCode}.");
-                return null;
+                return (false, null);
             }
             var release = Parse(await response.Content.ReadAsStringAsync(cancellation), gameId);
             Log.Info(release is null
-                ? $"UE4SS manifest has no entry for '{gameId}'."
-                : $"UE4SS manifest: {gameId} -> {release.Version}.");
-            return release;
+                ? $"UE4SS manifest '{url}' has no entry for '{gameId}'."
+                : $"UE4SS manifest '{url}': {gameId} -> {release.Version}.");
+            return (true, release);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
         {
             Log.Warn($"UE4SS manifest '{url}' could not be read: {ex.Message}");
-            return null;
+            return (false, null);
         }
+    }
+
+    /// <summary>
+    /// Fetches the manifest from the first of <paramref name="urls"/> that answers with one: copies of the same file on
+    /// several hosts, so one that is blocked or down, as GitHub in some regions, does not stop the check, and one answer
+    /// counts, also without this game's entry. Each address gets <paramref name="perAddress"/>, <see cref="PerAddress"/>
+    /// by default. Null when none answers.
+    /// </summary>
+    public static async Task<Ue4ssManifestAnswer?> FetchAsync(HttpClient http, IReadOnlyList<string> urls, string gameId,
+        TimeSpan? perAddress = null, CancellationToken cancellation = default)
+    {
+        foreach (var url in urls)
+        {
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            limit.CancelAfter(perAddress ?? PerAddress);
+            var (answered, release) = await ReadAsync(http, url, gameId, limit.Token);
+            if (answered)
+                return new Ue4ssManifestAnswer(url, release);
+            if (cancellation.IsCancellationRequested)
+                return null;
+        }
+        return null;
     }
 
     /// <summary>

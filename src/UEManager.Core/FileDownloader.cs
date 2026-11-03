@@ -9,6 +9,31 @@ public static class FileDownloader
     public static readonly TimeSpan DefaultStallTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>
+    /// Downloads the file from the first of <paramref name="urls"/> that gives it whole and unchanged: copies of the
+    /// same file on several hosts. Each is checked as by the one-address download.
+    /// </summary>
+    /// <exception cref="ModException">No address gave the file: the last one's problem.</exception>
+    public static async Task<string> DownloadAsync(HttpClient http, IReadOnlyList<string> urls, string fileName, long? expectedSize,
+        string? expectedSha256, string folder, string what, IProgress<double>? progress = null, CancellationToken cancellation = default)
+    {
+        ModException? last = null;
+        foreach (var url in urls)
+        {
+            try
+            {
+                return await DownloadAsync(http, url, fileName, expectedSize, expectedSha256, folder, what, progress, cancellation);
+            }
+            catch (ModException ex) when (!cancellation.IsCancellationRequested)
+            {
+                Log.Warn($"Download from '{url}' failed: {ex.Message}");
+                last = ex;
+                progress?.Report(0);
+            }
+        }
+        throw last ?? new ModException($"{what} could not be downloaded: no address is set.");
+    }
+
+    /// <summary>
     /// Downloads <paramref name="url"/> into <paramref name="folder"/> as <paramref name="fileName"/> and
     /// returns its path. A file whose size or SHA-256 differs from the expected one is deleted and refused,
     /// and so is the part of a download that failed or stalled.

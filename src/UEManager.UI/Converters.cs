@@ -62,6 +62,9 @@ public sealed class ToneBrushConverter : IValueConverter
             "bad" or false => "Brush.Danger",
             "accent" => "Brush.Accent",
             "dim" => "Brush.TextDim",
+            "text" => "Brush.Text",
+            "cloudflare" => "Brush.Cloudflare",
+            "github" => "Brush.GitHub",
             _ => "Brush.TextMuted",
         };
         if (parameter is "wash")

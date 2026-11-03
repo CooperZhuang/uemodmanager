@@ -66,9 +66,10 @@ public sealed class GameProfile
 
     /// <summary>
     /// The online manifest naming the current UE4SS release for this game, read at every
-    /// start. It drives one-click install and update offers without a new app build.
+    /// start. It drives one-click install and update offers without a new app build. Copies
+    /// of the same file on several hosts, tried in order (see <see cref="Mods.Ue4ssManifest"/>).
     /// </summary>
-    public string? Ue4ssManifestUrl { get; init; }
+    public IReadOnlyList<string> Ue4ssManifestUrls { get; init; } = [];
 
     /// <summary>
     /// A fixed UE4SS release file (a zip) for one-click install when the manifest cannot be
