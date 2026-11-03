@@ -52,7 +52,6 @@ folder.
 
 ## Known issues
 
-- The game's folder layout is checked on the Steam version. The Epic Games Store version is not checked yet.
 - No load order yet: neither pak priority nor UE4SS's `mods.txt` order.
 
 ## How to build
