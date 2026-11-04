@@ -264,7 +264,8 @@ row. Its name and version come from the newest release, read at every start:
 first from `uemodmanager/mods/<repo name>/` in the metadata repo (a copy, in the
 shape of the app's own copy, see Updates), on the host that answered the manifest;
 then from `repo` on GitHub. A new release of the mod is on offer once its copy is
-published. A missing UE4SS, or one
+published, and a small blue **UPDATE** on the Mods entry of the sidebar shows it to a
+player who has the mod installed. A missing UE4SS, or one
 other than the manifest names, is installed first, from the same click: such a mod
 may work only with that build. `folder` finds a copy installed by hand, so
 it moves to the card too.

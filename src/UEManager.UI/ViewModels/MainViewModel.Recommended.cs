@@ -60,6 +60,11 @@ public sealed partial class MainViewModel
     /// <summary>A click also installs or updates UE4SS first: such a mod may work only with the UE4SS the manifest names.</summary>
     private bool NeedsUe4ssFirst => AvailableUe4ss is not null && (!IsUe4ssInstalled || IsUe4ssUpdateAvailable);
 
+    /// <summary>The installed mod has a newer version: the card offers it, and the Mods entry in the sidebar says so.</summary>
+    public bool IsRecommendedUpdateAvailable =>
+        recommended is not null && recommendedRelease is { File: not null } release
+        && RecommendedRecord is { } installed && ModVersion.IsUpdate(installed.Version, release.Version);
+
     /// <summary>The button: install or update, with UE4SS when it needs it; none when there is nothing to do or no file to get.</summary>
     public string? RecommendedActionText
     {
@@ -67,9 +72,9 @@ public sealed partial class MainViewModel
         {
             if (recommended is null || recommendedRelease is not { File: not null } release)
                 return null;
-            if (RecommendedRecord is { } installed)
+            if (RecommendedRecord is not null)
             {
-                if (!ModVersion.IsUpdate(installed.Version, release.Version))
+                if (!IsRecommendedUpdateAvailable)
                     return null;
                 return NeedsUe4ssFirst ? L.T("Update UE4SS and this mod") : L.F($"Update to {release.Version}");
             }

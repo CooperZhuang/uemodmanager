@@ -162,8 +162,14 @@
                         <StackPanel>
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Home'}" ui:Icon.Glyph="&#xE80F;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
-                            <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Mods'}" ui:Icon.Glyph="&#xE8F1;"
-                                         IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />
+                            <Grid>
+                                <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Mods'}" ui:Icon.Glyph="&#xE8F1;"
+                                             IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />
+                                <!-- A new version of the recommended mod waits on this page. -->
+                                <TextBlock Margin="0,0,26,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Brush.Info}" IsHitTestVisible="False"
+                                           Text="{ui:Loc 'UPDATE'}" Visibility="{Binding IsRecommendedUpdateAvailable, Converter={StaticResource Visible}}" />
+                            </Grid>
                             <RadioButton Style="{StaticResource NavItem}" Content="UE4SS" ui:Icon.Glyph="&#xE943;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Ue4ss}" />
                             <!-- Filled by Catalog\CatalogResources.xaml while the catalog is switched on. -->

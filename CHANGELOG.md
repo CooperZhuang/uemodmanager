@@ -4,6 +4,9 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.4 (2026-11-04)
+- Blue UPDATE on the Mods entry in the sidebar when the recommended mod has a new version
+
 ## 1.5.3 (2026-11-04)
 - Recommended mod in its own card at the top of the Mods page, with an update check at every start
 - One click installs it, and installs or updates UE4SS when the mod needs it

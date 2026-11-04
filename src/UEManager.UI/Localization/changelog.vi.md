@@ -2,6 +2,9 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.4 (2026-11-04)
+- Khi mod đề xuất có phiên bản mới, mục Mod ở thanh bên hiện chữ CẬP NHẬT màu xanh
+
 ## 1.5.3 (2026-11-04)
 - Thẻ mod đề xuất riêng ở đầu trang Mod, kiểm tra cập nhật mỗi lần khởi động
 - Cài bằng một cú nhấp, đồng thời cài hoặc cập nhật UE4SS khi mod cần
