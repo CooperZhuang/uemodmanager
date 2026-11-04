@@ -392,6 +392,33 @@
             </Border>
         </Grid>
 
+        <!-- ===== Technical notes of the recommended mod ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding IsRecommendedNotesOpen, Converter={StaticResource Visible}}">
+            <!-- Wide, close to 16:9. The notes come from the manifest. -->
+            <Border Style="{StaticResource Dialog}" Width="720">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'TECHNICAL NOTES', Tracked=True}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding RecommendedName}" />
+                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding RecommendedNotes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Source code'}" />
+                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
+                                Content="{Binding RecommendedSource}" Command="{Binding OpenRecommendedSourceCommand}" />
+                    </StackPanel>
+                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                            Command="{Binding CloseRecommendedNotesCommand}" IsCancel="True" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- ===== Report a problem ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding HelpDialog, Converter={StaticResource VisibleIfSet}}">

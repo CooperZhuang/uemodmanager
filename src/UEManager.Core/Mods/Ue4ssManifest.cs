@@ -20,8 +20,33 @@ public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IR
     public IReadOnlyList<string> Urls => MirrorUrl is null || MirrorUrl == Url ? [Url] : [MirrorUrl, Url];
 }
 
-/// <summary>The manifest as one address answered it: the address, and this game's entry, null when it has none.</summary>
-public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release);
+/// <summary>
+/// The mod the app recommends for a game, shown at the top of the Mods page. The manifest names it, so it can come
+/// and go without a new app version, such as a fix a later game patch makes needless.
+/// </summary>
+/// <param name="Repo">Its GitHub repo, as "owner/name": the newest release there, or its copy, is the version on offer.</param>
+/// <param name="Folder">Its folder in UE4SS's Mods folder, so a copy installed by hand is recognized too.</param>
+/// <param name="Texts">What it does, by language code.</param>
+/// <param name="FilePrefix">The start of the zip's name in a release that holds several; empty for the first zip.</param>
+/// <param name="Experimental">The card says so, next to "Recommended".</param>
+/// <param name="Notes">The technical notes, by language code; paragraphs apart by an empty line. Null without notes.</param>
+public sealed record RecommendedMod(string Repo, string Name, string? Folder, IReadOnlyDictionary<string, string> Texts, string FilePrefix = "", bool Experimental = false,
+    IReadOnlyDictionary<string, string>? Notes = null)
+{
+    /// <summary>The repo's name without its owner: the folder of the mod's copy next to the manifest.</summary>
+    public string RepoName => Repo.Split('/')[1];
+
+    /// <summary>The text in a language, else in English, else none.</summary>
+    public string? TextIn(string language) =>
+        Texts.TryGetValue(language, out var text) || Texts.TryGetValue("en", out text) ? text : null;
+
+    /// <summary>The technical notes in a language, else in English, else none.</summary>
+    public string? NotesIn(string language) =>
+        Notes is not null && (Notes.TryGetValue(language, out var text) || Notes.TryGetValue("en", out text)) ? text : null;
+}
+
+/// <summary>The manifest as one address answered it: the address, and this game's entries, null when it has none.</summary>
+public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release, RecommendedMod? Recommended = null);
 
 /// <summary>
 /// The metadata manifest that names the current UE4SS release per game, so a new
@@ -30,6 +55,9 @@ public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release);
 ///   "mirror": "ue4ss/&lt;file&gt;.zip", "files": { "ue4ss/UE4SS.dll": ["&lt;sha256&gt;", ...], ... } } } }</code>
 /// "files" and "mirror" are optional; older app versions ignore them. "mirror" is a copy of the release file,
 /// relative to the manifest, so it comes from the same host; "url" stays the GitHub link, which older versions need.
+/// The optional top-level "recommended" names a mod per game; see <see cref="RecommendedMod"/>:
+/// <code>{ "recommended": { "&lt;game id&gt;": { "repo": "owner/name", "name": "...", "folder": "...",
+///   "text": { "en": "...", "zh-CN": "..." } } } }</code>
 /// </summary>
 public static partial class Ue4ssManifest
 {
@@ -51,6 +79,36 @@ public static partial class Ue4ssManifest
         if (string.IsNullOrWhiteSpace(version) || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
             return null;
         return new Ue4ssRelease(version.Trim(), url!, Text(entry, "sha256"), OfficialFiles(entry), Mirror(entry, manifestUrl));
+    }
+
+    /// <summary>The mod the manifest recommends for one game, or null when it names none or the entry is incomplete.</summary>
+    /// <exception cref="JsonException">The text is not JSON.</exception>
+    public static RecommendedMod? ParseRecommended(string json, string gameId)
+    {
+        using var document = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        if (!document.RootElement.TryGetProperty("recommended", out var games)
+            || games.ValueKind != JsonValueKind.Object
+            || !games.TryGetProperty(gameId, out var entry)
+            || entry.ValueKind != JsonValueKind.Object)
+            return null;
+        var repo = Text(entry, "repo");
+        var name = Text(entry, "name");
+        if (string.IsNullOrWhiteSpace(name) || repo is null || !RepoName().IsMatch(repo) || repo.Contains(".."))
+            return null;
+        var experimental = entry.TryGetProperty("experimental", out var flag) && flag.ValueKind == JsonValueKind.True;
+        return new RecommendedMod(repo, name.Trim(), Text(entry, "folder"), ByLanguage(entry, "text"), Text(entry, "filePrefix") ?? "", experimental, ByLanguage(entry, "notes"));
+    }
+
+    /// <summary>The texts of a field by language code; anything but text is left out.</summary>
+    private static Dictionary<string, string> ByLanguage(JsonElement entry, string field)
+    {
+        var texts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (entry.TryGetProperty(field, out var text) && text.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var language in text.EnumerateObject().Where(l => l.Value.ValueKind == JsonValueKind.String))
+                texts[language.Name] = language.Value.GetString()!;
+        }
+        return texts;
     }
 
     /// <summary>The entry's "mirror", relative to the manifest (or a full https link); null without one.</summary>
@@ -95,8 +153,8 @@ public static partial class Ue4ssManifest
     public static async Task<Ue4ssRelease?> FetchAsync(HttpClient http, string url, string gameId, CancellationToken cancellation = default) =>
         (await ReadAsync(http, url, gameId, cancellation)).Release;
 
-    /// <summary>The manifest from one address: whether it answered with a manifest, and this game's entry in it.</summary>
-    private static async Task<(bool Answered, Ue4ssRelease? Release)> ReadAsync(HttpClient http, string url, string gameId, CancellationToken cancellation)
+    /// <summary>The manifest from one address: whether it answered with a manifest, and this game's entries in it.</summary>
+    private static async Task<(bool Answered, Ue4ssRelease? Release, RecommendedMod? Recommended)> ReadAsync(HttpClient http, string url, string gameId, CancellationToken cancellation)
     {
         try
         {
@@ -106,18 +164,19 @@ public static partial class Ue4ssManifest
             if (!response.IsSuccessStatusCode)
             {
                 Log.Warn($"UE4SS manifest '{url}' answered {(int)response.StatusCode}.");
-                return (false, null);
+                return (false, null, null);
             }
-            var release = Parse(await response.Content.ReadAsStringAsync(cancellation), gameId, new Uri(url));
+            var json = await response.Content.ReadAsStringAsync(cancellation);
+            var release = Parse(json, gameId, new Uri(url));
             Log.Info(release is null
                 ? $"UE4SS manifest '{url}' has no entry for '{gameId}'."
                 : $"UE4SS manifest '{url}': {gameId} -> {release.Version}.");
-            return (true, release);
+            return (true, release, ParseRecommended(json, gameId));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
         {
             Log.Warn($"UE4SS manifest '{url}' could not be read: {ex.Message}");
-            return (false, null);
+            return (false, null, null);
         }
     }
 
@@ -134,9 +193,9 @@ public static partial class Ue4ssManifest
         {
             using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
             limit.CancelAfter(perAddress ?? PerAddress);
-            var (answered, release) = await ReadAsync(http, url, gameId, limit.Token);
+            var (answered, release, recommended) = await ReadAsync(http, url, gameId, limit.Token);
             if (answered)
-                return new Ue4ssManifestAnswer(url, release);
+                return new Ue4ssManifestAnswer(url, release, recommended);
             if (cancellation.IsCancellationRequested)
                 return null;
         }
@@ -166,4 +225,8 @@ public static partial class Ue4ssManifest
 
     [GeneratedRegex(@"v\d+(?:\.\d+)+(?:-[0-9A-Za-z.-]+)?", RegexOptions.IgnoreCase)]
     private static partial Regex FileVersion();
+
+    /// <summary>A GitHub repo as "owner/name".</summary>
+    [GeneratedRegex(@"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")]
+    private static partial Regex RepoName();
 }

@@ -23,6 +23,13 @@ public sealed class ModRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? CatalogId { get; set; }
 
+    /// <summary>
+    /// The mod the app recommends for this game (see <see cref="RecommendedMod"/>): the Mods page shows it apart from
+    /// the player's own mods, and mod sets leave it as it is.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Recommended { get; set; }
+
     /// <summary>The variant chosen when the download offered several, such as "x2".</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Variant { get; set; }

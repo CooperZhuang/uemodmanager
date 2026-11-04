@@ -16,6 +16,76 @@
         <GridLength x:Key="Col.Actions">176</GridLength>
         <!-- What the table drops in a narrow window, so the mod's name keeps room; see ModsView.OnTableSizeChanged. -->
         <Visibility x:Key="Mods.WideOnly">Visible</Visibility>
+
+        <!-- A mod's row: in the table, and for the recommended mod in its card above it. -->
+        <DataTemplate x:Key="ModRow" DataType="{x:Type vm:ModItemViewModel}">
+            <Border x:Name="Row" Padding="22,12" Background="Transparent"
+                    BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{DynamicResource Col.Status}" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="{DynamicResource Col.Type}" />
+                        <ColumnDefinition Width="{DynamicResource Col.Integrity}" />
+                        <ColumnDefinition Width="{DynamicResource Col.Date}" />
+                        <ColumnDefinition Width="{DynamicResource Col.Actions}" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding Enabled, Mode=OneWay}"
+                                  Command="{Binding ToggleCommand}" ToolTip="{ui:Loc 'Enable or disable'}" />
+                        <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}"
+                                   Text="{Binding EnabledText}" Visibility="{DynamicResource Mods.WideOnly}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
+                        <Button Style="{StaticResource Button.Name}" Content="{Binding Name}"
+                                Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the details of this mod and every file it placed'}" />
+                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" Text="{Binding Detail}" />
+                        <Button Margin="0,4,0,0" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Danger}"
+                                Content="{ui:Loc 'UE4SS reported errors at the last game start'}" Command="{Binding ShowUe4ssErrorsCommand}"
+                                ToolTip="{ui:Loc 'Show the lines of the UE4SS log that name this mod'}"
+                                Visibility="{Binding HasUe4ssErrors, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+
+                    <Border Grid.Column="2" Style="{StaticResource Badge}">
+                        <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding KindText}" />
+                    </Border>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                Background="Transparent" ToolTip="{Binding IntegrityHint}">
+                        <TextBlock Style="{StaticResource Text.Icon}" FontSize="12"
+                                   Foreground="{Binding IntegrityTone, Converter={StaticResource Tone}}" Text="{Binding IntegrityGlyph}" />
+                        <TextBlock Margin="7,0,0,0" FontSize="12" VerticalAlignment="Center" Visibility="{DynamicResource Mods.WideOnly}"
+                                   Foreground="{Binding IntegrityTone, Converter={StaticResource Tone}}" Text="{Binding IntegrityText}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Visibility="{DynamicResource Mods.WideOnly}"
+                               Text="{Binding InstalledText}" ToolTip="{Binding InstalledFullText}" />
+
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE713;"
+                                Command="{Binding EditSettingsCommand}" ToolTip="{Binding EditSettingsHint}"
+                                ToolTipService.ShowOnDisabled="True"
+                                Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
+                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE7A7;"
+                                Command="{Binding ResetSettingsCommand}" ToolTip="{ui:Loc 'Reset the settings to the ones the mod came with'}"
+                                Visibility="{Binding CanResetSettings, Converter={StaticResource Visible}}" />
+                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
+                                Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the files of this mod in their folders'}" />
+                        <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE838;"
+                                Command="{Binding OpenFolderCommand}" ToolTip="{ui:Loc 'Open the manager\'s copy of this mod'}" />
+                        <Button Margin="4,0,0,0" Style="{StaticResource Button.IconDanger}" ui:Icon.Glyph="&#xE74D;"
+                                Command="{Binding UninstallCommand}" ToolTip="{ui:Loc 'Uninstall'}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.Hover}" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
 
     <StackPanel>
@@ -35,6 +105,43 @@
                 <Button Margin="8,0,0,0" Content="{ui:Loc 'Install from folder…'}" ui:Icon.Glyph="&#xE8B7;" Command="{Binding InstallFromFolderCommand}" />
             </StackPanel>
         </Grid>
+
+        <!-- The mod the app recommends for this game, apart from the player's own mods. -->
+        <Border Margin="0,26,0,0" Style="{StaticResource Card}" Padding="0"
+                Background="{StaticResource Brush.InfoPanel}" BorderBrush="{StaticResource Brush.InfoLine}"
+                Visibility="{Binding HasRecommended, Converter={StaticResource Visible}}">
+            <StackPanel>
+                <DockPanel Margin="22,16">
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                            Content="{Binding RecommendedActionText}" ui:Icon.Glyph="&#xE896;" Command="{Binding InstallRecommendedCommand}"
+                            Visibility="{Binding HasRecommendedAction, Converter={StaticResource Visible}}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Overline}" Text="{Binding RecommendedLabel, Converter={StaticResource Tracked}}" />
+                            <Button Margin="14,0,0,0" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowRecommendedNotesCommand}"
+                                    Foreground="{StaticResource Brush.Info}" BorderBrush="{StaticResource Brush.Info}" Background="{StaticResource Brush.InfoWash}"
+                                    Visibility="{Binding HasRecommendedNotes, Converter={StaticResource Visible}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE946;" />
+                                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'TECHNICAL NOTES'}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding RecommendedName}"
+                                   Visibility="{Binding ShowRecommendedName, Converter={StaticResource Visible}}" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}" Text="{Binding RecommendedText}"
+                                   Visibility="{Binding HasRecommendedText, Converter={StaticResource Visible}}" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
+                                   Text="{Binding RecommendedStatusText}"
+                                   Visibility="{Binding HasRecommendedStatus, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                </DockPanel>
+                <StackPanel Visibility="{Binding IsRecommendedInstalled, Converter={StaticResource Visible}}">
+                    <Border Style="{StaticResource Divider}" />
+                    <ContentControl Focusable="False" Content="{Binding RecommendedItem}" ContentTemplate="{StaticResource ModRow}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
         <!-- Search -->
         <DockPanel Margin="0,26,0,12">
@@ -90,78 +197,7 @@
                 </Grid>
                 <Border Style="{StaticResource Divider}" />
 
-                <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:ModItemViewModel}">
-                            <Border x:Name="Row" Padding="22,12" Background="Transparent"
-                                    BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="{DynamicResource Col.Status}" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="{DynamicResource Col.Type}" />
-                                        <ColumnDefinition Width="{DynamicResource Col.Integrity}" />
-                                        <ColumnDefinition Width="{DynamicResource Col.Date}" />
-                                        <ColumnDefinition Width="{DynamicResource Col.Actions}" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding Enabled, Mode=OneWay}"
-                                                  Command="{Binding ToggleCommand}" ToolTip="{ui:Loc 'Enable or disable'}" />
-                                        <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}"
-                                                   Text="{Binding EnabledText}" Visibility="{DynamicResource Mods.WideOnly}" />
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
-                                        <Button Style="{StaticResource Button.Name}" Content="{Binding Name}"
-                                                Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the details of this mod and every file it placed'}" />
-                                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" Text="{Binding Detail}" />
-                                        <Button Margin="0,4,0,0" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Danger}"
-                                                Content="{ui:Loc 'UE4SS reported errors at the last game start'}" Command="{Binding ShowUe4ssErrorsCommand}"
-                                                ToolTip="{ui:Loc 'Show the lines of the UE4SS log that name this mod'}"
-                                                Visibility="{Binding HasUe4ssErrors, Converter={StaticResource Visible}}" />
-                                    </StackPanel>
-
-                                    <Border Grid.Column="2" Style="{StaticResource Badge}">
-                                        <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding KindText}" />
-                                    </Border>
-
-                                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
-                                                Background="Transparent" ToolTip="{Binding IntegrityHint}">
-                                        <TextBlock Style="{StaticResource Text.Icon}" FontSize="12"
-                                                   Foreground="{Binding IntegrityTone, Converter={StaticResource Tone}}" Text="{Binding IntegrityGlyph}" />
-                                        <TextBlock Margin="7,0,0,0" FontSize="12" VerticalAlignment="Center" Visibility="{DynamicResource Mods.WideOnly}"
-                                                   Foreground="{Binding IntegrityTone, Converter={StaticResource Tone}}" Text="{Binding IntegrityText}" />
-                                    </StackPanel>
-
-                                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Visibility="{DynamicResource Mods.WideOnly}"
-                                               Text="{Binding InstalledText}" ToolTip="{Binding InstalledFullText}" />
-
-                                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE713;"
-                                                Command="{Binding EditSettingsCommand}" ToolTip="{Binding EditSettingsHint}"
-                                                ToolTipService.ShowOnDisabled="True"
-                                                Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
-                                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE7A7;"
-                                                Command="{Binding ResetSettingsCommand}" ToolTip="{ui:Loc 'Reset the settings to the ones the mod came with'}"
-                                                Visibility="{Binding CanResetSettings, Converter={StaticResource Visible}}" />
-                                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
-                                                Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the files of this mod in their folders'}" />
-                                        <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE838;"
-                                                Command="{Binding OpenFolderCommand}" ToolTip="{ui:Loc 'Open the manager\'s copy of this mod'}" />
-                                        <Button Margin="4,0,0,0" Style="{StaticResource Button.IconDanger}" ui:Icon.Glyph="&#xE74D;"
-                                                Command="{Binding UninstallCommand}" ToolTip="{ui:Loc 'Uninstall'}" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                            <DataTemplate.Triggers>
-                                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.Hover}" />
-                                </Trigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False" ItemTemplate="{StaticResource ModRow}" />
 
                 <StackPanel Margin="0,52" HorizontalAlignment="Center"
                             Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}">

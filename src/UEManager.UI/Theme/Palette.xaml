@@ -44,6 +44,11 @@
     <SolidColorBrush x:Key="Brush.Cloudflare" Color="#F38020" />
     <!-- GitHub's blue on a dark page, for its name in the same place. -->
     <SolidColorBrush x:Key="Brush.GitHub" Color="#4493F8" />
+    <!-- Blue for the recommended mod: its card gets a slight tint, its notes box the full color. -->
+    <SolidColorBrush x:Key="Brush.Info" Color="#4493F8" />
+    <SolidColorBrush x:Key="Brush.InfoWash" Color="#224493F8" />
+    <SolidColorBrush x:Key="Brush.InfoPanel" Color="#E6141C2A" />
+    <SolidColorBrush x:Key="Brush.InfoLine" Color="#444493F8" />
 
     <!-- Faint fills in the same tones, for boxes that carry a state. -->
     <SolidColorBrush x:Key="Brush.SuccessWash" Color="#1A86B793" />

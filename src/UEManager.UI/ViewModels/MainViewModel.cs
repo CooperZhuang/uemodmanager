@@ -540,8 +540,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         get
         {
-            var needing = Mods.Count(m => m.NeedsUe4ss);
-            var enabled = Mods.Count(m => m.NeedsUe4ss && m.Enabled);
+            var needing = AllMods.Count(m => m.NeedsUe4ss);
+            var enabled = AllMods.Count(m => m.NeedsUe4ss && m.Enabled);
             return needing == 0
                 ? L.T("None of your installed mods needs UE4SS.")
                 : L.Plural(needing, "{0} installed mod needs UE4SS; {1} enabled.", "{0} installed mods need UE4SS; {1} enabled.", enabled);
@@ -558,9 +558,15 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public string DataPath => paths.Root;
 
-    public int InstalledCount => Mods.Count;
+    /// <summary>The player's own mods: mod sets leave the recommended one as it is.</summary>
+    private List<ModRecord> OwnMods => manager!.Mods.Where(m => !m.Recommended).ToList();
 
-    public string EnabledText => L.F($"{Mods.Count(m => m.Enabled)} enabled");
+    /// <summary>Every installed mod: the player's own, and the recommended one, which the Mods page shows apart.</summary>
+    private IEnumerable<ModItemViewModel> AllMods => RecommendedItem is null ? Mods : Mods.Append(RecommendedItem);
+
+    public int InstalledCount => AllMods.Count();
+
+    public string EnabledText => L.F($"{AllMods.Count(m => m.Enabled)} enabled");
 
     public string ModsCountText => L.F($"{ModsView.Cast<object>().Count()} of {Mods.Count} shown");
 
@@ -579,7 +585,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public bool IsTestingWithoutMods => TestOffCount > 0;
 
-    public bool CanTestWithoutMods => !IsTestingWithoutMods && Mods.Any(m => m.Enabled);
+    public bool CanTestWithoutMods => !IsTestingWithoutMods && AllMods.Any(m => m.Enabled);
 
     public string TestText => L.Plural(TestOffCount,
         "Testing without mods: {0} mod is turned off.", "Testing without mods: {0} mods are turned off.");
@@ -775,7 +781,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         if (!EnsureGame())
             return;
         ModSets = new ModSetsViewModel(this);
-        ModSets.Load(manager!.Sets, manager.Mods);
+        ModSets.Load(manager!.Sets, OwnMods);
     }
 
     internal void CloseModSets() => ModSets = null;
@@ -788,7 +794,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var saved = await RunAsync(L.T("Saving the set…"), async () => set = await Task.Run(() => manager!.SaveSet(name)));
         if (saved)
             ShowToast(L.F($"Set \"{set!.Name}\" saved."));
-        ModSets?.Load(manager!.Sets, manager.Mods);
+        ModSets?.Load(manager!.Sets, OwnMods);
         return saved;
     }
 
@@ -804,13 +810,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 : L.F($"Set \"{name}\" is in use. Turned on: {changed.On}. Turned off: {changed.Off}."));
         }
         RefreshMods();
-        ModSets?.Load(manager!.Sets, manager.Mods);
+        ModSets?.Load(manager!.Sets, OwnMods);
     }
 
     internal async Task DeleteModSetAsync(string name)
     {
         await RunAsync(L.T("Deleting the set…"), () => Task.Run(() => manager!.DeleteSet(name)));
-        ModSets?.Load(manager!.Sets, manager.Mods);
+        ModSets?.Load(manager!.Sets, OwnMods);
     }
 
     internal async Task ResetSettingsAsync(ModItemViewModel item)
@@ -836,6 +842,52 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var choice = await dialog.Result;
         InstallDialog = null;
         return choice;
+    }
+
+    /// <summary>
+    /// One click on a mod's release: download the file, check its size and checksum, and install it. A download
+    /// that needs a choice or a look first opens the install review instead: variants, warnings, a mod installed by
+    /// hand that it would replace, or settings the player changed.
+    /// </summary>
+    /// <param name="id">What the mod is known by, as its repo.</param>
+    /// <param name="urls">Where the file can be downloaded, in order.</param>
+    internal async Task InstallFromReleaseAsync(string id, string name, string version, IReadOnlyList<string> urls, string fileName, long size, string? sha256)
+    {
+        if (IsBusy || InstallDialog is not null || !EnsureGame())
+            return;
+        var folder = Path.Combine(paths.StagingDir, "download-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            string? download = null;
+            await RunAsync(L.F($"Downloading {name}…"), async () =>
+            {
+                var progress = new Progress<double>(share => BusyText = L.F($"Downloading {name}…  {share:P0}"));
+                download = await FileDownloader.DownloadAsync(Http, urls, fileName, size, sha256, folder, name, progress);
+            });
+            if (download is null)
+                return;
+            InstallPreview? preview = null;
+            await RunAsync(L.F($"Reading {fileName}…"), async () => preview = await Task.Run(() => manager!.Inspect(download)));
+            if (preview is null)
+                return;
+
+            using (preview)
+            {
+                var all = preview.Packages.ToList();
+                var check = manager!.Check(preview, all, id);
+                var direct = all.Count == 1 && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
+                    && (check.Replaces is null || string.Equals(check.Replaces.CatalogId, id, StringComparison.OrdinalIgnoreCase));
+                var choice = direct
+                    ? new InstallChoice(all, name, version, check.Replaces is not null, id)
+                    : await ReviewAsync(preview, new CatalogSource(id, name, version));
+                if (choice is not null)
+                    await InstallChoiceAsync(preview, choice, showMods: false);
+            }
+        }
+        finally
+        {
+            TryDeleteFolder(folder);
+        }
     }
 
     /// <param name="showMods">Switch to the Mods page afterwards; the openmods page stays where it is.</param>
@@ -916,6 +968,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var answer = await Ue4ssManifest.FetchAsync(Http, ue4ssManifestUrls, Profile.Id);
         Remote = answer is null ? RemoteSource.Offline : RemoteSources.Of(answer.Url);
         latestUe4ss = answer?.Release;
+        if (answer is not null)
+            _ = ReadRecommendedAsync(answer);
         if (latestUe4ss is null)
             return;
         OnModsChanged();
@@ -1589,10 +1643,19 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private void RefreshMods()
     {
         Mods.Clear();
+        RecommendedItem = null;
         if (manager is not null)
         {
+            if (isRecommendedKnown)
+                manager.MarkRecommended(recommended?.Repo, recommended?.Folder);
             foreach (var mod in manager.Mods)
-                Mods.Add(new ModItemViewModel(this, mod, manager.LibraryFolderOf(mod)));
+            {
+                var item = new ModItemViewModel(this, mod, manager.LibraryFolderOf(mod));
+                if (mod.Recommended)
+                    RecommendedItem = item;
+                else
+                    Mods.Add(item);
+            }
         }
         try
         {
@@ -1661,7 +1724,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || IsRecommendedNotesOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.3 (2026-11-04)
+- Recommended mod in its own card at the top of the Mods page, with an update check at every start
+- One click installs it, and installs or updates UE4SS when the mod needs it
+- First mod: UE4SS C++ BYPASS brings script-based pak mods back after the game's new script check (experimental)
+- Technical notes on the card: how the mod works and where its source code is
+
 ## 1.5.2 (2026-11-03)
 - Data, app updates and UE4SS downloads from Cloudflare first, GitHub as backup
 - Remote box in the sidebar: where the data came from, with a short explanation

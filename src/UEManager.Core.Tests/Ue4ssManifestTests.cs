@@ -93,6 +93,40 @@ public class Ue4ssManifestTests : IDisposable
     }
 
     [Fact]
+    public void The_manifest_names_the_recommended_mod_of_a_game()
+    {
+        const string json = """
+            { "recommended": {
+                "phantom-blade-zero": { "repo": "KintaroModding/pbz_fix", "name": " The Fix ", "folder": "PBZFix",
+                  "text": { "en": "Fixes it.", "zh-CN": "修复。", "bad": 3 } },
+                "experimental-game": { "repo": "a/b", "name": "x", "experimental": true,
+                  "notes": { "en": "How it works.", "zh-CN": "原理。", "bad": 3 } },
+                "no-repo": { "name": "x" },
+                "odd-repo": { "repo": "../../etc", "name": "x" },
+                "no-name": { "repo": "a/b" } } }
+            """;
+
+        var mod = Ue4ssManifest.ParseRecommended(json, "phantom-blade-zero")!;
+
+        Assert.Equal("The Fix", mod.Name);
+        Assert.Equal("pbz_fix", mod.RepoName);
+        Assert.Equal("PBZFix", mod.Folder);
+        Assert.Equal("修复。", mod.TextIn("zh-CN"));
+        Assert.Equal("Fixes it.", mod.TextIn("vi"));
+        Assert.False(mod.Experimental);
+        Assert.Null(mod.NotesIn("en"));
+        var experimental = Ue4ssManifest.ParseRecommended(json, "experimental-game")!;
+        Assert.True(experimental.Experimental);
+        Assert.Equal("原理。", experimental.NotesIn("zh-CN"));
+        Assert.Equal("How it works.", experimental.NotesIn("vi"));
+        Assert.Null(Ue4ssManifest.ParseRecommended(json, "no-repo"));
+        Assert.Null(Ue4ssManifest.ParseRecommended(json, "odd-repo"));
+        Assert.Null(Ue4ssManifest.ParseRecommended(json, "no-name"));
+        Assert.Null(Ue4ssManifest.ParseRecommended(json, "another-game"));
+        Assert.Null(Ue4ssManifest.ParseRecommended(Manifest, "phantom-blade-zero"));
+    }
+
+    [Fact]
     public async Task Several_addresses_are_tried_in_order_until_one_answers()
     {
         var asked = new List<string>();

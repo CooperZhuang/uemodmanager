@@ -31,6 +31,58 @@ public class ModSetTests : IDisposable
 
     private IEnumerable<string> Enabled() => manager.Mods.Where(m => m.Enabled).Select(m => m.Name).Order();
 
+    /// <summary>A UE4SS mod, as the recommended one is.</summary>
+    private ModRecord InstallUe4ssMod(string folderName, string version = "1.0", string? catalogId = null, bool replace = false)
+    {
+        folder.File($@"Downloads\{folderName}_{version}\ue4ss\Mods\{folderName}\enabled.txt", "");
+        folder.File($@"Downloads\{folderName}_{version}\ue4ss\Mods\{folderName}\Scripts\main.lua", "main " + version);
+        using var preview = manager.Inspect(folder.Combine("Downloads", $"{folderName}_{version}"));
+        return manager.Install(preview, preview.Packages.ToList(), folderName, version, replace, catalogId);
+    }
+
+    [Fact]
+    public void Sets_leave_the_recommended_mod_as_it_is()
+    {
+        var sharp = Install("Sharp");
+        manager.SaveSet("Before the fix");
+        var fix = InstallUe4ssMod("TheFix");
+        manager.MarkRecommended("KintaroModding/the_fix", "TheFix");
+
+        // A set saved before the fix came does not turn it off, and a new set does not hold it.
+        manager.SetEnabled(sharp.Id, false);
+        manager.ApplySet("Before the fix");
+        Assert.Equal(["Sharp", "TheFix"], Enabled());
+        Assert.DoesNotContain(fix.Id, manager.SaveSet("With the fix").ModIds);
+
+        // Turned off by the player, it stays off when a set is applied.
+        manager.SetEnabled(fix.Id, false);
+        manager.ApplySet("With the fix");
+        Assert.Equal(["Sharp"], Enabled());
+    }
+
+    [Fact]
+    public void The_recommended_mod_is_found_by_its_repo_or_its_folder_and_loses_the_mark_when_the_manifest_drops_it()
+    {
+        Install("Sharp");
+        var byHand = InstallUe4ssMod("TheFix");
+        Assert.False(byHand.Recommended);
+
+        manager.MarkRecommended("KintaroModding/the_fix", "thefix");
+
+        var marked = Assert.Single(manager.Mods, m => m.Recommended);
+        Assert.Equal("TheFix", marked.Name);
+        Assert.Equal("KintaroModding/the_fix", marked.CatalogId);
+
+        // An update keeps the mark, and the repo finds it even when the folder name changed.
+        var updated = InstallUe4ssMod("TheFix", "1.1", "KintaroModding/the_fix", replace: true);
+        Assert.True(updated.Recommended);
+        manager.MarkRecommended("KintaroModding/the_fix", "AnotherFolder");
+        Assert.True(Assert.Single(manager.Mods, m => m.Name == "TheFix").Recommended);
+
+        manager.MarkRecommended(null, null);
+        Assert.DoesNotContain(manager.Mods, m => m.Recommended);
+    }
+
     [Fact]
     public void A_set_turns_on_exactly_its_mods()
     {

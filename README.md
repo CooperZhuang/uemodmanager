@@ -242,6 +242,38 @@ files and keeps its settings and the mods. A DLL the player removed does not
 count. The help report says whether the build is official. Older app versions
 ignore `files`. `--ue4ss-manifest-url <url>` reads a test copy of the manifest.
 
+### Recommended mod
+
+The manifest's optional top-level `recommended` names one mod per game, so it can
+come and go without a new app version, such as a fix that a later game patch
+makes needless:
+
+```json
+{ "recommended": { "<game id>": { "repo": "owner/name", "name": "…", "folder": "…",
+  "experimental": true, "text": { "en": "…", "zh-CN": "…" },
+  "notes": { "en": "…", "zh-CN": "…" } } } }
+```
+
+The Mods page shows it in a card above the search box, apart from the player's
+own mods: its text (English when the language has none), the label
+**Recommended**, or **Recommended - Experimental** with `experimental`, and
+**Download and install**, or **Update to …**. With `notes` (paragraphs apart by an
+empty line) a **TECHNICAL NOTES** box next to the label opens them, with a link to
+`repo` as the source code. Once installed, the card holds the mod's normal
+row. Its name and version come from the newest release, read at every start:
+first from `uemodmanager/mods/<repo name>/` in the metadata repo (a copy, in the
+shape of the app's own copy, see Updates), on the host that answered the manifest;
+then from `repo` on GitHub. A new release of the mod is on offer once its copy is
+published. A missing UE4SS, or one
+other than the manifest names, is installed first, from the same click: such a mod
+may work only with that build. `folder` finds a copy installed by hand, so
+it moves to the card too.
+
+Mod sets leave it as it is: a set does not hold it, and a set saved before it
+came does not turn it off. **Test without mods** turns it off like any other mod.
+When the manifest no longer names it, it becomes one of the player's own mods.
+Offline, the installed mod stays in the card.
+
 ### UE4SS page
 
 The UE4SS page holds everything about UE4SS: its status and folders, how many

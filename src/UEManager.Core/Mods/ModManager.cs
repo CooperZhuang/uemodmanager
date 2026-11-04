@@ -263,6 +263,7 @@ public sealed class ModManager
                 SourceFileName = preview.SourceFileName,
                 InstalledAt = DateTimeOffset.Now,
                 CatalogId = catalogId ?? old?.CatalogId,
+                Recommended = old?.Recommended ?? false,
                 Variant = VariantOf(selected),
             };
             var libraryFolder = LibraryFolderOf(record);
@@ -451,7 +452,7 @@ public sealed class ModManager
             name = name.Trim();
             if (name.Length == 0)
                 throw new ModException($"Give the set a name.");
-            var set = new ModSet(name, [.. mods.Where(m => m.Enabled || offForTest.Contains(m.Id)).Select(m => m.Id)]);
+            var set = new ModSet(name, [.. mods.Where(m => !m.Recommended && (m.Enabled || offForTest.Contains(m.Id))).Select(m => m.Id)]);
             var before = sets;
             var changed = sets.ToList();
             var index = changed.FindIndex(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -476,7 +477,11 @@ public sealed class ModManager
         lock (gate)
         {
             var set = FindSet(name);
-            var wanted = set.ModIds.ToHashSet();
+            // A set leaves the recommended mod as it is: one saved before that mod came must not turn it off.
+            var recommended = mods.Where(m => m.Recommended).ToList();
+            var wanted = set.ModIds.Except(recommended.Select(m => m.Id))
+                .Concat(recommended.Where(m => m.Enabled || offForTest.Contains(m.Id)).Select(m => m.Id))
+                .ToHashSet();
             var on = mods.Count(m => !m.Enabled && wanted.Contains(m.Id));
             var off = mods.Count(m => m.Enabled && !wanted.Contains(m.Id));
             if (on + off > 0)
@@ -663,6 +668,43 @@ public sealed class ModManager
 
     /// <summary>Whether the player changed a settings file of the mod, in the game or (saved there before) in the library copy.</summary>
     public static bool HasEditedSettings(ModRecord mod) => EditedSettings(mod).Count > 0;
+
+    /// <summary>
+    /// Marks the mod the app recommends, found by the repo it came from or by its folder in UE4SS's Mods folder, as for
+    /// a copy installed by hand; any other mod loses the mark. With no <paramref name="id"/>, as when the manifest names
+    /// no mod any more, no mod has it. Only the mod list changes, so the game may run.
+    /// </summary>
+    public void MarkRecommended(string? id, string? folder)
+    {
+        lock (gate)
+        {
+            var mark = id is null ? null
+                : mods.FirstOrDefault(m => string.Equals(m.CatalogId, id, StringComparison.OrdinalIgnoreCase))
+                  ?? (folder is null ? null : mods.FirstOrDefault(m => m.Files.Any(f => f.Target == DeployTarget.Ue4ssMods
+                      && f.FileName.Split('/')[0].Equals(folder, StringComparison.OrdinalIgnoreCase))));
+            var changed = false;
+            foreach (var mod in mods)
+            {
+                changed |= mod.Recommended != (mod == mark);
+                mod.Recommended = mod == mark;
+            }
+            if (mark is { CatalogId: null })
+            {
+                mark.CatalogId = id;
+                changed = true;
+            }
+            if (!changed)
+                return;
+            try
+            {
+                Save();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Warn($"The recommended mod could not be noted yet: {ex.Message}");
+            }
+        }
+    }
 
     /// <summary>
     /// Keeps the player's version of the files of a mod that were changed outside the manager, as a value in its

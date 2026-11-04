@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.3 (2026-11-04)
+- Thẻ mod đề xuất riêng ở đầu trang Mod, kiểm tra cập nhật mỗi lần khởi động
+- Cài bằng một cú nhấp, đồng thời cài hoặc cập nhật UE4SS khi mod cần
+- Mod đầu tiên: UE4SS C++ BYPASS giúp các mod pak dạng script hoạt động trở lại sau đợt kiểm tra script mới của game (thử nghiệm)
+- Ghi chú kỹ thuật trên thẻ: cách mod hoạt động và nơi có mã nguồn
+
 ## 1.5.2 (2026-11-03)
 - Dữ liệu, bản cập nhật ứng dụng và tải UE4SS lấy từ Cloudflare trước, GitHub làm dự phòng
 - Ô REMOTE ở thanh bên: cho biết dữ liệu lấy từ đâu, kèm giải thích ngắn
