@@ -10,7 +10,7 @@
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="{Binding WindowTitle}"
         Language="{Binding SelectedLanguage, ConverterCulture=en-US}"
-        Width="1360" Height="800" MinWidth="1000" MinHeight="640"
+        Width="1360" Height="800"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Brush.Ink}"
         BorderBrush="{StaticResource Brush.LineStrong}"
@@ -494,7 +494,7 @@
         <!-- ===== Confirmation ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding Confirm, Converter={StaticResource VisibleIfSet}}">
-            <Border Style="{StaticResource Dialog}" Width="480" DataContext="{Binding Confirm}">
+            <Border Style="{StaticResource Dialog}" Width="{Binding Width}" DataContext="{Binding Confirm}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Title}" Text="{Binding Title}" />
                     <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding Message}" />

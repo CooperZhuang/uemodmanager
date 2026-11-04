@@ -66,8 +66,12 @@ after a change to an English text, update every language file too.
 | PAK / IoStore | `.pak`, `.utoc` + `.ucas` | `<Project>/Content/Paks/~mods` |
 | Blueprint | package files below a `LogicMods` folder | `<Project>/Content/Paks/LogicMods` |
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
-| Game files | a file below the download's `<Project>/Saved` or `<Project>/Config` folder | the same path in the game |
+| Game files | a file below the download's `<Project>/Saved`, `<Project>/Config` or `<Project>/Content/JavaScript` folder | the same path in the game |
 | Exe files | a `.dll`, `.addon64` or `.asi` file, with the files in its folder | the game's exe folder |
+
+A new mod of type Game files or Exe files first shows a short note: it goes into
+the game's folders, so it may conflict with other tools or loaders. Its row in the
+list has a blue shade. An update does not ask again.
 
 A game file is one the game keeps and reads itself, such as the keybinding
 preset `ProjectPBZ/Saved/EnhancedInputUserSettings.sav` that some Phantom Blade

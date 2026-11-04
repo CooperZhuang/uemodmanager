@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace UEManager.UI.ViewModels;
 
 /// <summary>A yes/no question shown in the themed overlay instead of a system message box.</summary>
-public sealed partial class ConfirmViewModel(string title, string message, string confirmText, string cancelText) : LocalizedObservableObject
+public sealed partial class ConfirmViewModel(string title, string message, string confirmText, string cancelText, double width = 480) : LocalizedObservableObject
 {
     private readonly TaskCompletionSource<bool> result = new();
 
@@ -14,6 +14,8 @@ public sealed partial class ConfirmViewModel(string title, string message, strin
     public string ConfirmText => confirmText;
 
     public string CancelText => cancelText;
+
+    public double Width => width;
 
     public Task<bool> Result => result.Task;
 

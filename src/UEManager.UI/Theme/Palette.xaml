@@ -49,6 +49,8 @@
     <SolidColorBrush x:Key="Brush.InfoWash" Color="#224493F8" />
     <SolidColorBrush x:Key="Brush.InfoPanel" Color="#E6141C2A" />
     <SolidColorBrush x:Key="Brush.InfoLine" Color="#444493F8" />
+    <!-- A little darker than the recommended card: the row of a mod that puts files beside the game's own. -->
+    <SolidColorBrush x:Key="Brush.GameFilesRow" Color="#E6111825" />
 
     <!-- Faint fills in the same tones, for boxes that carry a state. -->
     <SolidColorBrush x:Key="Brush.SuccessWash" Color="#1A86B793" />

@@ -65,6 +65,9 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
 
     public string KindText => Format.Kind(record.TypeLabel);
 
+    /// <summary>A mod of game files or exe files puts files beside the game's own, so its row has a shade of its own.</summary>
+    public bool IsBesideGameFiles => record.TypeLabel is ModTypes.GameFiles or ModTypes.ExeFiles;
+
     public DateTimeOffset InstalledAt => record.InstalledAt;
 
     public string InstalledText => record.InstalledAt.LocalDateTime.ToString(L.T("d MMM yyyy"), CultureInfo.CurrentCulture);

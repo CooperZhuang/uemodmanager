@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.5 (2026-11-04)
+- Mod script: nay cài cả các tệp trong Content/JavaScript, ví dụ Mods Menu
+- Nút Làm mới ở trang Mod: kiểm tra lại thư mục mod mà không cần khởi động lại
+- Mod loại "Tệp game" và "Tệp cạnh exe" có hàng màu xanh, và mod mới hiện một lưu ý ngắn trước khi cài
+- Cửa sổ không còn nhỏ hơn kích thước lúc khởi động
+
 ## 1.5.4 (2026-11-04)
 - Khi mod đề xuất có phiên bản mới, mục Mod ở thanh bên hiện chữ CẬP NHẬT màu xanh
 

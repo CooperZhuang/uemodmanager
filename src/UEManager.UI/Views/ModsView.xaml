@@ -81,6 +81,9 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsBesideGameFiles}" Value="True">
+                    <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.GameFilesRow}" />
+                </DataTrigger>
                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
                     <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.Hover}" />
                 </Trigger>
@@ -153,6 +156,8 @@
             <Border DockPanel.Dock="Right" Margin="10,0,0,0" Style="{StaticResource FieldBox}">
                 <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding ModsCountText}" />
             </Border>
+            <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;"
+                    Command="{Binding RefreshCommand}" ToolTip="F5" />
             <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ctrl+F"
                      Tag="{ui:Loc 'Filter: mod name, version, PAK / IoStore, or file name'}" />
         </DockPanel>
@@ -214,6 +219,8 @@
             <DockPanel>
                 <Button DockPanel.Dock="Right" VerticalAlignment="Center" Content="{ui:Loc 'Open mods folder'}"
                         ui:Icon.Glyph="&#xE838;" Command="{Binding OpenModFolderCommand}" />
+                <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Content="{ui:Loc 'Refresh'}"
+                        ui:Icon.Glyph="&#xE72C;" Command="{Binding RefreshCommand}" />
                 <TextBlock DockPanel.Dock="Left" Margin="0,0,16,0" Style="{StaticResource Text.Icon}" FontSize="18"
                            Foreground="{StaticResource Brush.Warning}" Text="&#xE7BA;" />
                 <StackPanel VerticalAlignment="Center">

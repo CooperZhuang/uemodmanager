@@ -893,6 +893,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <param name="showMods">Switch to the Mods page afterwards; the openmods page stays where it is.</param>
     private async Task InstallChoiceAsync(InstallPreview preview, InstallChoice choice, bool showMods)
     {
+        // Files beside the game's own are not like a mod in the mods folder. A new mod of that kind says so; an update does not ask again.
+        if (!choice.Replace && choice.Packages.Any(p => p.Target is DeployTarget.InstallRoot or DeployTarget.ExeFolder)
+            && !await AskAsync(L.T("This mod goes into the game's folders"),
+                L.T("Most mods stay in the mods folder. This one places files directly in the game's folders, so it may conflict with other tools or loaders. The manager saves any file it replaces and puts it back when you turn the mod off or uninstall it.")
+                + "\n\n" + L.T("This is only a note, not an error. The mod may well work without any problem."),
+                L.T("Install"), width: 580))
+            return;
         ModRecord? installed = null;
         await RunAsync(L.F($"Installing {choice.Name}…"), async () => installed = await Task.Run(() =>
             manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings)));
@@ -1186,6 +1193,10 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         if (SelectedPage == "Ue4ss")
             await RefreshUe4ssLogAsync();
     }
+
+    /// <summary>The button for F5, as the player may have changed the mods folder by hand.</summary>
+    [RelayCommand]
+    private Task Refresh() => ReloadAsync();
 
     partial void OnSelectedPageChanged(string? oldValue, string newValue)
     {
@@ -1713,9 +1724,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         return false;
     }
 
-    private async Task<bool> AskAsync(string title, string message, string confirmText, string? cancelText = null)
+    private async Task<bool> AskAsync(string title, string message, string confirmText, string? cancelText = null, double width = 480)
     {
-        Confirm = new ConfirmViewModel(title, message, confirmText, cancelText ?? L.T("Cancel"));
+        Confirm = new ConfirmViewModel(title, message, confirmText, cancelText ?? L.T("Cancel"), width);
         var accepted = await Confirm.Result;
         Confirm = null;
         return accepted;

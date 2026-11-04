@@ -11,6 +11,15 @@ public class WindowPlacementTests
     private static readonly Size Minimum = new(1000, 640);
 
     [Fact]
+    public void The_smallest_window_is_the_start_size_unless_the_screen_is_smaller()
+    {
+        var start = new Size(1360, 800);
+
+        Assert.Equal(start, MainWindow.Smallest(start, new Rect(0, 0, 1920, 1040)));
+        Assert.Equal(new Size(1280, 680), MainWindow.Smallest(start, new Rect(0, 0, 1280, 680)));
+    }
+
+    [Fact]
     public void A_place_on_a_screen_is_kept()
     {
         var bounds = MainWindow.Usable(new WindowPlacement(2100, 80, 1400, 900, false), TwoScreens, Minimum);

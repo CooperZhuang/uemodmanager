@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.5 (2026-11-04)
+- Script mods: files below Content/JavaScript now install, such as Mods Menu
+- Refresh button on the Mods page, to check the mods folder again without a restart
+- Game files and Exe files mods have a blue row, and a new one shows a short note before it installs
+- The window no longer goes below its start size
+
 ## 1.5.4 (2026-11-04)
 - Blue UPDATE on the Mods entry in the sidebar when the recommended mod has a new version
 

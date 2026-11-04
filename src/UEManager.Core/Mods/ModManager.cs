@@ -1584,11 +1584,7 @@ public sealed class ModManager
                     FileSystem.TryDeleteFile(moved);
             }
             foreach (var (file, path) in deployed)
-            {
-                // A game file's folders belong to the game, and stay.
-                if (!file.IsGameFile)
-                    RemoveEmptyFolders(file, path);
-            }
+                RemoveEmptyFolders(file, path);
         }
 
         public void PutBack()
@@ -1727,17 +1723,26 @@ public sealed class ModManager
                         Log.Warn($"The game's own {file.FileName} could not be put back: {ex.Message}");
                     }
                 }
-                else
-                {
-                    RemoveEmptyFolders(file, file.DeployedPath!);
-                }
+                RemoveEmptyFolders(file, file.DeployedPath!);
             }
             file.DeployedPath = null;
         }
         mod.Enabled = false;
     }
 
-    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath) => RemoveEmptyFolders(file.FileName, deployedPath);
+    /// <summary>
+    /// Removes the folders a mod's file brought along, once they are empty. A game file's folders belong to the game,
+    /// and stay. Only a script's folders below the game's script folder go: they are the mod's, and a script loader may
+    /// stop at an empty folder there.
+    /// </summary>
+    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath)
+    {
+        var name = !file.IsGameFile ? file.FileName
+            : file.Target == DeployTarget.InstallRoot ? PackageScanner.BelowScriptFolder(file.FileName)
+            : null;
+        if (name is not null)
+            RemoveEmptyFolders(name, deployedPath);
+    }
 
     /// <summary>
     /// Removes the folders a file brought along, such as "Mod\Scripts" and "Mod" for

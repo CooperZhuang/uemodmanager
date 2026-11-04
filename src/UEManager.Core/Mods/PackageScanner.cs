@@ -223,7 +223,8 @@ public static class PackageScanner
     /// <param name="fallbackName">Folder name for a UE4SS mod whose files sit at the top of the download.</param>
     /// <param name="projectFolder">
     /// The game's Unreal project folder, such as "ProjectPBZ". A file the download places in one of the game's own
-    /// folders under it, such as Saved or Config, is installed too; without the name, those files are ignored.
+    /// folders under it, such as Saved, Config or Content/JavaScript, is installed too; without the name, those files
+    /// are ignored.
     /// </param>
     /// <param name="exeFolder">
     /// The game's exe folder below the install folder, such as "platform/steam". A download whose paths name it keeps
@@ -289,8 +290,7 @@ public static class PackageScanner
 
         // A file the download places in one of the game's own folders, such as
         // "ProjectPBZ/Saved/EnhancedInputUserSettings.sav" or "platform/steam/dxgi.dll": a keybinding preset, a settings
-        // file the game reads, or a mod file next to the exe. Each file is its own part and keeps its path below the
-        // install folder.
+        // file the game reads, a script, or a mod file next to the exe. Each file keeps its path below the install folder.
         var claimed = drafts.SelectMany(d => d.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var gameFiles = files
             .Where(f => !claimed.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions) && !SettingsFiles.IsDocument(f))
@@ -316,12 +316,12 @@ public static class PackageScanner
             .ToList();
         // The game files of one folder are one part: a lone file is known by its name, several by the folder they
         // go to, such as the files a download places in the exe folder.
-        foreach (var group in gameFiles.GroupBy(g => Path.GetDirectoryName(g.Path)?.Replace('\\', '/') ?? "", StringComparer.OrdinalIgnoreCase))
+        foreach (var group in gameFiles.GroupBy(g => GamePartFolder(g.Path, projectFolder), StringComparer.OrdinalIgnoreCase))
         {
             var folderPath = group.Key;
             var inFolder = group.OrderBy(g => g.Path, StringComparer.OrdinalIgnoreCase).ToList();
             var (folder, name) = inFolder.Count == 1
-                ? (folderPath, Path.GetFileName(inFolder[0].Path))
+                ? (Path.GetDirectoryName(inFolder[0].Path)?.Replace('\\', '/') ?? "", Path.GetFileName(inFolder[0].Path))
                 : (Path.GetDirectoryName(folderPath)?.Replace('\\', '/') ?? "", Path.GetFileName(folderPath));
             packages.Add(PackageGroup.GameFiles(name, folder, inFolder.Select(f => f.File).ToList(), inFolder.Select(f => f.Path).ToList()));
         }
@@ -442,12 +442,38 @@ public static class PackageScanner
     /// <summary>The folders below Saved that hold the player's saves, the game's logs and crash reports.</summary>
     private static readonly string[] NotGameFiles = ["SaveGames", "Logs", "Crashes"];
 
+    /// <summary>The folder below the project folder where a game with a script engine reads loose scripts.</summary>
+    private const string ScriptFolder = "Content/JavaScript";
+
+    /// <summary>
+    /// A game file's path below the script folder, such as "Menu/main.js" for
+    /// "ProjectPBZ/Content/JavaScript/Menu/main.js"; null for any other file.
+    /// </summary>
+    internal static string? BelowScriptFolder(string path)
+    {
+        var parts = path.Split('/');
+        return parts.Length > 3 && StartsAt(parts, 1, ScriptFolder) ? string.Join('/', parts[3..]) : null;
+    }
+
+    /// <summary>
+    /// The folder whose game files make one part: a file's own folder; for a script, the mod's folder right below the
+    /// script folder, so that a script mod stays whole. A part left out would leave the mod broken.
+    /// </summary>
+    /// <param name="path">The file's path below the install folder.</param>
+    private static string GamePartFolder(string path, string? projectFolder)
+    {
+        var parts = path.Split('/');
+        return parts.Length > 4 && parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase) && StartsAt(parts, 1, ScriptFolder)
+            ? string.Join('/', parts[..4])
+            : Path.GetDirectoryName(path)?.Replace('\\', '/') ?? "";
+    }
+
     /// <summary>
     /// The path below the install folder of a file the download places in one of the game's own folders, such as
-    /// "ProjectPBZ/Saved/Keys.sav" or "platform/steam/dxgi.dll"; null for any other file. The game reads the file
-    /// there, and the mod replaces the one the game keeps, so only those folders count: nothing else of a download is
-    /// installed over the game's own. A download may wrap its files in a folder of its own, so both are looked for at
-    /// any depth.
+    /// "ProjectPBZ/Saved/Keys.sav", "ProjectPBZ/Content/JavaScript/Menu/main.js" or "platform/steam/dxgi.dll"; null for
+    /// any other file. The game reads the file there, and the mod replaces the one the game keeps, so only those folders
+    /// count: nothing else of a download is installed over the game's own. A download may wrap its files in a folder of
+    /// its own, so both are looked for at any depth.
     /// </summary>
     private static string? GameFilePath(string relativePath, string? projectFolder, string? exeFolder)
     {
@@ -464,6 +490,9 @@ public static class PackageScanner
                     return null;
                 return string.Join('/', parts[i..]);
             }
+            if (!string.IsNullOrWhiteSpace(projectFolder) && parts[i].Equals(projectFolder, StringComparison.OrdinalIgnoreCase)
+                && StartsAt(parts, i + 1, ScriptFolder))
+                return string.Join('/', parts[i..]);
             if (!string.IsNullOrWhiteSpace(exeFolder) && StartsAt(parts, i, exeFolder!))
                 return string.Join('/', parts[i..]);
         }

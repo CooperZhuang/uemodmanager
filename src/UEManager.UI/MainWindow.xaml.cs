@@ -12,6 +12,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // The start size is also the smallest, so there are fewer layouts to keep right.
+        var smallest = Smallest(new Size(Width, Height), SystemParameters.WorkArea);
+        MinWidth = Width = smallest.Width;
+        MinHeight = Height = smallest.Height;
         OnWindowStateChanged();
         StateChanged += (_, _) => OnWindowStateChanged();
         // Ctrl+F and F5, the keys of these commands, while no dialog covers the window.
@@ -67,6 +71,10 @@ public partial class MainWindow : Window
                 WindowState == WindowState.Maximized));
         base.OnClosing(e);
     }
+
+    /// <summary>The smallest window: the start size, or what fits a screen too small for it.</summary>
+    internal static Size Smallest(Size start, Rect workArea) =>
+        new(Math.Min(start.Width, workArea.Width), Math.Min(start.Height, workArea.Height));
 
     private void PlaceAt(WindowPlacement placement)
     {
