@@ -4,6 +4,18 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.6 (2026-11-05)
+- PBZModLoader on the recommended card: its own fix for pak mods, no UE4SS needed (thanks, LKF)
+- UE4SS C++ BYPASS stays on the card as an extra download
+- Upgrade from a PBZModLoader installed by hand: old files go to a backup, mods and settings stay
+- Mods for PBZModLoader install, and a zip with a copy for two loaders installs only one copy
+- A script mod waits until its loader is installed
+- Mods Menu and PBZModLoader: only one of them at a time
+- A mod that only shares a file with another mod no longer replaces it
+- Scripts named like install.js or notice.js are no longer left out
+- No more note before installing Game files or Exe files mods
+- Install problems always stay in view; long file notes wrap
+
 ## 1.5.5 (2026-11-04)
 - Script mods: files below Content/JavaScript now install, such as Mods Menu
 - Refresh button on the Mods page, to check the mods folder again without a restart

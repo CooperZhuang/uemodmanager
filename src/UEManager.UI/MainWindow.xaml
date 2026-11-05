@@ -400,13 +400,13 @@
 
         <!-- ===== Technical notes of the recommended mod ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
-              Visibility="{Binding IsRecommendedNotesOpen, Converter={StaticResource Visible}}">
+              Visibility="{Binding RecommendedNotes, Converter={StaticResource VisibleIfSet}}">
             <!-- Wide, close to 16:9. The notes come from the manifest. -->
-            <Border Style="{StaticResource Dialog}" Width="720">
+            <Border Style="{StaticResource Dialog}" Width="720" DataContext="{Binding RecommendedNotes}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'TECHNICAL NOTES', Tracked=True}" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding RecommendedName}" />
-                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding RecommendedNotes}">
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding Name}" />
+                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding Notes}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
@@ -417,10 +417,39 @@
                         <TextBlock VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12" FontWeight="SemiBold"
                                    Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Source code'}" />
                         <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
-                                Content="{Binding RecommendedSource}" Command="{Binding OpenRecommendedSourceCommand}" />
+                                Content="{Binding Source}" Command="{Binding OpenSourceCommand}" />
                     </StackPanel>
                     <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
-                            Command="{Binding CloseRecommendedNotesCommand}" IsCancel="True" />
+                            Command="{Binding CloseNotesCommand}" IsCancel="True" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===== A thank-you of a recommended mod ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding RecommendedThanks, Converter={StaticResource VisibleIfSet}}">
+            <!-- The text and the links come from the manifest. -->
+            <Border Style="{StaticResource Dialog}" Width="560" DataContext="{Binding RecommendedThanks}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Foreground="{StaticResource Brush.Success}" Text="{Binding ThanksBoxText, Converter={StaticResource Tracked}}" />
+                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding ThanksParagraphs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl x:Name="ThanksLinks" Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding ThanksLinks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
+                                        Content="{Binding Text}" CommandParameter="{Binding Url}"
+                                        Command="{Binding DataContext.OpenThanksLinkCommand, ElementName=ThanksLinks}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                            Command="{Binding CloseThanksCommand}" IsCancel="True" />
                 </StackPanel>
             </Border>
         </Grid>

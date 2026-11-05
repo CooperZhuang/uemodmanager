@@ -561,8 +561,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>The player's own mods: mod sets leave the recommended one as it is.</summary>
     private List<ModRecord> OwnMods => manager!.Mods.Where(m => !m.Recommended).ToList();
 
-    /// <summary>Every installed mod: the player's own, and the recommended one, which the Mods page shows apart.</summary>
-    private IEnumerable<ModItemViewModel> AllMods => RecommendedItem is null ? Mods : Mods.Append(RecommendedItem);
+    /// <summary>Every installed mod: the player's own, and the ones on the card, which the Mods page shows apart.</summary>
+    private IEnumerable<ModItemViewModel> AllMods => Mods.Concat(RecommendedItems);
 
     public int InstalledCount => AllMods.Count();
 
@@ -579,6 +579,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         : L.T("Try another name, version or file name.");
 
     public bool HasUnmanaged => UnmanagedCount > 0;
+
+    /// <summary>Both script loaders are in the game, as from before the manager kept them apart.</summary>
+    public bool HasBothScriptLoaders => manager is { IsModsMenuInstalled: true, IsModLoaderInstalled: true };
 
     /// <summary>How many mods a test without mods turned off; 0 when no such test is on.</summary>
     public int TestOffCount => manager?.OffForTest.Count ?? 0;
@@ -690,6 +693,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
             using (preview)
             {
+                if (!await CleanOldModLoaderAsync(preview, null))
+                    continue;
                 var choice = await ReviewAsync(preview, catalog: null);
                 if (choice is not null)
                     await InstallChoiceAsync(preview, choice, showMods: true);
@@ -873,12 +878,20 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
             using (preview)
             {
-                var all = preview.Packages.ToList();
-                var check = manager!.Check(preview, all, id);
-                var direct = all.Count == 1 && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
+                if (!await CleanOldModLoaderAsync(preview, id))
+                    return;
+                // A loader's other entries are no choice to ask about, unless the player took one before.
+                var parts = preview.Packages.Where(p => !p.IsAlternate).ToList();
+                var check = manager!.Check(preview, parts, id);
+                if (preview.Packages.FirstOrDefault(p => p.IsAlternate && p.Variant == check.Replaces?.Variant) is { } taken)
+                {
+                    parts = [taken];
+                    check = manager.Check(preview, parts, id);
+                }
+                var direct = parts.Count == 1 && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
                     && (check.Replaces is null || string.Equals(check.Replaces.CatalogId, id, StringComparison.OrdinalIgnoreCase));
                 var choice = direct
-                    ? new InstallChoice(all, name, version, check.Replaces is not null, id)
+                    ? new InstallChoice(parts, name, version, check.Replaces is not null, id)
                     : await ReviewAsync(preview, new CatalogSource(id, name, version));
                 if (choice is not null)
                     await InstallChoiceAsync(preview, choice, showMods: false);
@@ -893,13 +906,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <param name="showMods">Switch to the Mods page afterwards; the openmods page stays where it is.</param>
     private async Task InstallChoiceAsync(InstallPreview preview, InstallChoice choice, bool showMods)
     {
-        // Files beside the game's own are not like a mod in the mods folder. A new mod of that kind says so; an update does not ask again.
-        if (!choice.Replace && choice.Packages.Any(p => p.Target is DeployTarget.InstallRoot or DeployTarget.ExeFolder)
-            && !await AskAsync(L.T("This mod goes into the game's folders"),
-                L.T("Most mods stay in the mods folder. This one places files directly in the game's folders, so it may conflict with other tools or loaders. The manager saves any file it replaces and puts it back when you turn the mod off or uninstall it.")
-                + "\n\n" + L.T("This is only a note, not an error. The mod may well work without any problem."),
-                L.T("Install"), width: 580))
-            return;
+        // Mods Menu and PBZModLoader cause problems together, and the app points to the one it can stand behind.
+        if (!choice.Replace && ModManager.IsModsMenu(choice.Packages))
+        {
+            if (!await AskAsync(L.T("We recommend PBZModLoader"),
+                    L.T("Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. We cannot fix this while the source code of Mods Menu is closed. We recommend PBZModLoader: it is safe to use and open source."),
+                    L.T("Install Mods Menu"), width: 580))
+                return;
+        }
         ModRecord? installed = null;
         await RunAsync(L.F($"Installing {choice.Name}…"), async () => installed = await Task.Run(() =>
             manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings)));
@@ -1654,20 +1668,21 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private void RefreshMods()
     {
         Mods.Clear();
-        RecommendedItem = null;
+        var marked = new List<ModItemViewModel>();
         if (manager is not null)
         {
             if (isRecommendedKnown)
-                manager.MarkRecommended(recommended?.Repo, recommended?.Folder);
+                manager.MarkRecommended(RecommendedWanted());
             foreach (var mod in manager.Mods)
             {
                 var item = new ModItemViewModel(this, mod, manager.LibraryFolderOf(mod));
                 if (mod.Recommended)
-                    RecommendedItem = item;
+                    marked.Add(item);
                 else
                     Mods.Add(item);
             }
         }
+        PlaceRecommended(marked);
         try
         {
             UnmanagedCount = manager?.UnmanagedFiles().Count ?? 0;
@@ -1684,7 +1699,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         OnPropertyChanged(string.Empty);
     }
 
-    private bool EnsureGame()
+    internal bool EnsureGame()
     {
         if (Game is not null && manager is not null)
             return true;
@@ -1735,7 +1750,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || IsRecommendedNotesOpen;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

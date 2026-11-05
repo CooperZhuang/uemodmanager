@@ -54,3 +54,8 @@ public sealed record InstallCheck(IReadOnlyList<FormattableString> Problems, IRe
     /// <summary>An update would replace settings the player changed, so the player chooses whether to keep them.</summary>
     public bool HasEditedSettings => EditedSettings is { Count: > 0 };
 }
+
+/// <summary>What a PBZModLoader installed by hand keeps in the game and the manager's copy does not need.</summary>
+/// <param name="Places">Files and folders, below the install folder.</param>
+/// <param name="SourceOnlyMods">Mods with a main.ts and no main.js: only the old loader could compile them.</param>
+public sealed record OldModLoader(IReadOnlyList<string> Places, IReadOnlyList<string> SourceOnlyMods);

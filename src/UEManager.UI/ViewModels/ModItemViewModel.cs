@@ -21,6 +21,8 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         HasUe4ssErrors = owner.HadUe4ssErrors(record);
     }
 
+    internal ModRecord Record => record;
+
     /// <summary>UE4SS reported errors in this mod at the last game start.</summary>
     public bool HasUe4ssErrors { get; }
 

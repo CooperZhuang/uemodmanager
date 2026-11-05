@@ -27,7 +27,8 @@
                                            Text="{Binding Name}" ToolTip="{Binding File.FullPath}" />
                             </DockPanel>
                             <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding File.Size}" />
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
+                            <!-- An Auto column gives its text all the room it asks for: only the text's own limit makes a long state wrap. -->
+                            <TextBlock Grid.Column="2" MaxWidth="220" VerticalAlignment="Center" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
                                        Foreground="{Binding File.Tone, Converter={StaticResource Tone}}" Text="{Binding File.State}" />
                             <!-- A folder in the mod details opens in Explorer; the install review has none. -->
                             <StackPanel Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" Orientation="Horizontal"

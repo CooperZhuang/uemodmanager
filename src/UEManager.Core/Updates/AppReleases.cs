@@ -35,7 +35,8 @@ public static class AppReleases
     /// <param name="listUrl">Where the answer came from: a relative download link is relative to it.</param>
     /// <exception cref="ModException">The answer names no version.</exception>
     /// <exception cref="JsonException">The text is not JSON.</exception>
-    public static AppRelease Parse(string json, string filePrefix, bool allowHttp = false, Uri? listUrl = null)
+    /// <param name="fileSuffix">The end of the zip's name, for a release whose zips differ there; empty for any.</param>
+    public static AppRelease Parse(string json, string filePrefix, bool allowHttp = false, Uri? listUrl = null, string fileSuffix = "")
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -50,7 +51,8 @@ public static class AppReleases
                 var url = Link(asset, "browser_download_url", allowHttp, listUrl);
                 if (name is null || url is null
                     || !name.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase)
-                    || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                    || !name.EndsWith(fileSuffix, StringComparison.OrdinalIgnoreCase))
                     continue;
                 var size = asset.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number && s.TryGetInt64(out var bytes) ? bytes : 0;
                 // GitHub gives "sha256:<hex>".
@@ -81,14 +83,14 @@ public static class AppReleases
     /// </summary>
     /// <exception cref="ModException">No address gave a usable answer: the last one's problem.</exception>
     public static async Task<AppRelease> FetchLatestAsync(HttpClient http, IReadOnlyList<string> urls, string filePrefix,
-        TimeSpan? perAddress = null, CancellationToken cancellation = default)
+        TimeSpan? perAddress = null, CancellationToken cancellation = default, string fileSuffix = "")
     {
         ModException? last = null;
         foreach (var url in urls)
         {
             try
             {
-                return await FetchLatestAsync(http, url, filePrefix, cancellation, perAddress ?? PerAddress);
+                return await FetchLatestAsync(http, url, filePrefix, cancellation, perAddress ?? PerAddress, fileSuffix);
             }
             catch (ModException ex) when (!cancellation.IsCancellationRequested)
             {
@@ -103,7 +105,7 @@ public static class AppReleases
     /// <param name="timeLimit">How long the answer may take; 20 seconds when null.</param>
     /// <exception cref="ModException">The address could not be reached or gave no usable answer.</exception>
     public static async Task<AppRelease> FetchLatestAsync(HttpClient http, string url, string filePrefix, CancellationToken cancellation = default,
-        TimeSpan? timeLimit = null)
+        TimeSpan? timeLimit = null, string fileSuffix = "")
     {
         try
         {
@@ -118,7 +120,7 @@ public static class AppReleases
                 throw new ModException($"The release list answered {(int)response.StatusCode} {response.ReasonPhrase}. Try again later.");
             var listUrl = new Uri(url);
             var release = Parse(await response.Content.ReadAsStringAsync(timeout.Token), filePrefix,
-                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl) with { ListUrl = url };
+                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl, fileSuffix) with { ListUrl = url };
             Log.Info($"Newest release from '{url}': {release.Version}; file for this build: {release.File?.Name ?? "none"}.");
             return release;
         }

@@ -66,12 +66,10 @@ after a change to an English text, update every language file too.
 | PAK / IoStore | `.pak`, `.utoc` + `.ucas` | `<Project>/Content/Paks/~mods` |
 | Blueprint | package files below a `LogicMods` folder | `<Project>/Content/Paks/LogicMods` |
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
-| Game files | a file below the download's `<Project>/Saved`, `<Project>/Config` or `<Project>/Content/JavaScript` folder | the same path in the game |
+| Game files | a file below the download's `<Project>/Saved`, `<Project>/Config`, `<Project>/Content/JavaScript` or `<Project>/PBZModLoader/mods` folder | the same path in the game |
 | Exe files | a `.dll`, `.addon64` or `.asi` file, with the files in its folder | the game's exe folder |
 
-A new mod of type Game files or Exe files first shows a short note: it goes into
-the game's folders, so it may conflict with other tools or loaders. Its row in the
-list has a blue shade. An update does not ask again.
+A mod of type Game files or Exe files has a blue shade in the list.
 
 A game file is one the game keeps and reads itself, such as the keybinding
 preset `ProjectPBZ/Saved/EnhancedInputUserSettings.sav` that some Phantom Blade
@@ -273,6 +271,48 @@ player who has the mod installed. A missing UE4SS, or one
 other than the manifest names, is installed first, from the same click: such a mod
 may work only with that build. `folder` finds a copy installed by hand, so
 it moves to the card too.
+
+The optional top-level `recommended2` has the same shape and comes first. Apps
+before 1.5.6 do not read it, so `recommended` stays as they know it. It adds
+`installedName` (a shorter name for the mod's row once it is installed), `fileSuffix`
+(the end of the zip's name, in a release with several zips), `ue4ss`
+(`false` for a mod that needs no UE4SS, so its button leaves UE4SS alone) and `extra`
+(a second mod the card offers below it, with `retireText` and `retireButton` for a
+line and a button that uninstall it while the main mod is installed too). The two
+mods do not block each other. `thanks` (`box`, `text`, and `links`, https only) adds a
+green box that opens a thank-you, for the people a mod builds on.
+
+A download with an `alternative-entries` folder holds other entry DLLs of one loader,
+each under its own name. Only one may be in the game: the review shows them as one
+choice and leaves them unticked, and a click on the card does not offer them. A player
+who took one keeps it through an update.
+
+A download with both `<Project>/Content/JavaScript/PBZModsMenu` and
+`<Project>/PBZModLoader/mods` holds one script mod twice, a copy for each loader. It is
+one choice too, and nothing is ticked until the player makes it: with both copies in the
+game, one is not used, or the mod loads twice and most likely crashes the game. A later
+install keeps the copy that is in the game, and the other copy takes its place. With
+one of the two loaders in the game, the copy for it is ticked at first.
+
+Mods Menu and PBZModLoader cause problems together, so the manager installs only one of
+them at a time: the review stops the other, and the Mods page warns when both are in the
+game. A new install of Mods Menu first shows a note that points to PBZModLoader. Either
+loader counts when it is in the mod list, even turned off, and when it was put in by hand.
+
+A script mod below one of those two loaders' folders waits for its loader: the review
+stops it while that loader is missing. For a zip with a copy for each loader and neither
+loader in the game, the copy for PBZModLoader is ticked, so the review says what to do. A
+copy of PBZModLoader put in by hand counts by its DLL next to the exe, under one of its entry
+names and with the text `[PBZMOD]` in it. Its log and its mods folder do not count, as they
+stay when it is removed. A loader before 2.0 counts by its start file
+`<Project>/Content/JavaScript/PBZModLoader/bootstrap.js` or by a DLL that names that path.
+
+A PBZModLoader installed by hand gives way to the manager's copy, which is one DLL: after
+the player agrees, its entry DLL and the old layout that the loader's manifest lists
+(`Content/JavaScript/PBZModLoader`, and `compiler`, `evidence` and `TOOLCHAIN-LICENSE.txt` in
+`PBZModLoader`) move to a backup folder, all or none. `PBZModLoader/mods` and `mods.ini` stay.
+A mod with only a `main.ts` no longer runs, as the compiler was the old loader's, and the
+question names such mods. These are the only files the manager moves that it did not place.
 
 Mod sets leave it as it is: a set does not hold it, and a set saved before it
 came does not turn it off. **Test without mods** turns it off like any other mod.

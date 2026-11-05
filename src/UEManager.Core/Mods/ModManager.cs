@@ -151,6 +151,21 @@ public sealed class ModManager
             warnings.AddRange(package.Warnings);
         }
 
+        // The two script loaders cause problems together, and only one may be in the game: a player's choice, not a replace.
+        if (IsModsMenu(selected) && IsModLoaderInstalled)
+            problems.Add($"Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. PBZModLoader is installed, and we recommend to keep it: it is safe to use and open source.");
+        else if (IsModLoader(preview, catalogId) && IsModsMenuInstalled)
+            problems.Add($"Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. Uninstall Mods Menu first: we recommend PBZModLoader, as it is safe to use and open source.");
+
+        // A script mod runs only in its loader, so it waits for that loader. A loader's own download may bring its mods along.
+        foreach (var needed in selected.Select(p => p.NeedsLoader).OfType<string>().Distinct())
+        {
+            if (needed == PackageScanner.ForModsMenu && !IsModsMenuInstalled)
+                problems.Add($"This mod runs in Mods Menu, which is not installed. Install Mods Menu first, then this mod.");
+            else if (needed == PackageScanner.ForModLoader && !IsModLoaderInstalled && !IsModLoader(preview, catalogId))
+                problems.Add($"This mod runs in PBZModLoader, which is not installed. Install it first from the top of the Mods page, then this mod.");
+        }
+
         var needsUe4ss = !Ue4ssRuntime.Detect(Game).Installed
             && selected.Any(p => p.Target is DeployTarget.Ue4ssMods or DeployTarget.LogicMods);
         if (needsUe4ss)
@@ -200,9 +215,9 @@ public sealed class ModManager
 
             if (catalogId is not null)
             {
-                // The same catalog entry, or else the same files installed by hand from a download.
+                // The same catalog entry, or else the same mod installed by hand from a download.
                 replaces = mods.FirstOrDefault(m => string.Equals(m.CatalogId, catalogId, StringComparison.OrdinalIgnoreCase))
-                    ?? (owners is [{ CatalogId: null } handInstalled] ? handInstalled : null);
+                    ?? (owners is [{ CatalogId: null } handInstalled] && IsSameMod(handInstalled, entries.Select(e => (e.Target, e.Path))) ? handInstalled : null);
                 foreach (var other in owners.Where(o => o != replaces && o.Enabled))
                     problems.Add($"\"{other.Name}\" uses the same files. Disable or uninstall it first.");
             }
@@ -210,7 +225,15 @@ public sealed class ModManager
             {
                 if (owners.Count > 1)
                     problems.Add($"This download uses files of several installed mods: {string.Join(", ", owners.Select(o => o.Name))}. Uninstall them first.");
-                replaces = owners.Count == 1 ? owners[0] : null;
+                replaces = owners is [var only] && IsSameMod(only, entries.Select(e => (e.Target, e.Path))) ? only : null;
+                if (owners is [{ Enabled: true } other] && replaces is null)
+                    problems.Add($"\"{other.Name}\" uses the same files. Disable or uninstall it first.");
+            }
+            // The download's other choice is installed: this one takes its place, so the mod is never in the game twice.
+            if (replaces is null && owners.Count == 0)
+            {
+                var others = preview.Packages.Where(p => p.VariantOf is not null && !selected.Contains(p) && selected.Any(s => s.VariantOf == p.VariantOf)).ToList();
+                replaces = mods.FirstOrDefault(m => others.Any(o => IsSameMod(m, o.RelativePaths.Select(path => (o.Target, path)))));
             }
             if (replaces is not null)
                 editedSettings = EditedSettings(replaces);
@@ -670,28 +693,34 @@ public sealed class ModManager
     public static bool HasEditedSettings(ModRecord mod) => EditedSettings(mod).Count > 0;
 
     /// <summary>
-    /// Marks the mod the app recommends, found by the repo it came from or by its folder in UE4SS's Mods folder, as for
-    /// a copy installed by hand; any other mod loses the mark. With no <paramref name="id"/>, as when the manifest names
-    /// no mod any more, no mod has it. Only the mod list changes, so the game may run.
+    /// Marks the mods the app recommends, each found by the repo it came from or by its folder in UE4SS's Mods folder,
+    /// as for a copy installed by hand; any other mod loses the mark. With none, as when the manifest names no mod any
+    /// more, no mod has it. Only the mod list changes, so the game may run.
     /// </summary>
-    public void MarkRecommended(string? id, string? folder)
+    public void MarkRecommended(IReadOnlyCollection<(string Id, string? Folder)> wanted)
     {
         lock (gate)
         {
-            var mark = id is null ? null
-                : mods.FirstOrDefault(m => string.Equals(m.CatalogId, id, StringComparison.OrdinalIgnoreCase))
-                  ?? (folder is null ? null : mods.FirstOrDefault(m => m.Files.Any(f => f.Target == DeployTarget.Ue4ssMods
-                      && f.FileName.Split('/')[0].Equals(folder, StringComparison.OrdinalIgnoreCase))));
+            var marks = new HashSet<ModRecord>();
             var changed = false;
+            foreach (var (id, folder) in wanted)
+            {
+                var mark = mods.FirstOrDefault(m => string.Equals(m.CatalogId, id, StringComparison.OrdinalIgnoreCase))
+                    ?? (folder is null ? null : mods.FirstOrDefault(m => m.Files.Any(f => f.Target == DeployTarget.Ue4ssMods
+                        && f.FileName.Split('/')[0].Equals(folder, StringComparison.OrdinalIgnoreCase))));
+                if (mark is null)
+                    continue;
+                marks.Add(mark);
+                if (mark.CatalogId is null)
+                {
+                    mark.CatalogId = id;
+                    changed = true;
+                }
+            }
             foreach (var mod in mods)
             {
-                changed |= mod.Recommended != (mod == mark);
-                mod.Recommended = mod == mark;
-            }
-            if (mark is { CatalogId: null })
-            {
-                mark.CatalogId = id;
-                changed = true;
+                changed |= mod.Recommended != marks.Contains(mod);
+                mod.Recommended = marks.Contains(mod);
             }
             if (!changed)
                 return;
@@ -1768,6 +1797,196 @@ public sealed class ModManager
                 return;
             }
         }
+    }
+
+    /// <summary>Mods Menu's start file, below the project folder. A mod for it has none.</summary>
+    private const string ModsMenuStart = "Content/JavaScript/PBZModsMenu/bootstrap.js";
+
+    /// <summary>A file only PBZModLoader's own download has, below the project folder. Left in the game, it says nothing.</summary>
+    private const string ModLoaderLicenses = "PBZModLoader/LICENSES.txt";
+
+    private const string ModLoaderName = "pbzmodloader";
+
+    /// <summary>The start file of a PBZModLoader before 2.0, below the project folder. Its DLL names this path, in UTF-16.</summary>
+    private const string OldModLoaderStart = "Content/JavaScript/PBZModLoader/bootstrap.js";
+
+    private static readonly byte[] OldModLoaderMark = System.Text.Encoding.Unicode.GetBytes(OldModLoaderStart);
+
+    /// <summary>What a PBZModLoader before 2.0 keeps below the project folder, as the loader's own manifest lists it. The new one needs none of it.</summary>
+    private static readonly string[] OldModLoaderPlaces =
+        ["Content/JavaScript/PBZModLoader", "PBZModLoader/compiler", "PBZModLoader/evidence", "PBZModLoader/TOOLCHAIN-LICENSE.txt"];
+
+    private bool IsInProject(string path) =>
+        (Game.ProjectFolder ?? Game.Profile.ProjectFolder) is { Length: > 0 } project && File.Exists(Path.Combine(Game.RootPath, project, path));
+
+    /// <summary>Whether these parts of a download are Mods Menu itself, and not a mod for it.</summary>
+    public static bool IsModsMenu(IEnumerable<PackageGroup> parts) =>
+        parts.Any(p => p.RelativePaths.Any(path => path.EndsWith("/" + ModsMenuStart, StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>Whether a download is PBZModLoader itself, and not a mod for it.</summary>
+    public static bool IsModLoader(InstallPreview preview, string? catalogId) =>
+        catalogId?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true
+        || preview.IgnoredFiles.Any(f => f.EndsWith("/" + ModLoaderLicenses, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Mods Menu is in the list, even when turned off, or in the game by hand.</summary>
+    public bool IsModsMenuInstalled
+    {
+        get
+        {
+            lock (gate)
+                return mods.Any(m => m.Files.Any(f => f.FileName.EndsWith("/" + ModsMenuStart, StringComparison.OrdinalIgnoreCase))) || IsInProject(ModsMenuStart);
+        }
+    }
+
+    /// <summary>PBZModLoader is in the list, even when turned off, or its DLL is in the game by hand. A mod for it has no DLL.</summary>
+    public bool IsModLoaderInstalled
+    {
+        get
+        {
+            lock (gate)
+                return mods.Any(m => m.Files.Any(f => f.FileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        && (m.CatalogId?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true
+                            || m.SourceFileName?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true))
+                    || HasModLoaderEntry || IsInProject(OldModLoaderStart);
+        }
+    }
+
+    /// <summary>The names PBZModLoader's entry DLL can have, next to the game's exe.</summary>
+    private static readonly string[] ModLoaderEntries = ["version.dll", "hid.dll", "winmm.dll", "dsound.dll", "dxgi.dll"];
+
+    /// <summary>The largest file looked into: the loader's DLL is far smaller.</summary>
+    private const long ModLoaderEntryLimit = 64 * 1024 * 1024;
+
+    /// <summary>
+    /// PBZModLoader's DLL is next to the exe, under one of its names. Only the DLL tells: its log and its mods folder stay
+    /// when it is removed, and other tools use the same names. The DLL is read as data, for the text its log lines start
+    /// with or, before 2.0, the path of its start file.
+    /// </summary>
+    private bool HasModLoaderEntry => ModLoaderEntries.Any(name => IsModLoaderEntry(Path.Combine(Game.BinariesPath, name)));
+
+    private static bool IsModLoaderEntry(string place)
+    {
+        try
+        {
+            var file = new FileInfo(place);
+            if (!file.Exists || file.Length > ModLoaderEntryLimit)
+                return false;
+            var content = File.ReadAllBytes(place).AsSpan();
+            return content.IndexOf("[PBZMOD]"u8) >= 0 || content.IndexOf(OldModLoaderMark) >= 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"'{place}' could not be read: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// What a PBZModLoader installed by hand keeps in the game: its entry DLL, which the manager's copy must replace as
+    /// only one may be in the game, and the old loader's other files. Null with none of them, or when they are in the mod
+    /// list, as the list then must take them out.
+    /// </summary>
+    public OldModLoader? FindOldModLoader()
+    {
+        if ((Game.ProjectFolder ?? Game.Profile.ProjectFolder) is not { Length: > 0 } project)
+            return null;
+        lock (gate)
+        {
+            var old = OldModLoaderPlaces.Select(place => Path.Combine(Game.RootPath, project, Local(place)))
+                .Where(place => File.Exists(place) || Directory.Exists(place))
+                .ToList();
+            var listed = mods.SelectMany(m => m.Files).Select(f => f.DeployedPath).OfType<string>().ToList();
+            if (old.Any(place => listed.Any(file => string.Equals(file, place, StringComparison.OrdinalIgnoreCase)
+                    || file.StartsWith(place + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))))
+                return null;
+            var entries = ModLoaderEntries.Select(name => Path.Combine(Game.BinariesPath, name))
+                .Where(place => IsModLoaderEntry(place) && !listed.Contains(place, StringComparer.OrdinalIgnoreCase));
+            var places = entries.Concat(old).Select(place => Path.GetRelativePath(Game.RootPath, place)).ToList();
+            if (places.Count == 0)
+                return null;
+            var folder = Path.Combine(Game.RootPath, project, "PBZModLoader", "mods");
+            var sourceOnly = !Directory.Exists(folder) ? []
+                : Directory.EnumerateDirectories(folder)
+                    .Where(mod => File.Exists(Path.Combine(mod, "main.ts")) && !File.Exists(Path.Combine(mod, "main.js")))
+                    .Select(mod => Path.GetFileName(mod))
+                    .Order(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            return new OldModLoader(places, sourceOnly);
+        }
+    }
+
+    /// <summary>
+    /// Moves those files out of the game into a backup folder, all or none, after the player said so. They are the only
+    /// files the manager moves that it did not place: mods and mods.ini stay.
+    /// </summary>
+    /// <returns>The backup folder.</returns>
+    public string RemoveOldModLoader(OldModLoader old)
+    {
+        lock (gate)
+        {
+            EnsureCanChange();
+            var backup = Path.Combine(paths.BackupDir(Game.Profile.Id), $"{DateTime.Now:yyyyMMdd-HHmmss} PBZModLoader");
+            var moved = new List<(string From, string To)>();
+            try
+            {
+                foreach (var place in old.Places.Select(relative => Path.Combine(Game.RootPath, relative)))
+                {
+                    var files = Directory.Exists(place) ? Directory.EnumerateFiles(place, "*", SearchOption.AllDirectories).ToList() : [place];
+                    foreach (var file in files)
+                    {
+                        var target = Path.Combine(backup, Path.GetRelativePath(Game.RootPath, file));
+                        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                        File.Move(file, target);
+                        moved.Add((file, target));
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                foreach (var (from, to) in Enumerable.Reverse(moved))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(from)!);
+                    File.Move(to, from);
+                }
+                FileSystem.TryDeleteDirectory(backup);
+                throw new ModException($"The old files of PBZModLoader could not be moved, so nothing was changed. A file may be in use. ({ex.Message})");
+            }
+            foreach (var place in old.Places.Select(relative => Path.Combine(Game.RootPath, relative)).Where(Directory.Exists))
+                FileSystem.TryDeleteDirectory(place);
+            Log.Info($"Moved {moved.Count} file(s) of a PBZModLoader installed by hand to '{backup}'.");
+            return backup;
+        }
+    }
+
+    /// <summary>
+    /// The part of a download's choice to tick at first: the one in the game already, or a script mod's copy for the
+    /// script loader that is installed, or with neither for the one the app recommends, so the review says what to do.
+    /// Null when the player must decide.
+    /// </summary>
+    public PackageGroup? PreferredChoice(InstallPreview preview)
+    {
+        if (preview.Packages.FirstOrDefault(p => p.IsAlternate && IsInstalled(p)) is { } made)
+            return made;
+        var (menu, loader) = (IsModsMenuInstalled, IsModLoaderInstalled);
+        return menu && loader ? null
+            : preview.Packages.FirstOrDefault(p => p.IsAlternate && p.Variant == (menu ? PackageScanner.ForModsMenu : PackageScanner.ForModLoader));
+    }
+
+    /// <summary>Whether a mod in the list has this part's files: a choice of a download that the player made before.</summary>
+    public bool IsInstalled(PackageGroup part)
+    {
+        lock (gate)
+            return mods.Any(m => part.RelativePaths.Any(path => m.Files.Any(f => IsSameFile(f, part.Target, path))));
+    }
+
+    /// <summary>
+    /// Whether a mod is an older copy of a download, and not another mod that shares a file with it, as two loaders
+    /// share version.dll: at least half of its files are in the download. An update must not remove another mod.
+    /// </summary>
+    private static bool IsSameMod(ModRecord mod, IEnumerable<(DeployTarget Target, string Path)> entries)
+    {
+        var list = entries.ToList();
+        return mod.Files.Count(f => list.Any(e => IsSameFile(f, e.Target, e.Path))) * 2 >= mod.Files.Count;
     }
 
     /// <summary>The variant the selection installs, such as "x2"; null when the download offered no variants.</summary>

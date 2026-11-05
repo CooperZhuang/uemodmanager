@@ -107,7 +107,16 @@ public sealed class PackageGroup
     /// no .asi. Windows may load a DLL next to the game's exe when the game starts, so the review leaves the part
     /// unticked and the player decides.
     /// </summary>
-    public bool IsUncertain { get; internal init; }
+    public bool IsUncertain { get; internal set; }
+
+    /// <summary>
+    /// A choice of which only one may be in the game, so the review leaves it unticked and a click on a release does not
+    /// offer it: another entry DLL of a loader, under another name, or a script mod's copy for one of two script loaders.
+    /// </summary>
+    public bool IsAlternate { get; internal set; }
+
+    /// <summary>The script loader this part runs in, as <see cref="PackageScanner.ForModLoader"/> names it; null for any other part, and for Mods Menu itself.</summary>
+    public string? NeedsLoader { get; internal set; }
 
     public string TypeLabel => ModTypes.Label(RelativePaths.Select(p => (Target, p)));
 
@@ -191,7 +200,7 @@ public sealed class PackageGroup
     ];
 
     /// <summary>A file in the exe folder that is clearly a loader: a known proxy DLL, a ReShade add-on, an .asi.</summary>
-    private static bool IsKnownLoader(string place)
+    internal static bool IsKnownLoader(string place)
     {
         var name = Path.GetFileName(place);
         return FileSystem.HasExtension(name, [".addon64", ".addon32", ".asi"])
@@ -293,9 +302,9 @@ public static class PackageScanner
         // file the game reads, a script, or a mod file next to the exe. Each file keeps its path below the install folder.
         var claimed = drafts.SelectMany(d => d.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var gameFiles = files
-            .Where(f => !claimed.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions) && !SettingsFiles.IsDocument(f))
+            .Where(f => !claimed.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions))
             .Select(f => (File: f, Path: GameFilePath(RelativePath(root, f), projectFolder, exeFolder)))
-            .Where(f => f.Path is not null)
+            .Where(f => f.Path is not null && !IsDocumentAt(f.File, f.Path))
             .Select(f => (f.File, Path: f.Path!))
             .ToList();
 
@@ -370,6 +379,10 @@ public static class PackageScanner
             }
         }
 
+        MarkAlternateEntries(packages, exeFolder);
+        MarkLoaderCopies(packages);
+        MarkNeededLoaders(packages);
+
         // Shared libraries can go with several UE4SS mods; they count once.
         var used = packages.SelectMany(p => p.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var ignored = files.Where(f => !used.Contains(f)).Select(f => RelativePath(root, f)).Order(NaturalOrder.Instance).ToList();
@@ -442,35 +455,120 @@ public static class PackageScanner
     /// <summary>The folders below Saved that hold the player's saves, the game's logs and crash reports.</summary>
     private static readonly string[] NotGameFiles = ["SaveGames", "Logs", "Crashes"];
 
-    /// <summary>The folder below the project folder where a game with a script engine reads loose scripts.</summary>
-    private const string ScriptFolder = "Content/JavaScript";
+    /// <summary>The folders below the project folder where a script engine or a script loader reads loose scripts.</summary>
+    private static readonly string[] ScriptFolders = ["Content/JavaScript", "PBZModLoader/mods"];
+
+    /// <summary>How the review names a script mod's copy for each of the two script loaders.</summary>
+    public const string ForModsMenu = "Mods Menu";
+
+    public const string ForModLoader = "PBZModLoader";
+
+    /// <summary>Where a script mod goes for Mods Menu and for PBZModLoader, below the project folder.</summary>
+    private const string ModsMenuFolder = "Content/JavaScript/PBZModsMenu";
+
+    private const string ModLoaderFolder = "PBZModLoader/mods";
+
+    /// <summary>The folder a loader keeps its other entry DLLs in, each in a folder of its own.</summary>
+    private const string AlternateEntries = "alternative-entries";
+
+    /// <summary>Files named like a document that are one in a script folder too. A script such as install.js is a mod's own file.</summary>
+    private static readonly string[] DocumentExtensions = ["", ".txt", ".md", ".rtf", ".pdf", ".htm", ".html"];
 
     /// <summary>
-    /// A game file's path below the script folder, such as "Menu/main.js" for
+    /// A game file's path below a script folder, such as "Menu/main.js" for
     /// "ProjectPBZ/Content/JavaScript/Menu/main.js"; null for any other file.
     /// </summary>
     internal static string? BelowScriptFolder(string path)
     {
         var parts = path.Split('/');
-        return parts.Length > 3 && StartsAt(parts, 1, ScriptFolder) ? string.Join('/', parts[3..]) : null;
+        return parts.Length > 3 && ScriptFolders.Any(folder => StartsAt(parts, 1, folder)) ? string.Join('/', parts[3..]) : null;
+    }
+
+    /// <param name="path">The file's path below the install folder.</param>
+    private static bool IsDocumentAt(string file, string path) =>
+        SettingsFiles.IsDocument(file)
+        && (BelowScriptFolder(path) is null || DocumentExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// A download with a copy of a script mod for each of the two script loaders is one choice, and the player makes it:
+    /// with both copies in the game, one is not used, or the mod loads twice, which most likely crashes the game.
+    /// </summary>
+    private static void MarkLoaderCopies(List<PackageGroup> packages)
+    {
+        var forMenu = packages.Where(p => IsBelowProject(p, ModsMenuFolder)).ToList();
+        var forLoader = packages.Where(p => IsBelowProject(p, ModLoaderFolder)).ToList();
+        if (forMenu.Count == 0 || forLoader.Count == 0)
+            return;
+        foreach (var (copies, loader) in new[] { (forMenu, ForModsMenu), (forLoader, ForModLoader) })
+        {
+            foreach (var copy in copies)
+            {
+                copy.IsAlternate = true;
+                copy.VariantOf = ModLoaderFolder;
+                copy.Variant = loader;
+            }
+        }
+    }
+
+    /// <summary>A part in a script loader's folder runs in that loader. Mods Menu's own files are there too, with its start file.</summary>
+    private static void MarkNeededLoaders(List<PackageGroup> packages)
+    {
+        foreach (var package in packages)
+        {
+            if (IsBelowProject(package, ModLoaderFolder))
+                package.NeedsLoader = ForModLoader;
+            else if (IsBelowProject(package, ModsMenuFolder)
+                     && !package.RelativePaths.Any(path => path.EndsWith($"/{ModsMenuFolder}/bootstrap.js", StringComparison.OrdinalIgnoreCase)))
+                package.NeedsLoader = ForModsMenu;
+        }
+    }
+
+    private static bool IsBelowProject(PackageGroup package, string folder) =>
+        package.Kind == PackageKind.File && StartsAt(package.RelativePaths[0].Split('/'), 1, folder);
+
+    /// <summary>
+    /// A loader's entries are one choice, as only one may be in the game: the one next to the exe by its path, or one of
+    /// the others, which wait for the player.
+    /// </summary>
+    private static void MarkAlternateEntries(List<PackageGroup> packages, string? exeFolder)
+    {
+        var alternates = packages
+            .Where(p => p.Kind == PackageKind.ExeFiles
+                && p.Folder.Split('/')[^1].Equals(AlternateEntries, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (alternates.Count == 0)
+            return;
+        foreach (var alternate in alternates)
+        {
+            alternate.IsAlternate = true;
+            alternate.IsUncertain = false;
+            alternate.VariantOf = AlternateEntries;
+            alternate.Variant = alternate.Name;
+        }
+        var usual = packages.FirstOrDefault(p => p.Kind == PackageKind.File && p.RelativePaths.Count == 1
+            && PackageGroup.IsKnownLoader(p.RelativePaths[0])
+            && exeFolder is not null && p.RelativePaths[0].StartsWith(exeFolder + "/", StringComparison.OrdinalIgnoreCase));
+        if (usual is not null)
+            usual.VariantOf = AlternateEntries;
     }
 
     /// <summary>
     /// The folder whose game files make one part: a file's own folder; for a script, the mod's folder right below the
-    /// script folder, so that a script mod stays whole. A part left out would leave the mod broken.
+    /// script folder, so that a script mod stays whole. A part left out would leave the mod broken. Both levels of a
+    /// script folder count, as in "ProjectPBZ/PBZModLoader/mods/Name/main.js".
     /// </summary>
     /// <param name="path">The file's path below the install folder.</param>
     private static string GamePartFolder(string path, string? projectFolder)
     {
         var parts = path.Split('/');
-        return parts.Length > 4 && parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase) && StartsAt(parts, 1, ScriptFolder)
+        return parts.Length > 4 && parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase) && BelowScriptFolder(path) is not null
             ? string.Join('/', parts[..4])
             : Path.GetDirectoryName(path)?.Replace('\\', '/') ?? "";
     }
 
     /// <summary>
     /// The path below the install folder of a file the download places in one of the game's own folders, such as
-    /// "ProjectPBZ/Saved/Keys.sav", "ProjectPBZ/Content/JavaScript/Menu/main.js" or "platform/steam/dxgi.dll"; null for
+    /// "ProjectPBZ/Saved/Keys.sav", "ProjectPBZ/PBZModLoader/mods/Name/main.js" or "platform/steam/dxgi.dll"; null for
     /// any other file. The game reads the file there, and the mod replaces the one the game keeps, so only those folders
     /// count: nothing else of a download is installed over the game's own. A download may wrap its files in a folder of
     /// its own, so both are looked for at any depth.
@@ -491,7 +589,7 @@ public static class PackageScanner
                 return string.Join('/', parts[i..]);
             }
             if (!string.IsNullOrWhiteSpace(projectFolder) && parts[i].Equals(projectFolder, StringComparison.OrdinalIgnoreCase)
-                && StartsAt(parts, i + 1, ScriptFolder))
+                && ScriptFolders.Any(folder => StartsAt(parts, i + 1, folder)))
                 return string.Join('/', parts[i..]);
             if (!string.IsNullOrWhiteSpace(exeFolder) && StartsAt(parts, i, exeFolder!))
                 return string.Join('/', parts[i..]);

@@ -2,6 +2,18 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.6 (2026-11-05)
+- PBZModLoader trên thẻ đề xuất: có sẵn bản sửa cho mod pak, không cần UE4SS (cảm ơn LKF)
+- UE4SS C++ BYPASS vẫn ở trên thẻ như một bản tải thêm
+- Nâng cấp từ PBZModLoader cài thủ công: tệp cũ chuyển vào bản sao lưu, mod và cấu hình được giữ
+- Cài được mod cho PBZModLoader, và tệp zip có bản cho hai trình nạp chỉ cài một bản
+- Mod script chờ đến khi trình nạp của nó được cài
+- Mods Menu và PBZModLoader: mỗi lần chỉ một trong hai
+- Mod chỉ dùng chung một tệp với mod khác không còn thay thế mod đó
+- Script có tên như install.js hoặc notice.js không còn bị bỏ sót
+- Không còn lưu ý trước khi cài mod loại "Tệp game" hoặc "Tệp cạnh exe"
+- Lỗi khi cài luôn hiển thị trong tầm nhìn; ghi chú tệp dài sẽ tự xuống dòng
+
 ## 1.5.5 (2026-11-04)
 - Mod script: nay cài cả các tệp trong Content/JavaScript, ví dụ Mods Menu
 - Nút Làm mới ở trang Mod: kiểm tra lại thư mục mod mà không cần khởi động lại

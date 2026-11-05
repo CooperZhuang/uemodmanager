@@ -392,12 +392,13 @@
          by the user). It reacts to the pointer only while it can be clicked. -->
     <Style x:Key="Button.StatusBox" TargetType="Button">
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Padding" Value="10,7" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border Padding="10,7" CornerRadius="2" BorderThickness="1"
+                        <Border Padding="{TemplateBinding Padding}" CornerRadius="2" BorderThickness="1"
                                 Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
                         </Border>

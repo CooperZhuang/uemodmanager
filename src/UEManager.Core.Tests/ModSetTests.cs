@@ -46,7 +46,7 @@ public class ModSetTests : IDisposable
         var sharp = Install("Sharp");
         manager.SaveSet("Before the fix");
         var fix = InstallUe4ssMod("TheFix");
-        manager.MarkRecommended("KintaroModding/the_fix", "TheFix");
+        manager.MarkRecommended([("KintaroModding/the_fix", "TheFix")]);
 
         // A set saved before the fix came does not turn it off, and a new set does not hold it.
         manager.SetEnabled(sharp.Id, false);
@@ -67,7 +67,7 @@ public class ModSetTests : IDisposable
         var byHand = InstallUe4ssMod("TheFix");
         Assert.False(byHand.Recommended);
 
-        manager.MarkRecommended("KintaroModding/the_fix", "thefix");
+        manager.MarkRecommended([("KintaroModding/the_fix", "thefix")]);
 
         var marked = Assert.Single(manager.Mods, m => m.Recommended);
         Assert.Equal("TheFix", marked.Name);
@@ -76,10 +76,10 @@ public class ModSetTests : IDisposable
         // An update keeps the mark, and the repo finds it even when the folder name changed.
         var updated = InstallUe4ssMod("TheFix", "1.1", "KintaroModding/the_fix", replace: true);
         Assert.True(updated.Recommended);
-        manager.MarkRecommended("KintaroModding/the_fix", "AnotherFolder");
+        manager.MarkRecommended([("KintaroModding/the_fix", "AnotherFolder")]);
         Assert.True(Assert.Single(manager.Mods, m => m.Name == "TheFix").Recommended);
 
-        manager.MarkRecommended(null, null);
+        manager.MarkRecommended([]);
         Assert.DoesNotContain(manager.Mods, m => m.Recommended);
     }
 

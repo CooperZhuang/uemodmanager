@@ -89,6 +89,71 @@
                 </Trigger>
             </DataTemplate.Triggers>
         </DataTemplate>
+
+        <!-- A mod on the card at the top of the page: the recommended mod, or the extra download below it. -->
+        <DataTemplate x:Key="RecommendedOffer" DataType="{x:Type vm:RecommendedOfferViewModel}">
+            <StackPanel>
+                <DockPanel Margin="22,12">
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                            Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;" Command="{Binding InstallCommand}"
+                            Visibility="{Binding HasMainAction, Converter={StaticResource Visible}}" />
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center"
+                            Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;" Command="{Binding InstallCommand}"
+                            Visibility="{Binding HasExtraAction, Converter={StaticResource Visible}}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- The label's box is as wide on both mods, so the notes boxes line up in every language. -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="RecommendedLabel" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Padding="7,3" CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="{StaticResource Brush.Accent}" Background="{StaticResource Brush.AccentWash}">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Overline}"
+                                           Foreground="{StaticResource Brush.AccentBright}" Text="{Binding Label, Converter={StaticResource Tracked}}" />
+                            </Border>
+                            <Button Grid.Column="1" Margin="8,0,0,0" Padding="7,3" HorizontalAlignment="Left" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowNotesCommand}"
+                                    Foreground="{StaticResource Brush.Info}" BorderBrush="{StaticResource Brush.Info}" Background="{StaticResource Brush.InfoWash}"
+                                    Visibility="{Binding HasNotes, Converter={StaticResource Visible}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Text.Icon}" FontSize="11" Text="&#xE946;" />
+                                    <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11" Text="{ui:Loc 'TECHNICAL NOTES'}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Margin="8,0,0,0" Padding="7,3" HorizontalAlignment="Left" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowThanksCommand}"
+                                    Foreground="{StaticResource Brush.Success}" BorderBrush="{StaticResource Brush.Success}" Background="{StaticResource Brush.SuccessWash}"
+                                    Visibility="{Binding HasThanks, Converter={StaticResource Visible}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Text.Icon}" FontSize="11" Text="&#xEB51;" />
+                                    <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11" Text="{Binding ThanksBoxText}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <!-- The name and the version as a mod's row has them, in one line. -->
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding ShowName, Converter={StaticResource Visible}}">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" Text="{Binding Name}" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding VersionText}"
+                                       Visibility="{Binding HasVersion, Converter={StaticResource Visible}}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap" Text="{Binding Text}"
+                                   Visibility="{Binding HasText, Converter={StaticResource Visible}}" />
+                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
+                                   Text="{Binding StatusText}"
+                                   Visibility="{Binding HasStatus, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                </DockPanel>
+                <StackPanel Visibility="{Binding IsInstalled, Converter={StaticResource Visible}}">
+                    <Border Style="{StaticResource Divider}" />
+                    <ContentControl Focusable="False" Content="{Binding Item}" ContentTemplate="{StaticResource ModRow}" />
+                </StackPanel>
+                <DockPanel Margin="22,12" Visibility="{Binding ShowRetire, Converter={StaticResource Visible}}">
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Content="{Binding RetireButtonText}"
+                            ui:Icon.Glyph="&#xE74D;" Command="{Binding RetireCommand}" />
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap" Text="{Binding RetireText}" />
+                </DockPanel>
+            </StackPanel>
+        </DataTemplate>
     </UserControl.Resources>
 
     <StackPanel>
@@ -113,37 +178,28 @@
         <Border Margin="0,26,0,0" Style="{StaticResource Card}" Padding="0"
                 Background="{StaticResource Brush.InfoPanel}" BorderBrush="{StaticResource Brush.InfoLine}"
                 Visibility="{Binding HasRecommended, Converter={StaticResource Visible}}">
-            <StackPanel>
-                <DockPanel Margin="22,16">
-                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
-                            Content="{Binding RecommendedActionText}" ui:Icon.Glyph="&#xE896;" Command="{Binding InstallRecommendedCommand}"
-                            Visibility="{Binding HasRecommendedAction, Converter={StaticResource Visible}}" />
-                    <StackPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Overline}" Text="{Binding RecommendedLabel, Converter={StaticResource Tracked}}" />
-                            <Button Margin="14,0,0,0" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowRecommendedNotesCommand}"
-                                    Foreground="{StaticResource Brush.Info}" BorderBrush="{StaticResource Brush.Info}" Background="{StaticResource Brush.InfoWash}"
-                                    Visibility="{Binding HasRecommendedNotes, Converter={StaticResource Visible}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE946;" />
-                                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'TECHNICAL NOTES'}" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding RecommendedName}"
-                                   Visibility="{Binding ShowRecommendedName, Converter={StaticResource Visible}}" />
-                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}" Text="{Binding RecommendedText}"
-                                   Visibility="{Binding HasRecommendedText, Converter={StaticResource Visible}}" />
-                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
-                                   Text="{Binding RecommendedStatusText}"
-                                   Visibility="{Binding HasRecommendedStatus, Converter={StaticResource Visible}}" />
-                    </StackPanel>
-                </DockPanel>
-                <StackPanel Visibility="{Binding IsRecommendedInstalled, Converter={StaticResource Visible}}">
+            <StackPanel Grid.IsSharedSizeScope="True">
+                <ContentControl Focusable="False" Content="{Binding RecommendedMain}" ContentTemplate="{StaticResource RecommendedOffer}"
+                                Visibility="{Binding RecommendedMain.IsVisible, Converter={StaticResource Visible}}" />
+                <StackPanel Visibility="{Binding RecommendedExtra.IsVisible, Converter={StaticResource Visible}}">
                     <Border Style="{StaticResource Divider}" />
-                    <ContentControl Focusable="False" Content="{Binding RecommendedItem}" ContentTemplate="{StaticResource ModRow}" />
+                    <ContentControl Focusable="False" Content="{Binding RecommendedExtra}" ContentTemplate="{StaticResource RecommendedOffer}" />
                 </StackPanel>
             </StackPanel>
+        </Border>
+
+        <!-- Both script loaders are in the game -->
+        <Border Margin="0,12,0,0" Style="{StaticResource Card}" Padding="22,14"
+                Visibility="{Binding HasBothScriptLoaders, Converter={StaticResource Visible}}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Margin="0,0,16,0" Style="{StaticResource Text.Icon}" FontSize="18"
+                           Foreground="{StaticResource Brush.Warning}" Text="&#xE7BA;" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" Text="{ui:Loc 'Mods Menu and PBZModLoader are both installed'}" />
+                    <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
+                               Text="{ui:Loc 'They cause problems together. Uninstall one of them. We recommend to keep PBZModLoader: it is safe to use and open source.'}" />
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- Search -->

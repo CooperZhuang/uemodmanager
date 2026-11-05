@@ -33,6 +33,27 @@ public sealed record Ue4ssRelease(string Version, string Url, string? Sha256, IR
 public sealed record RecommendedMod(string Repo, string Name, string? Folder, IReadOnlyDictionary<string, string> Texts, string FilePrefix = "", bool Experimental = false,
     IReadOnlyDictionary<string, string>? Notes = null)
 {
+    /// <summary>A shorter name for the mod's row once it is installed, where <see cref="Name"/> might not fit; null for the same name.</summary>
+    public string? InstalledName { get; init; }
+
+    /// <summary>The end of the zip's name, such as "-win64.zip", in a release whose zips differ there; empty for any.</summary>
+    public string FileSuffix { get; init; } = "";
+
+    /// <summary>The mod runs on UE4SS, so a click on the card installs or updates UE4SS first.</summary>
+    public bool NeedsUe4ss { get; init; } = true;
+
+    /// <summary>A second mod the card offers below this one, as an extra download.</summary>
+    public RecommendedMod? Extra { get; init; }
+
+    /// <summary>For an extra mod: the line under its row while the main mod is installed too, by language code.</summary>
+    public IReadOnlyDictionary<string, string>? RetireTexts { get; init; }
+
+    /// <summary>For an extra mod: the button with that line, which uninstalls it, by language code.</summary>
+    public IReadOnlyDictionary<string, string>? RetireButtons { get; init; }
+
+    /// <summary>A thank-you on the card; null without one.</summary>
+    public RecommendedThanks? Thanks { get; init; }
+
     /// <summary>The repo's name without its owner: the folder of the mod's copy next to the manifest.</summary>
     public string RepoName => Repo.Split('/')[1];
 
@@ -41,8 +62,25 @@ public sealed record RecommendedMod(string Repo, string Name, string? Folder, IR
         Texts.TryGetValue(language, out var text) || Texts.TryGetValue("en", out text) ? text : null;
 
     /// <summary>The technical notes in a language, else in English, else none.</summary>
-    public string? NotesIn(string language) =>
-        Notes is not null && (Notes.TryGetValue(language, out var text) || Notes.TryGetValue("en", out text)) ? text : null;
+    public string? NotesIn(string language) => In(Notes, language);
+
+    public string? RetireTextIn(string language) => In(RetireTexts, language);
+
+    public string? RetireButtonIn(string language) => In(RetireButtons, language);
+
+    internal static string? In(IReadOnlyDictionary<string, string>? texts, string language) =>
+        texts is not null && (texts.TryGetValue(language, out var text) || texts.TryGetValue("en", out text)) ? text : null;
+}
+
+/// <summary>A thank-you on the card: a green box that opens a short text with links, for the people a mod builds on.</summary>
+/// <param name="Boxes">The box's text, by language code.</param>
+/// <param name="Texts">The window's text, by language code; paragraphs apart by an empty line.</param>
+/// <param name="Links">Where to find those people: https links only.</param>
+public sealed record RecommendedThanks(IReadOnlyDictionary<string, string> Boxes, IReadOnlyDictionary<string, string> Texts, IReadOnlyList<string> Links)
+{
+    public string? BoxIn(string language) => RecommendedMod.In(Boxes, language);
+
+    public string? TextIn(string language) => RecommendedMod.In(Texts, language);
 }
 
 /// <summary>The manifest as one address answered it: the address, and this game's entries, null when it has none.</summary>
@@ -58,6 +96,8 @@ public sealed record Ue4ssManifestAnswer(string Url, Ue4ssRelease? Release, Reco
 /// The optional top-level "recommended" names a mod per game; see <see cref="RecommendedMod"/>:
 /// <code>{ "recommended": { "&lt;game id&gt;": { "repo": "owner/name", "name": "...", "folder": "...",
 ///   "text": { "en": "...", "zh-CN": "..." } } } }</code>
+/// The optional top-level "recommended2" has the same shape and comes first. Apps before 1.5.6 do not read it, so it
+/// can name what they could not install right, and "recommended" stays as they know it.
 /// </summary>
 public static partial class Ue4ssManifest
 {
@@ -86,17 +126,50 @@ public static partial class Ue4ssManifest
     public static RecommendedMod? ParseRecommended(string json, string gameId)
     {
         using var document = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-        if (!document.RootElement.TryGetProperty("recommended", out var games)
-            || games.ValueKind != JsonValueKind.Object
-            || !games.TryGetProperty(gameId, out var entry)
-            || entry.ValueKind != JsonValueKind.Object)
-            return null;
+        foreach (var list in new[] { "recommended2", "recommended" })
+        {
+            if (document.RootElement.TryGetProperty(list, out var games) && games.ValueKind == JsonValueKind.Object
+                && games.TryGetProperty(gameId, out var entry) && entry.ValueKind == JsonValueKind.Object)
+                return RecommendedEntry(entry);
+        }
+        return null;
+    }
+
+    /// <summary>One mod on the card, or null when its entry is incomplete.</summary>
+    private static RecommendedMod? RecommendedEntry(JsonElement entry)
+    {
         var repo = Text(entry, "repo");
         var name = Text(entry, "name");
         if (string.IsNullOrWhiteSpace(name) || repo is null || !RepoName().IsMatch(repo) || repo.Contains(".."))
             return null;
         var experimental = entry.TryGetProperty("experimental", out var flag) && flag.ValueKind == JsonValueKind.True;
-        return new RecommendedMod(repo, name.Trim(), Text(entry, "folder"), ByLanguage(entry, "text"), Text(entry, "filePrefix") ?? "", experimental, ByLanguage(entry, "notes"));
+        return new RecommendedMod(repo, name.Trim(), Text(entry, "folder"), ByLanguage(entry, "text"), Text(entry, "filePrefix") ?? "", experimental, ByLanguage(entry, "notes"))
+        {
+            InstalledName = string.IsNullOrWhiteSpace(Text(entry, "installedName")) ? null : Text(entry, "installedName")!.Trim(),
+            FileSuffix = Text(entry, "fileSuffix") ?? "",
+            NeedsUe4ss = !(entry.TryGetProperty("ue4ss", out var ue4ss) && ue4ss.ValueKind == JsonValueKind.False),
+            Extra = entry.TryGetProperty("extra", out var extra) && extra.ValueKind == JsonValueKind.Object ? RecommendedEntry(extra) : null,
+            RetireTexts = ByLanguage(entry, "retireText"),
+            RetireButtons = ByLanguage(entry, "retireButton"),
+            Thanks = entry.TryGetProperty("thanks", out var thanks) && thanks.ValueKind == JsonValueKind.Object ? ThanksEntry(thanks) : null,
+        };
+    }
+
+    /// <summary>A thank-you, or null without a box to show it. A link that is not https stays out, as a click opens it in the browser.</summary>
+    private static RecommendedThanks? ThanksEntry(JsonElement entry)
+    {
+        var boxes = ByLanguage(entry, "box");
+        if (boxes.Count == 0)
+            return null;
+        var links = new List<string>();
+        if (entry.TryGetProperty("links", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            links.AddRange(list.EnumerateArray()
+                .Where(l => l.ValueKind == JsonValueKind.String)
+                .Select(l => l.GetString()!)
+                .Where(l => Uri.TryCreate(l, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps));
+        }
+        return new RecommendedThanks(boxes, ByLanguage(entry, "text"), links);
     }
 
     /// <summary>The texts of a field by language code; anything but text is left out.</summary>
