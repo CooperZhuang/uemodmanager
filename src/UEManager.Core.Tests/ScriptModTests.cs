@@ -76,15 +76,66 @@ public class ScriptModTests : IDisposable
     }
 
     [Fact]
-    public void Only_the_script_folder_counts_below_content()
+    public void Every_folder_below_content_counts_but_paks()
     {
         folder.File(@"Downloads\Other\TestGame\Content\Movies\intro.mp4", "a movie");
-        folder.File(@"Downloads\Other\TestGame\Content\JavaScriptOld\Menu\main.js", "not the script folder");
+        folder.File(@"Downloads\Other\TestGame\Content\Mods\Route\icon.png", "an image");
+        folder.File(@"Downloads\Other\TestGame\Content\Mods\Route\deep\line.png", "an image");
+        folder.File(@"Downloads\Other\TestGame\Content\Paks\~mods\notes.bin", "no pak beside it");
+        folder.File(@"Downloads\Other\TestGame\Binaries\Other\helper.bin", "not in the content folder");
 
         using var preview = manager.Inspect(folder.Combine("Downloads", "Other"));
 
-        Assert.Empty(preview.Packages);
+        Assert.Equal(["TestGame/Content/Mods/Route/deep/line.png", "TestGame/Content/Mods/Route/icon.png"],
+            Assert.Single(preview.Packages, p => p.Name == "Route").RelativePaths.Order(StringComparer.Ordinal));
+        Assert.Equal("intro.mp4", Assert.Single(preview.Packages, p => p.Name != "Route").Name);
         Assert.Equal(2, preview.IgnoredFileCount);
+    }
+
+    [Fact]
+    public void A_mod_with_images_in_the_content_folder_is_installed_whole_and_leaves_whole()
+    {
+        folder.File(@"Game\TestGame\Binaries\Win64\version.dll", "[PBZMOD] by hand");
+        folder.File(@"Downloads\Route\README-en.txt", "install instructions by hand");
+        folder.File(@"Downloads\Route\TestGame\PBZModLoader\mods\Route\main.js", "the mod");
+        folder.File(@"Downloads\Route\TestGame\Content\Mods\Route\icon.png", "an image");
+        folder.File(@"Downloads\Route\TestGame\Content\Mods\Route\README.txt", "a readme");
+
+        var mod = Install(folder.Combine("Downloads", "Route"));
+
+        var images = Path.Combine(game.RootPath, "TestGame", "Content", "Mods");
+        Assert.True(File.Exists(Path.Combine(images, "Route", "icon.png")));
+        Assert.False(File.Exists(Path.Combine(images, "Route", "README.txt")));
+        Assert.True(File.Exists(Path.Combine(game.RootPath, "TestGame", "PBZModLoader", "mods", "Route", "main.js")));
+
+        manager.SetEnabled(mod.Id, false);
+
+        Assert.False(Directory.Exists(Path.Combine(images, "Route")));
+
+        manager.SetEnabled(mod.Id, true);
+
+        Assert.True(File.Exists(Path.Combine(images, "Route", "icon.png")));
+
+        manager.Uninstall(mod.Id);
+
+        Assert.False(Directory.Exists(Path.Combine(images, "Route")));
+        Assert.True(Directory.Exists(Path.Combine(game.RootPath, "TestGame", "Content", "Paks")));
+    }
+
+    [Fact]
+    public void A_loose_file_of_the_game_in_the_content_folder_is_saved_and_put_back()
+    {
+        folder.File(@"Game\TestGame\Content\Movies\intro.mp4", "the game's own");
+        folder.File(@"Downloads\Skip\TestGame\Content\Movies\intro.mp4", "a short one");
+
+        var mod = Install(folder.Combine("Downloads", "Skip"));
+
+        var movie = Path.Combine(game.RootPath, "TestGame", "Content", "Movies", "intro.mp4");
+        Assert.Equal("a short one", File.ReadAllText(movie));
+
+        manager.Uninstall(mod.Id);
+
+        Assert.Equal("the game's own", File.ReadAllText(movie));
     }
 
     [Fact]

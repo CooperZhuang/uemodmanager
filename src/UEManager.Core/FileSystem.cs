@@ -11,6 +11,9 @@ internal static class FileSystem
 
     public static readonly string[] IoStoreExtensions = [".utoc", ".ucas"];
 
+    /// <summary>A package's signature, which goes where the package goes.</summary>
+    public static readonly string[] SignatureExtensions = [".sig"];
+
     public static bool HasExtension(string path, string[] extensions) =>
         extensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 

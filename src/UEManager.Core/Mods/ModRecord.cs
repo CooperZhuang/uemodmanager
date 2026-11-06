@@ -178,8 +178,14 @@ public static partial class SettingsFiles
     public static bool IsPakSettings(string path) =>
         FileSystem.HasExtension(path, PakSettingsExtensions) && !IsDocument(path);
 
+    /// <summary>The file types a document comes in. A script named install.js or a table named license.json is a mod's own file.</summary>
+    internal static readonly string[] DocumentExtensions = ["", ".txt", ".md", ".rtf", ".pdf", ".htm", ".html"];
+
     /// <summary>A document rather than a mod file: a readme, a license, a change log, install notes.</summary>
-    public static bool IsDocument(string path) => DocumentName().IsMatch(Path.GetFileNameWithoutExtension(path));
+    public static bool IsDocument(string path) => HasDocumentName(path) && FileSystem.HasExtension(path, DocumentExtensions);
+
+    /// <summary>Named like a document, whatever the file type: install.bat is no mod file, license.json may be one.</summary>
+    public static bool HasDocumentName(string path) => DocumentName().IsMatch(Path.GetFileNameWithoutExtension(path));
 
     /// <summary>The names a UE4SS mod gives its settings file in its Scripts folder.</summary>
     private static readonly string[] Ue4ssSettingsNames = ["config", "settings"];

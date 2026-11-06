@@ -2,6 +2,14 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.7 (2026-11-06)
+- Mod có tệp rời trong thư mục project của game được cài đủ, ví dụ ảnh của Quest Navigation
+- Mod cho PBZModLoader cũng cài được từ tệp zip không có thư mục ProjectPBZ ở trên cùng
+- Tệp .sig đi cùng tệp pak của nó, và tệp như license.json hoặc notice.ini không còn bị coi là tài liệu
+- Cửa sổ cài đặt cảnh báo khi có tệp bị bỏ qua mà mod có thể cần
+- Cửa sổ cài đặt cảnh báo mod chỉ có main.ts: PBZModLoader 2.0 không dùng được
+- Thông báo rõ hơn khi tệp tải về không có tệp mod nào
+
 ## 1.5.6 (2026-11-05)
 - PBZModLoader trên thẻ đề xuất: có sẵn bản sửa cho mod pak, không cần UE4SS (cảm ơn LKF)
 - UE4SS C++ BYPASS vẫn ở trên thẻ như một bản tải thêm

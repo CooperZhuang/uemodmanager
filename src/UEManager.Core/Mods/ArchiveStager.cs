@@ -91,7 +91,7 @@ public static class ArchiveStager
         copyTo(output);
     }
 
-    /// <summary>A loose package file brings its companions: Example_P.pak picks up Example_P.utoc and Example_P.ucas.</summary>
+    /// <summary>A loose package file brings its companions: Example_P.pak picks up Example_P.utoc, Example_P.ucas and Example_P.sig.</summary>
     private static void CopyPackageSiblings(string file, string stagingDir)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(file))!;
@@ -99,7 +99,7 @@ public static class ArchiveStager
         foreach (var sibling in Directory.EnumerateFiles(folder, stem + ".*"))
         {
             if (string.Equals(Path.GetFileNameWithoutExtension(sibling), stem, StringComparison.OrdinalIgnoreCase)
-                && FileSystem.HasExtension(sibling, FileSystem.PackageExtensions))
+                && (FileSystem.HasExtension(sibling, FileSystem.PackageExtensions) || FileSystem.HasExtension(sibling, FileSystem.SignatureExtensions)))
                 File.Copy(sibling, Path.Combine(stagingDir, Path.GetFileName(sibling)));
         }
     }

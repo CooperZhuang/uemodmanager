@@ -2,6 +2,14 @@
 
 CHANGELOG.md 的繁體中文版：標題與英文版相同，每項改動一行。未翻譯的版本顯示英文。
 
+## 1.5.7 (2026-11-06)
+- 遊戲專案資料夾下的零散檔案現在會完整安裝，例如 Quest Navigation 的圖片
+- PBZModLoader 的模組也可從頂層沒有 ProjectPBZ 資料夾的壓縮檔安裝
+- .sig 檔案會隨其 pak 一起安裝；license.json、notice.ini 等檔案不再被當作文件
+- 模組可能需要的檔案未被安裝時，安裝視窗會顯示警告
+- 安裝視窗會提示只有 main.ts 的模組：PBZModLoader 2.0 無法使用它
+- 下載內容中沒有模組檔案時，提示訊息更清楚
+
 ## 1.5.6 (2026-11-05)
 - 推薦卡片新增 PBZModLoader：內建 pak 模組修復，不需要 UE4SS（感謝 LKF）
 - UE4SS C++ BYPASS 作為額外下載保留在卡片上

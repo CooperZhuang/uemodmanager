@@ -210,9 +210,11 @@ public sealed class PackageGroup
 }
 
 /// <param name="IgnoredFiles">The download's other files, such as readmes and screenshots: their paths from its top, in order.</param>
+/// <param name="LeftOutFiles">Those of the other files that a mod may need.</param>
 public sealed record ScanResult(
     IReadOnlyList<PackageGroup> Packages,
     IReadOnlyList<string> IgnoredFiles,
+    IReadOnlyList<string> LeftOutFiles,
     int NestedArchiveCount,
     bool ContainsUe4ssRuntime)
 {
@@ -232,8 +234,7 @@ public static class PackageScanner
     /// <param name="fallbackName">Folder name for a UE4SS mod whose files sit at the top of the download.</param>
     /// <param name="projectFolder">
     /// The game's Unreal project folder, such as "ProjectPBZ". A file the download places in one of the game's own
-    /// folders under it, such as Saved, Config or Content/JavaScript, is installed too; without the name, those files
-    /// are ignored.
+    /// folders under it, such as Saved, Config or Content, is installed too; without the name, those files are ignored.
     /// </param>
     /// <param name="exeFolder">
     /// The game's exe folder below the install folder, such as "platform/steam". A download whose paths name it keeps
@@ -286,20 +287,22 @@ public static class PackageScanner
         // it into ~mods: the mod reads it next to its pak. Its name and the folder's do not matter, as many downloads
         // keep the files loose at the top. Readmes, licenses and change logs stay out.
         var packaged = drafts.Where(d => d.Ue4ssRoot is null).ToList();
-        foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f) && !ue4ssRoots.Any(r => IsInside(f, r))))
+        Draft? SettingsOwner(string file)
         {
             var name = Path.GetFileNameWithoutExtension(file);
-            var owner = packaged
+            return packaged
                 .Where(d => string.Equals(Path.GetDirectoryName(d.Files[0]), Path.GetDirectoryName(file), StringComparison.OrdinalIgnoreCase))
                 .OrderBy(d => d.Name.Contains(name, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault();
-            owner?.Files.Add(file);
         }
+        foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f) && !SettingsFiles.HasDocumentName(f) && !ue4ssRoots.Any(r => IsInside(f, r))))
+            SettingsOwner(file)?.Files.Add(file);
 
         // A file the download places in one of the game's own folders, such as
         // "ProjectPBZ/Saved/EnhancedInputUserSettings.sav" or "platform/steam/dxgi.dll": a keybinding preset, a settings
-        // file the game reads, a script, or a mod file next to the exe. Each file keeps its path below the install folder.
+        // file the game reads, a script of a mod, or a mod file next to the exe. Each file keeps its path below the
+        // install folder.
         var claimed = drafts.SelectMany(d => d.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var gameFiles = files
             .Where(f => !claimed.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions))
@@ -307,6 +310,54 @@ public static class PackageScanner
             .Where(f => f.Path is not null && !IsDocumentAt(f.File, f.Path))
             .Select(f => (f.File, Path: f.Path!))
             .ToList();
+
+        // A proxy DLL and the files that load with it, kept loose next to the game's exe: the folder that holds a
+        // loader goes next to the exe as it is, which is where ReShade and the add-ons find their own files.
+        var taken = claimed.Concat(gameFiles.Select(g => g.File)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var loaderFolders = files
+            .Where(f => !taken.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions)
+                && !SettingsFiles.HasDocumentName(f) && FileSystem.HasExtension(f, LoaderExtensions))
+            .Select(f => Path.GetDirectoryName(f)!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        // A loader folder inside another one is part of it. A folder that only holds a file the download already
+        // places by path is an alternate copy of it, such as an older fallback build: it stays out.
+        var named = gameFiles.Select(g => Path.GetFileName(g.File)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var looseParts = loaderFolders
+            .Where(folder => !loaderFolders.Any(other => other != folder && IsInside(folder, other)))
+            .Where(folder => !files.Any(f => IsInside(f, folder) && named.Contains(Path.GetFileName(f))))
+            .Select(folder => (Folder: folder, Files: files
+                .Where(f => IsInside(f, folder) && !taken.Contains(f)
+                    && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions) && !SettingsFiles.HasDocumentName(f))
+                .ToList()))
+            .Where(part => part.Files.Count > 0)
+            .ToList();
+
+        // The wider rules take only what the rules above left, so a file they place never moves: a new rule can add to
+        // what a download installs, but not change it.
+        var looseFiles = looseParts.SelectMany(part => part.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var rest = files
+            .Where(f => !taken.Contains(f) && !looseFiles.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions))
+            .ToList();
+        // Beside a package: settings named like a document but of another type, such as license.json, and its signature.
+        var beside = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in rest)
+        {
+            var owner = SettingsFiles.IsPakSettings(file) ? SettingsOwner(file)
+                : FileSystem.HasExtension(file, FileSystem.SignatureExtensions)
+                    ? packaged.FirstOrDefault(d => string.Equals(Path.GetDirectoryName(d.Files[0]), Path.GetDirectoryName(file), StringComparison.OrdinalIgnoreCase)
+                        && d.Name.Equals(Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase))
+                    : null;
+            if (owner is null)
+                continue;
+            owner.Files.Add(file);
+            beside.Add(file);
+        }
+        gameFiles.AddRange(rest
+            .Where(f => !beside.Contains(f) && !SettingsFiles.IsDocument(f))
+            .Select(f => (File: f, Path: WiderGameFilePath(RelativePath(root, f), projectFolder, exeFolder)))
+            .Where(f => f.Path is not null)
+            .Select(f => (f.File, Path: f.Path!)));
 
         // A folder every part sits in, such as the download's own top folder, says nothing.
         var common = CommonLeadingFolders(drafts.Select(d => d.Folder).ToList());
@@ -334,35 +385,12 @@ public static class PackageScanner
                 : (Path.GetDirectoryName(folderPath)?.Replace('\\', '/') ?? "", Path.GetFileName(folderPath));
             packages.Add(PackageGroup.GameFiles(name, folder, inFolder.Select(f => f.File).ToList(), inFolder.Select(f => f.Path).ToList()));
         }
-
-        // A proxy DLL and the files that load with it, kept loose next to the game's exe: the folder that holds a
-        // loader goes next to the exe as it is, which is where ReShade and the add-ons find their own files.
-        var taken = claimed.Concat(gameFiles.Select(g => g.File)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var loaderFolders = files
-            .Where(f => !taken.Contains(f) && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions)
-                && !SettingsFiles.IsDocument(f) && FileSystem.HasExtension(f, LoaderExtensions))
-            .Select(f => Path.GetDirectoryName(f)!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        // A loader folder inside another one is part of it. A folder that only holds a file the download already
-        // places by path is an alternate copy of it, such as an older fallback build: it stays out.
-        var named = gameFiles.Select(g => Path.GetFileName(g.File)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var loose = loaderFolders
-            .Where(folder => !loaderFolders.Any(other => other != folder && IsInside(folder, other)))
-            .Where(folder => !files.Any(f => IsInside(f, folder) && named.Contains(Path.GetFileName(f))))
-            .ToList();
-        foreach (var folder in loose)
+        foreach (var part in looseParts)
         {
-            var group = files
-                .Where(f => IsInside(f, folder) && !taken.Contains(f)
-                    && !FileSystem.HasExtension(f, FileSystem.ArchiveExtensions) && !SettingsFiles.IsDocument(f))
-                .ToList();
-            if (group.Count == 0)
-                continue;
-            var atTop = string.Equals(folder, root, StringComparison.OrdinalIgnoreCase);
-            var name = atTop ? FileSystem.SafeName(fallbackName, "Mod") : Path.GetFileName(folder);
-            packages.Add(PackageGroup.ExeFiles(name, atTop ? "" : RelativeFolder(root, Path.GetDirectoryName(folder)!), group,
-                group.Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/')).ToList()));
+            var atTop = string.Equals(part.Folder, root, StringComparison.OrdinalIgnoreCase);
+            var name = atTop ? FileSystem.SafeName(fallbackName, "Mod") : Path.GetFileName(part.Folder);
+            packages.Add(PackageGroup.ExeFiles(name, atTop ? "" : RelativeFolder(root, Path.GetDirectoryName(part.Folder)!), part.Files,
+                part.Files.Select(f => Path.GetRelativePath(part.Folder, f).Replace('\\', '/')).ToList()));
         }
         packages = packages.OrderBy(p => p.Label, NaturalOrder.Instance).ToList();
 
@@ -386,9 +414,11 @@ public static class PackageScanner
         // Shared libraries can go with several UE4SS mods; they count once.
         var used = packages.SelectMany(p => p.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var ignored = files.Where(f => !used.Contains(f)).Select(f => RelativePath(root, f)).Order(NaturalOrder.Instance).ToList();
+        var placed = used.Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var leftOut = ignored.Where(f => !placed.Contains(Path.GetFileName(f)) && MayMatter(f, projectFolder, exeFolder)).ToList();
         var nestedArchives = files.Count(f => FileSystem.HasExtension(f, FileSystem.ArchiveExtensions));
         var runtime = files.Any(f => Path.GetFileName(f).Equals("UE4SS.dll", StringComparison.OrdinalIgnoreCase));
-        return new ScanResult(packages, ignored, nestedArchives, runtime);
+        return new ScanResult(packages, ignored, leftOut, nestedArchives, runtime);
     }
 
     /// <summary>
@@ -455,8 +485,17 @@ public static class PackageScanner
     /// <summary>The folders below Saved that hold the player's saves, the game's logs and crash reports.</summary>
     private static readonly string[] NotGameFiles = ["SaveGames", "Logs", "Crashes"];
 
-    /// <summary>The folders below the project folder where a script engine or a script loader reads loose scripts.</summary>
-    private static readonly string[] ScriptFolders = ["Content/JavaScript", "PBZModLoader/mods"];
+    /// <summary>PBZModLoader's list of its mods, below the project folder: the player's, as the loader keeps it.</summary>
+    private const string ModLoaderSettings = "PBZModLoader/mods.ini";
+
+    /// <summary>The project's folders that the game keeps for itself: a mod's file there goes, but the folder stays.</summary>
+    private static readonly string[] GameFolders = ["Saved", "Config", "Binaries"];
+
+    /// <summary>Files that show a mod on its page, kept beside its files: no mod reads them from outside the game's folders.</summary>
+    private static readonly string[] PageFiles = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".mp4", ".webm", ".url", ".lnk"];
+
+    /// <summary>The file in which a download gives its name and version to mod tools, at its top.</summary>
+    private const string ModInfoFile = "modinfo.ini";
 
     /// <summary>How the review names a script mod's copy for each of the two script loaders.</summary>
     public const string ForModsMenu = "Mods Menu";
@@ -471,23 +510,95 @@ public static class PackageScanner
     /// <summary>The folder a loader keeps its other entry DLLs in, each in a folder of its own.</summary>
     private const string AlternateEntries = "alternative-entries";
 
-    /// <summary>Files named like a document that are one in a script folder too. A script such as install.js is a mod's own file.</summary>
-    private static readonly string[] DocumentExtensions = ["", ".txt", ".md", ".rtf", ".pdf", ".htm", ".html"];
+    /// <summary>The folders below the project folder where a script engine or a script loader reads loose scripts.</summary>
+    private static readonly string[] ScriptFolders = ["Content/JavaScript", ModLoaderFolder];
+
+    private static bool IsInScriptFolder(string[] parts, int project) => ScriptFolders.Any(folder => StartsAt(parts, project + 1, folder));
+
+    /// <summary>The project's content folder. A mod's loose files go in it as the download places them, except in Paks, which has rules of its own.</summary>
+    private const string ContentFolder = "Content";
+
+    private const string PaksFolder = "Paks";
+
+    private const string BinariesFolder = "Binaries";
+
+    /// <summary>Whether the path, from <paramref name="at"/> on, starts with the content folder and its Paks.</summary>
+    private static bool IsInPaks(string[] parts, int at) =>
+        at + 1 < parts.Length && parts[at].Equals(ContentFolder, StringComparison.OrdinalIgnoreCase)
+        && parts[at + 1].Equals(PaksFolder, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// A game file's path below a script folder, such as "Menu/main.js" for
-    /// "ProjectPBZ/Content/JavaScript/Menu/main.js"; null for any other file.
+    /// A game file's path below a folder where mods keep loose files, such as "Menu/main.js" for
+    /// "ProjectPBZ/Content/JavaScript/Menu/main.js": any folder of the project but those the game keeps for itself and
+    /// Paks. Null for any other file.
     /// </summary>
-    internal static string? BelowScriptFolder(string path)
+    internal static string? BelowModFolder(string path, string? projectFolder)
     {
         var parts = path.Split('/');
-        return parts.Length > 3 && ScriptFolders.Any(folder => StartsAt(parts, 1, folder)) ? string.Join('/', parts[3..]) : null;
+        return parts.Length > 3 && parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase)
+            && !GameFolders.Contains(parts[1], StringComparer.OrdinalIgnoreCase) && !IsInPaks(parts, 1)
+            ? string.Join('/', parts[3..])
+            : null;
     }
 
+    /// <summary>Whether a file is a document where the first rules for game files look: named like one, unless a script folder holds it in another file type.</summary>
     /// <param name="path">The file's path below the install folder.</param>
     private static bool IsDocumentAt(string file, string path) =>
-        SettingsFiles.IsDocument(file)
-        && (BelowScriptFolder(path) is null || DocumentExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase));
+        SettingsFiles.HasDocumentName(file)
+        && (!IsInScriptFolder(path.Split('/'), 0) || FileSystem.HasExtension(file, SettingsFiles.DocumentExtensions));
+
+    /// <summary>
+    /// Whether a file that stays out may be one the mod needs, so the review warns. Not so for a document, for the
+    /// player's or UE4SS's own files, which never go in, or for text, a picture, a link or an install helper beside the
+    /// mod's files, such as Tool-LICENSE.txt, a screenshot or install.bat. A copy of a file the download places, such as
+    /// one for another store, is left out before this.
+    /// </summary>
+    /// <param name="path">The file's path from the top of the download.</param>
+    private static bool MayMatter(string path, string? projectFolder, string? exeFolder)
+    {
+        if (SettingsFiles.IsDocument(path) || path.EndsWith("/" + ModLoaderSettings, StringComparison.OrdinalIgnoreCase)
+            || path.Equals(ModLoaderSettings, StringComparison.OrdinalIgnoreCase))
+            return false;
+        var parts = path.Split('/');
+        var project = string.IsNullOrWhiteSpace(projectFolder) ? -1
+            : Array.FindIndex(parts, part => part.Equals(projectFolder, StringComparison.OrdinalIgnoreCase));
+        if (project >= 0 && project + 1 < parts.Length && IsPlayersOwn(parts, project))
+            return false;
+        // A file loose in UE4SS's Mods folder, such as mods.txt.
+        if (parts.Length >= 3 && parts[^3].Equals("ue4ss", StringComparison.OrdinalIgnoreCase) && parts[^2].Equals("Mods", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (project >= 0 || (!string.IsNullOrWhiteSpace(exeFolder) && Enumerable.Range(0, parts.Length).Any(i => StartsAt(parts, i, exeFolder!))))
+            return true;
+        return !SettingsFiles.HasDocumentName(path) && !FileSystem.HasExtension(path, SettingsFiles.DocumentExtensions)
+            && !FileSystem.HasExtension(path, PageFiles) && !parts[^1].Equals(ModInfoFile, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Saves, logs and crash reports are the player's and the game's, and so is the loader's list of mods: a mod never
+    /// replaces them, as its copy would put back an old one when the mod leaves.
+    /// </summary>
+    private static bool IsPlayersOwn(string[] parts, int project) =>
+        (parts[project + 1].Equals("Saved", StringComparison.OrdinalIgnoreCase) && project + 3 < parts.Length
+            && NotGameFiles.Contains(parts[project + 2], StringComparer.OrdinalIgnoreCase))
+        || string.Join('/', parts[(project + 1)..]).Equals(ModLoaderSettings, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The mods among these parts that PBZModLoader 2.0 cannot run: with a main.ts and no main.js, as only the old loader
+    /// had the compiler.
+    /// </summary>
+    public static IReadOnlyList<string> SourceOnlyMods(IEnumerable<PackageGroup> parts)
+    {
+        var scripts = parts.Where(p => p.NeedsLoader == ForModLoader)
+            .SelectMany(p => p.RelativePaths)
+            .Select(path => string.Join('/', path.Split('/')[3..]))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return scripts
+            .Where(script => script.Count(c => c == '/') == 1 && script.EndsWith("/main.ts", StringComparison.OrdinalIgnoreCase)
+                && !scripts.Contains(script[..^2] + "js"))
+            .Select(script => script.Split('/')[0])
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 
     /// <summary>
     /// A download with a copy of a script mod for each of the two script loaders is one choice, and the player makes it:
@@ -553,15 +664,15 @@ public static class PackageScanner
     }
 
     /// <summary>
-    /// The folder whose game files make one part: a file's own folder; for a script, the mod's folder right below the
-    /// script folder, so that a script mod stays whole. A part left out would leave the mod broken. Both levels of a
-    /// script folder count, as in "ProjectPBZ/PBZModLoader/mods/Name/main.js".
+    /// The folder whose game files make one part: a file's own folder; for a mod's loose files, its folder right below
+    /// the folder they go to, so that the mod stays whole. A part left out would leave the mod broken. Both levels count,
+    /// as in "ProjectPBZ/PBZModLoader/mods/Name/main.js" and "ProjectPBZ/Content/Mods/Name/icon.png".
     /// </summary>
     /// <param name="path">The file's path below the install folder.</param>
     private static string GamePartFolder(string path, string? projectFolder)
     {
         var parts = path.Split('/');
-        return parts.Length > 4 && parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase) && BelowScriptFolder(path) is not null
+        return parts.Length > 4 && BelowModFolder(path, projectFolder) is not null
             ? string.Join('/', parts[..4])
             : Path.GetDirectoryName(path)?.Replace('\\', '/') ?? "";
     }
@@ -569,9 +680,8 @@ public static class PackageScanner
     /// <summary>
     /// The path below the install folder of a file the download places in one of the game's own folders, such as
     /// "ProjectPBZ/Saved/Keys.sav", "ProjectPBZ/PBZModLoader/mods/Name/main.js" or "platform/steam/dxgi.dll"; null for
-    /// any other file. The game reads the file there, and the mod replaces the one the game keeps, so only those folders
-    /// count: nothing else of a download is installed over the game's own. A download may wrap its files in a folder of
-    /// its own, so both are looked for at any depth.
+    /// any other file. The game reads the file there, and the mod replaces the one the game keeps. A download may wrap
+    /// its files in a folder of its own, so both are looked for at any depth.
     /// </summary>
     private static string? GameFilePath(string relativePath, string? projectFolder, string? exeFolder)
     {
@@ -589,10 +699,38 @@ public static class PackageScanner
                 return string.Join('/', parts[i..]);
             }
             if (!string.IsNullOrWhiteSpace(projectFolder) && parts[i].Equals(projectFolder, StringComparison.OrdinalIgnoreCase)
-                && ScriptFolders.Any(folder => StartsAt(parts, i + 1, folder)))
+                && IsInScriptFolder(parts, i))
                 return string.Join('/', parts[i..]);
             if (!string.IsNullOrWhiteSpace(exeFolder) && StartsAt(parts, i, exeFolder!))
                 return string.Join('/', parts[i..]);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The path below the install folder of a file that no other rule took: any file below the project folder, such as
+    /// "ProjectPBZ/Plugins/Name/Name.uplugin", or next to the exe, such as a config named like a document. A file the
+    /// game has is kept and put back when the mod leaves. Paks has rules of its own, and a DLL below the project's
+    /// Binaries went next to the exe already. A download may also leave out the project folder: the script loader's
+    /// folder says enough at any depth, and the content folder at the top or in a wrap, as deeper down it may be the
+    /// source of a mod.
+    /// </summary>
+    private static string? WiderGameFilePath(string relativePath, string? projectFolder, string? exeFolder)
+    {
+        var parts = relativePath.Split('/');
+        for (var i = 0; i + 1 < parts.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(exeFolder) && StartsAt(parts, i, exeFolder!))
+                return string.Join('/', parts[i..]);
+            if (string.IsNullOrWhiteSpace(projectFolder))
+                continue;
+            if (parts[i].Equals(projectFolder, StringComparison.OrdinalIgnoreCase))
+                return IsPlayersOwn(parts, i) || IsInPaks(parts, i + 1) || parts[i + 1].Equals(BinariesFolder, StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : string.Join('/', parts[i..]);
+            if (StartsAt(parts, i, ModLoaderFolder)
+                || (i < 2 && parts[i].Equals(ContentFolder, StringComparison.OrdinalIgnoreCase) && !IsInPaks(parts, i)))
+                return $"{projectFolder}/{string.Join('/', parts[i..])}";
         }
         return null;
     }

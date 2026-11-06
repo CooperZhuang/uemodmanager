@@ -137,7 +137,11 @@ public sealed class ModManager
             if (preview.NestedArchiveCount > 0)
                 problems.Add($"No mod files were found. The download holds another archive: extract it and install that one.");
             else
-                problems.Add($"No mod files were found: no .pak, .utoc or .ucas files, and no UE4SS mod folder with Scripts\\main.lua or dlls.");
+            {
+                var places = string.Join(", ", new[] { Game.ProjectFolder ?? Game.Profile.ProjectFolder, Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/') }
+                    .Where(place => !string.IsNullOrWhiteSpace(place)));
+                problems.Add($"No mod files were found. The manager looks for .pak, .utoc or .ucas files, a UE4SS mod folder with Scripts\\main.lua or dlls, and files below the game's own folders ({places}). This download may need an install by hand: see its install notes.");
+            }
             return new InstallCheck(problems, warnings, null);
         }
         if (selected.Count == 0)
@@ -164,6 +168,17 @@ public sealed class ModManager
                 problems.Add($"This mod runs in Mods Menu, which is not installed. Install Mods Menu first, then this mod.");
             else if (needed == PackageScanner.ForModLoader && !IsModLoaderInstalled && !IsModLoader(preview, catalogId))
                 problems.Add($"This mod runs in PBZModLoader, which is not installed. Install it first from the top of the Mods page, then this mod.");
+        }
+
+        var sourceOnly = PackageScanner.SourceOnlyMods(selected);
+        if (sourceOnly.Count > 0)
+            warnings.Add($"PBZModLoader 2.0 cannot use a mod with only a main.ts file, so this will not run: {string.Join(", ", sourceOnly)}.");
+
+        if (preview.LeftOutFiles.Count > 0)
+        {
+            const int shown = 8;
+            var names = string.Join(", ", preview.LeftOutFiles.Take(shown)) + (preview.LeftOutFiles.Count > shown ? ", …" : "");
+            warnings.Add($"Files left out ({preview.LeftOutFiles.Count}): {names}. The manager does not know where they go. If the mod does not work without them, see its install notes.");
         }
 
         var needsUe4ss = !Ue4ssRuntime.Detect(Game).Installed
@@ -849,7 +864,7 @@ public sealed class ModManager
                     if (!taken.Contains(file))
                     {
                         FileSystem.TryDeleteFile(file.DeployedPath!);
-                        RemoveEmptyFolders(file, file.DeployedPath!);
+                        RemoveEmptyFolders(file, file.DeployedPath!, ProjectFolder);
                     }
                     file.DeployedPath = null;
                 }
@@ -1074,7 +1089,7 @@ public sealed class ModManager
             var items = folders.Where(Directory.Exists)
                 .Concat(files.Where(File.Exists))
                 .Concat(outside.Select(f => f.DeployedPath!));
-            var removal = new Removal(Park(items));
+            var removal = new Removal(Park(items), ProjectFolder);
             foreach (var mod in affected)
                 removal.Disable(mod);
             Commit(removal);
@@ -1530,7 +1545,7 @@ public sealed class ModManager
         // Several mods leaving together may share one copy of a library.
         var deployed = files.Where(f => f.DeployedPath is not null && File.Exists(f.DeployedPath)).Select(f => f.DeployedPath!)
             .Distinct(StringComparer.OrdinalIgnoreCase);
-        var removal = new Removal(Park(deployed));
+        var removal = new Removal(Park(deployed), ProjectFolder);
         // The game's own files, which the mods replaced, come back to these places.
         var replaced = group
             .SelectMany(m => m.Files.Where(f => f.IsGameFile && f.ReplacedSha256 is not null && f.DeployedPath is not null)
@@ -1581,7 +1596,7 @@ public sealed class ModManager
     /// Files and folders a change moved aside in the game. They are deleted once the mod list is
     /// saved. When it cannot be saved, they move back and the mods are enabled again.
     /// </summary>
-    private sealed class Removal(List<(string Original, string Parked)> parked)
+    private sealed class Removal(List<(string Original, string Parked)> parked, string? projectFolder)
     {
         private readonly List<(ModFileRecord File, string Path)> deployed = [];
         private readonly List<ModRecord> disabled = [];
@@ -1613,7 +1628,7 @@ public sealed class ModManager
                     FileSystem.TryDeleteFile(moved);
             }
             foreach (var (file, path) in deployed)
-                RemoveEmptyFolders(file, path);
+                RemoveEmptyFolders(file, path, projectFolder);
         }
 
         public void PutBack()
@@ -1752,7 +1767,7 @@ public sealed class ModManager
                         Log.Warn($"The game's own {file.FileName} could not be put back: {ex.Message}");
                     }
                 }
-                RemoveEmptyFolders(file, file.DeployedPath!);
+                RemoveEmptyFolders(file, file.DeployedPath!, ProjectFolder);
             }
             file.DeployedPath = null;
         }
@@ -1761,13 +1776,13 @@ public sealed class ModManager
 
     /// <summary>
     /// Removes the folders a mod's file brought along, once they are empty. A game file's folders belong to the game,
-    /// and stay. Only a script's folders below the game's script folder go: they are the mod's, and a script loader may
-    /// stop at an empty folder there.
+    /// and stay. Only the folders below a folder where mods keep loose files go: they are the mod's, and a script loader
+    /// may stop at an empty folder there.
     /// </summary>
-    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath)
+    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath, string? projectFolder)
     {
         var name = !file.IsGameFile ? file.FileName
-            : file.Target == DeployTarget.InstallRoot ? PackageScanner.BelowScriptFolder(file.FileName)
+            : file.Target == DeployTarget.InstallRoot ? PackageScanner.BelowModFolder(file.FileName, projectFolder)
             : null;
         if (name is not null)
             RemoveEmptyFolders(name, deployedPath);
@@ -1815,6 +1830,8 @@ public sealed class ModManager
     /// <summary>What a PBZModLoader before 2.0 keeps below the project folder, as the loader's own manifest lists it. The new one needs none of it.</summary>
     private static readonly string[] OldModLoaderPlaces =
         ["Content/JavaScript/PBZModLoader", "PBZModLoader/compiler", "PBZModLoader/evidence", "PBZModLoader/TOOLCHAIN-LICENSE.txt"];
+
+    private string? ProjectFolder => Game.ProjectFolder ?? Game.Profile.ProjectFolder;
 
     private bool IsInProject(string path) =>
         (Game.ProjectFolder ?? Game.Profile.ProjectFolder) is { Length: > 0 } project && File.Exists(Path.Combine(Game.RootPath, project, path));

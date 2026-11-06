@@ -12,6 +12,7 @@ public sealed class InstallPreview : IDisposable
         StagingDir = stagingDir;
         Packages = scan.Packages;
         IgnoredFiles = scan.IgnoredFiles;
+        LeftOutFiles = scan.LeftOutFiles;
         NestedArchiveCount = scan.NestedArchiveCount;
         ContainsUe4ssRuntime = scan.ContainsUe4ssRuntime;
         SuggestedName = suggestedName;
@@ -30,6 +31,9 @@ public sealed class InstallPreview : IDisposable
     public IReadOnlyList<string> IgnoredFiles { get; }
 
     public int IgnoredFileCount => IgnoredFiles.Count;
+
+    /// <summary>Those of <see cref="IgnoredFiles"/> that a mod may need, so the review warns about them.</summary>
+    public IReadOnlyList<string> LeftOutFiles { get; }
 
     public int NestedArchiveCount { get; }
 

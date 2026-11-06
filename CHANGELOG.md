@@ -4,6 +4,14 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.7 (2026-11-06)
+- Mods with loose files below the game's project folder install whole, such as the images of Quest Navigation
+- Mods for PBZModLoader also install from a zip without the ProjectPBZ folder on top
+- A .sig file goes with its pak, and a file such as license.json or notice.ini is no longer taken for a document
+- The install window warns when a file stays out that the mod may need
+- The install window warns about a mod with only a main.ts: PBZModLoader 2.0 cannot use it
+- A clearer message when a download has no mod files
+
 ## 1.5.6 (2026-11-05)
 - PBZModLoader on the recommended card: its own fix for pak mods, no UE4SS needed (thanks, LKF)
 - UE4SS C++ BYPASS stays on the card as an extra download

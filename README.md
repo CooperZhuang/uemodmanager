@@ -66,7 +66,7 @@ after a change to an English text, update every language file too.
 | PAK / IoStore | `.pak`, `.utoc` + `.ucas` | `<Project>/Content/Paks/~mods` |
 | Blueprint | package files below a `LogicMods` folder | `<Project>/Content/Paks/LogicMods` |
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
-| Game files | a file below the download's `<Project>/Saved`, `<Project>/Config`, `<Project>/Content/JavaScript` or `<Project>/PBZModLoader/mods` folder | the same path in the game |
+| Game files | a file below the download's `<Project>` folder, except in `Content/Paks` and `Binaries`; `PBZModLoader/mods` and a top-level `Content` count without that folder too | the same path in the game |
 | Exe files | a `.dll`, `.addon64` or `.asi` file, with the files in its folder | the game's exe folder |
 
 A mod of type Game files or Exe files has a blue shade in the list.
@@ -81,8 +81,9 @@ writes these files while it runs, so their content is never compared, and their
 folders are never removed. When the game changed such a file while the mod was
 on, as with new key bindings or a ReShade.ini, that version is copied into
 `Data/games/<id>/backups/` before the mod's file leaves. The player's saves,
-logs and crash reports (`Saved/SaveGames`, `Saved/Logs`, `Saved/Crashes`) are
-never installed: a mod's copy would bring back an old save when the mod leaves.
+logs and crash reports (`Saved/SaveGames`, `Saved/Logs`, `Saved/Crashes`) and
+`PBZModLoader/mods.ini` are never installed: a mod's copy would bring back an old
+save when the mod leaves.
 If the game's own copy cannot be put back, as when the game holds the file,
 nothing is removed.
 
@@ -126,6 +127,16 @@ there. A Blueprint mod such as AutoSwitchWeapon ships such a folder with only a
 shows in the game's settings. Files the mod writes there stay when it is
 disabled or uninstalled. Files loose in the Mods folder, such as `mods.txt`,
 stay out: they are UE4SS's own.
+
+A document stays out by its name and type: `license.txt` does, `license.json`
+does not. A `.sig` goes with the package of the same name. The review warns about
+any other file that stays out, as the mod may need it. Text, pictures, links and
+install helpers beside a mod's files, outside the game's own folders, stay out
+without a warning.
+
+The wider rules for game files and for files beside a package take only what the
+other rules left, so they add to what a download installs and never move a file: a
+folder with a loader still goes next to the exe as a whole.
 
 A download with several folders that hold the same files (options such as
 `x1.5/`, `x2/`, `x10/`) offers them as one choice, sorted by number; the chosen
@@ -313,6 +324,7 @@ the player agrees, its entry DLL and the old layout that the loader's manifest l
 `PBZModLoader`) move to a backup folder, all or none. `PBZModLoader/mods` and `mods.ini` stay.
 A mod with only a `main.ts` no longer runs, as the compiler was the old loader's, and the
 question names such mods. These are the only files the manager moves that it did not place.
+The review of a new mod with only a `main.ts` warns too.
 
 Mod sets leave it as it is: a set does not hold it, and a set saved before it
 came does not turn it off. **Test without mods** turns it off like any other mod.
