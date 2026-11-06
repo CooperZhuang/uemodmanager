@@ -75,7 +75,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             $"{AppInfo.ReleaseFilePrefix}_{profile.Id}_");
         Ue4ssLogPanel = new Ue4ssLogViewModel(this);
         ModsView = CollectionViewSource.GetDefaultView(Mods);
-        ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText);
+        ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText) && ModTags.Has(mod.Record, SelectedTag);
         sortField = Enum.TryParse<ModSortField>(settings.ModsSort, out var field) ? field : ModSortField.Name;
         sortDescending = settings.ModsSortDescending;
         ApplySort();
@@ -229,6 +229,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         DismissToast();
         OnModsChanged();
         ModsView.Refresh();
+        RefreshTagFilters();
         base.RefreshLanguage();
     }
 
@@ -292,6 +293,17 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     [ObservableProperty]
     private string searchText = "";
+
+    /// <summary>The tag whose mods the list shows; null for all mods.</summary>
+    [ObservableProperty]
+    private string? selectedTag;
+
+    /// <summary>The buttons above the list: all mods, then each tag of the player's own mods. None without a tag.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTagFilters))]
+    private IReadOnlyList<TagFilterItem> tagFilters = [];
+
+    public bool HasTagFilters => TagFilters.Count > 0;
 
     [ObservableProperty]
     private int unmanagedCount;
@@ -733,7 +745,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     internal void CloseSettingsEditor() => SettingsEditor = null;
 
     /// <summary>Shows a mod's details: where it came from, and each file with its place in the game and its state.</summary>
-    internal void ShowModDetails(ModRecord mod)
+    /// <param name="addTag">Open only to add a tag, as the button in the mod's row does.</param>
+    internal void ShowModDetails(ModRecord mod, bool addTag = false)
     {
         if (manager is null || Game is null)
             return;
@@ -745,6 +758,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             return new ModFileItem(Path.GetRelativePath(Game.RootPath, path), path, Format.Size(file.Size), state, tone);
         }).ToList();
         ModDetails = new ModDetailsViewModel(this, mod, files, changed.Select(f => SettingsFiles.Name(f.FileName)).ToList(), Game.RootPath);
+        if (addTag)
+            ModDetails.OpenToAddTag();
     }
 
     /// <summary>
@@ -768,13 +783,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     internal void CloseModDetails() => ModDetails = null;
 
-    /// <summary>Gives a mod another name and version; the list sorts it anew.</summary>
-    /// <returns>Whether the name was saved.</returns>
-    internal async Task<bool> RenameModAsync(ModRecord mod, string name, string version)
+    /// <summary>Gives a mod another name, version and tags; the list sorts it anew.</summary>
+    /// <param name="tags">The tags as the player typed them.</param>
+    /// <returns>Whether they were saved.</returns>
+    internal async Task<bool> RenameModAsync(ModRecord mod, string name, string version, string tags)
     {
         if (manager is null)
             return false;
-        var saved = await RunAsync(L.T("Saving…"), () => Task.Run(() => manager.Rename(mod.Id, name, version)));
+        var saved = await RunAsync(L.T("Saving…"), () => Task.Run(() => manager.Rename(mod.Id, name, version, ModTags.Parse(tags))));
         RefreshMods();
         return saved;
     }
@@ -916,7 +932,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         ModRecord? installed = null;
         await RunAsync(L.F($"Installing {choice.Name}…"), async () => installed = await Task.Run(() =>
-            manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings)));
+            manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings, choice.Tags is null ? null : ModTags.Parse(choice.Tags))));
         if (installed is null)
             return;
         RefreshMods();
@@ -1529,13 +1545,35 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         action?.Invoke();
     }
 
-    partial void OnSearchTextChanged(string value)
+    partial void OnSearchTextChanged(string value) => RefreshModsFilter();
+
+    partial void OnSelectedTagChanged(string? value)
+    {
+        RefreshModsFilter();
+        RefreshTagFilters();
+    }
+
+    private void RefreshModsFilter()
     {
         ModsView.Refresh();
         OnPropertyChanged(nameof(ModsCountText));
         OnPropertyChanged(nameof(ShowEmpty));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyHint));
+    }
+
+    /// <summary>Builds the buttons above the list anew. A tag no mod has any more shows all mods again; a click on the active tag does too.</summary>
+    internal void RefreshTagFilters()
+    {
+        var tags = ModTags.Count(Mods.Select(mod => mod.Record));
+        if (SelectedTag is not null && !tags.Any(entry => entry.Tag.Equals(SelectedTag, StringComparison.OrdinalIgnoreCase)))
+            SelectedTag = null;
+        TagFilterItem Filter(string label, string? tag)
+        {
+            var active = string.Equals(tag, SelectedTag, StringComparison.OrdinalIgnoreCase);
+            return new TagFilterItem(label, active, new RelayCommand(() => SelectedTag = active ? null : tag));
+        }
+        TagFilters = tags.Count == 0 ? [] : [Filter(L.T("All"), null), .. tags.Select(entry => Filter($"{entry.Tag} ({entry.Count})", entry.Tag))];
     }
 
     private void ApplySort() => ((ListCollectionView)ModsView).CustomSort = new ModOrder(SortField, SortDescending);
@@ -1683,6 +1721,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             }
         }
         PlaceRecommended(marked);
+        RefreshTagFilters();
         try
         {
             UnmanagedCount = manager?.UnmanagedFiles().Count ?? 0;

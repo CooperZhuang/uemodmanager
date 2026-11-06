@@ -58,6 +58,12 @@
                         </StackPanel>
                     </Grid>
 
+                    <!-- The player's own words for the mod: optional. -->
+                    <StackPanel Margin="0,12,0,0" Visibility="{Binding HasPackages, Converter={StaticResource Visible}}">
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Tags', Tracked=True}" />
+                        <TextBox Margin="0,6,0,0" Text="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Separate with commas, such as Combat, UI'}" />
+                    </StackPanel>
+
                     <!-- Packages -->
                     <TextBlock Margin="0,22,0,8" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Contents', Tracked=True}"
                                Visibility="{Binding HasPackages, Converter={StaticResource Visible}}" />

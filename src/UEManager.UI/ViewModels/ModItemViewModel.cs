@@ -1,9 +1,13 @@
 using System.Globalization;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using UEManager.Core.Mods;
 using UEManager.UI.Services;
 
 namespace UEManager.UI.ViewModels;
+
+/// <summary>A button above the mod list that shows only the mods with one tag, or all mods.</summary>
+public sealed record TagFilterItem(string Label, bool IsActive, ICommand Select);
 
 /// <summary>One row in the mod list. Rows are rebuilt after every change, so they hold no state of their own.</summary>
 public sealed partial class ModItemViewModel : LocalizedObservableObject
@@ -44,6 +48,12 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         L.Plural(record.Files.Count, "{0} file", "{0} files"),
         Format.Size(record.TotalSize),
     }.Where(part => part is not null));
+
+    /// <summary>The player's tags, on a line of their own below <see cref="Detail"/>; null with none, so the line stays away.</summary>
+    public string? TagsText => record.Tags is { Count: > 0 } ? ModTags.Join(record.Tags) : null;
+
+    /// <summary>The mods on the card stand apart from the list that tags filter, so they have no tags to add.</summary>
+    public bool CanTag => !record.Recommended;
 
     /// <summary>A Lua, C++ or Blueprint mod, which only runs with UE4SS.</summary>
     public bool NeedsUe4ss => record.NeedsUe4ss;
@@ -117,7 +127,8 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         || (record.Version?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
         || record.TypeLabel.Contains(search, StringComparison.OrdinalIgnoreCase)
         || KindText.Contains(search, StringComparison.OrdinalIgnoreCase)
-        || record.Files.Any(f => f.FileName.Contains(search, StringComparison.OrdinalIgnoreCase));
+        || record.Files.Any(f => f.FileName.Contains(search, StringComparison.OrdinalIgnoreCase))
+        || record.Tags?.Any(tag => tag.Contains(search, StringComparison.OrdinalIgnoreCase)) == true;
 
     [RelayCommand]
     private Task Toggle() => owner.SetEnabledAsync(this, !Enabled);
@@ -136,4 +147,7 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
 
     [RelayCommand]
     private void ShowDetails() => owner.ShowModDetails(record);
+
+    [RelayCommand]
+    private void AddTag() => owner.ShowModDetails(record, addTag: true);
 }

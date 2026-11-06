@@ -8,8 +8,9 @@ using UEManager.UI.Services;
 namespace UEManager.UI.ViewModels;
 
 /// <param name="KeepSettings">On an update, keep the settings files the player changed instead of the new defaults.</param>
+/// <param name="Tags">The tags as the player typed them; null keeps the ones of the mod it updates.</param>
 public sealed record InstallChoice(IReadOnlyList<PackageGroup> Packages, string Name, string? Version, bool Replace,
-    string? CatalogId = null, bool KeepSettings = true);
+    string? CatalogId = null, bool KeepSettings = true, string? Tags = null);
 
 /// <summary>A download from the catalog: the mod's id there, and the name and version the catalog gives.</summary>
 public sealed record CatalogSource(string Id, string Name, string Version);
@@ -24,6 +25,8 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     private readonly CatalogSource? catalog;
     private InstallCheck? check;
     private bool selecting;
+    private bool fillingTags;
+    private bool tagsTyped;
 
     public InstallDialogViewModel(ModManager manager, InstallPreview preview, Action showUe4ssGuide, CatalogSource? catalog = null)
     {
@@ -94,6 +97,12 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     [ObservableProperty]
     private string version;
 
+    /// <summary>The player's own words for the mod, as typed. An update starts with the ones the mod has.</summary>
+    [ObservableProperty]
+    private string tags = "";
+
+    partial void OnTagsChanged(string value) => tagsTyped |= !fillingTags;
+
     [ObservableProperty]
     private string? replaceText;
 
@@ -122,7 +131,8 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         string.IsNullOrWhiteSpace(Version) ? null : Version,
         check?.Replaces is not null,
         catalog?.Id,
-        KeepSettings));
+        KeepSettings,
+        Tags));
 
     [RelayCommand]
     private void Cancel() => result.TrySetResult(null);
@@ -162,6 +172,13 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
             Warnings.Add(warning);
 
         var old = check.Replaces;
+        // Until the player types, the tags follow the mod this updates.
+        if (!tagsTyped)
+        {
+            fillingTags = true;
+            Tags = ModTags.Join(old?.Tags);
+            fillingTags = false;
+        }
         ReplaceText = old switch
         {
             null => null,

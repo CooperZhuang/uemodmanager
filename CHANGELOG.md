@@ -5,6 +5,8 @@ The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
 ## 1.5.7 (2026-11-06)
+- Tags for your mods: add them at install or with the Add tag button, then filter the list with one click
+- An X in the search boxes clears the text, and so does Esc
 - Mods with loose files below the game's project folder install whole, such as the images of Quest Navigation
 - Mods for PBZModLoader also install from a zip without the ProjectPBZ folder on top
 - A .sig file goes with its pak, and a file such as license.json or notice.ini is no longer taken for a document

@@ -34,6 +34,10 @@ public sealed class ModRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Variant { get; set; }
 
+    /// <summary>The player's own words for the mod (see <see cref="ModTags"/>); null with none. An update keeps them.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Tags { get; set; }
+
     public List<ModFileRecord> Files { get; set; } = [];
 
     /// <summary>Short type name for the interface, such as IoStore or UE4SS Lua.</summary>

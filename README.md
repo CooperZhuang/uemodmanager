@@ -482,6 +482,16 @@ The set whose mods are on now is marked **In use**. An update keeps a mod in its
 sets; an uninstall takes it out of them. Deleting a set asks first, in the
 window itself (Esc keeps the set), and changes no mods.
 
+## Tags
+
+A mod's tags are words of the player's own, apart by commas, such as "Combat, UI"
+(`tags` in `mods.json`). The install review has a field for them, and **Add tag** is
+a button in a mod's row and in its details; **Edit** in the details takes them too.
+Once a mod has a tag, buttons above the list show **All** and each tag with its
+count, and a click shows only the mods with that tag, one tag at a time. A row shows
+its tags, and the search finds them. An update keeps a mod's tags. They change no
+file of the mod. The mods on the card stand apart from the list and have no tags.
+
 ## Keyboard
 
 | Key | Does |
@@ -489,7 +499,7 @@ window itself (Esc keeps the set), and changes no mods.
 | Ctrl+F | goes to the search box: the log's on the UE4SS page, the mod search from every other page |
 | F5 | checks the mods' files in the game again; on the UE4SS page it also reads the log again |
 | Ctrl+S | saves in the settings editor |
-| Esc | closes a dialog, or answers its question with the safe choice |
+| Esc | clears a search box; closes a dialog, or answers its question with the safe choice |
 
 Ctrl+F and F5 wait while a dialog is open.
 

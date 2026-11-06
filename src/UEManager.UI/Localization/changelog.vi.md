@@ -3,6 +3,8 @@
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
 ## 1.5.7 (2026-11-06)
+- Nhãn cho mod: thêm khi cài hoặc bằng nút Thêm nhãn, rồi lọc danh sách chỉ với một cú nhấp
+- Nút X trong ô tìm kiếm xóa nội dung, phím Esc cũng vậy
 - Mod có tệp rời trong thư mục project của game được cài đủ, ví dụ ảnh của Quest Navigation
 - Mod cho PBZModLoader cũng cài được từ tệp zip không có thư mục ProjectPBZ ở trên cùng
 - Tệp .sig đi cùng tệp pak của nó, và tệp như license.json hoặc notice.ini không còn bị coi là tài liệu

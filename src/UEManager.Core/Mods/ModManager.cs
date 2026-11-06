@@ -279,8 +279,10 @@ public sealed class ModManager
     /// On an update, settings files the player changed are kept instead of the new version's defaults.
     /// Either way, the player's version is backed up first.
     /// </param>
+    /// <param name="tags">The mod's tags, none when empty; null keeps the ones of the mod it updates.</param>
     public ModRecord Install(InstallPreview preview, IReadOnlyCollection<PackageGroup> selected,
-        string name, string? version, bool replace = false, string? catalogId = null, bool keepSettings = true)
+        string name, string? version, bool replace = false, string? catalogId = null, bool keepSettings = true,
+        IReadOnlyList<string>? tags = null)
     {
         lock (gate)
         {
@@ -302,6 +304,7 @@ public sealed class ModManager
                 InstalledAt = DateTimeOffset.Now,
                 CatalogId = catalogId ?? old?.CatalogId,
                 Recommended = old?.Recommended ?? false,
+                Tags = tags is null ? old?.Tags : tags.Count == 0 ? null : [.. tags],
                 Variant = VariantOf(selected),
             };
             var libraryFolder = LibraryFolderOf(record);
@@ -370,25 +373,28 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// Gives a mod another name and version, as the install review would have. Only the mod list changes: the
+    /// Gives a mod another name, version and tags, as the install review would have. Only the mod list changes: the
     /// library keeps a mod's files under its id, and the game's files keep their names, so this works while the
     /// game runs.
     /// </summary>
     /// <param name="version">Null or blank for none.</param>
-    public void Rename(string id, string name, string? version)
+    /// <param name="tags">The new tags, none when empty; null leaves them as they are.</param>
+    public void Rename(string id, string name, string? version, IReadOnlyList<string>? tags = null)
     {
         lock (gate)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ModException($"Give the mod a name.");
             var mod = Find(id);
-            var (oldName, oldVersion) = (mod.Name, mod.Version);
+            var (oldName, oldVersion, oldTags) = (mod.Name, mod.Version, mod.Tags);
             mod.Name = name.Trim();
             mod.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
-            if (mod.Name == oldName && mod.Version == oldVersion)
+            if (tags is not null)
+                mod.Tags = tags.Count == 0 ? null : [.. tags];
+            if (mod.Name == oldName && mod.Version == oldVersion && (mod.Tags ?? []).SequenceEqual(oldTags ?? []))
                 return;
-            Commit(undo: () => (mod.Name, mod.Version) = (oldName, oldVersion));
-            Log.Info($"Renamed \"{oldName}\" ({oldVersion ?? "no version"}) to \"{mod.Name}\" ({mod.Version ?? "no version"}).");
+            Commit(undo: () => (mod.Name, mod.Version, mod.Tags) = (oldName, oldVersion, oldTags));
+            Log.Info($"Renamed \"{oldName}\" ({oldVersion ?? "no version"}) to \"{mod.Name}\" ({mod.Version ?? "no version"}), tags: {ModTags.Join(mod.Tags)}.");
         }
     }
 

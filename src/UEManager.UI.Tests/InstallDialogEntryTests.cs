@@ -97,4 +97,39 @@ public sealed class InstallDialogEntryTests : IDisposable
 
         Assert.Same(hid, Assert.Single(dialog.Packages, p => p.IsSelected));
     }
+
+    [Fact]
+    public void A_new_mod_starts_without_tags_and_takes_what_the_player_types()
+    {
+        File(@"Sharp\Sharp_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Sharp"));
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.Equal("", dialog.Tags);
+
+        dialog.Tags = "Combat, UI";
+        dialog.InstallCommand.Execute(null);
+
+        Assert.Equal("Combat, UI", dialog.Result.Result!.Tags);
+    }
+
+    [Fact]
+    public void An_update_starts_with_the_mods_tags_and_keeps_what_the_player_types()
+    {
+        File(@"Sharp\Sharp_P.pak");
+        File(@"Sharp\x2\Sharp_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Sharp"));
+        manager.Install(preview, [preview.Packages[0]], "Sharp", null, tags: ["Combat"]);
+
+        using var next = manager.Inspect(Path.Combine(root, "Sharp"));
+        var dialog = new InstallDialogViewModel(manager, next, () => { });
+        Assert.Equal("Combat", dialog.Tags);
+
+        dialog.Tags = "Maps";
+        dialog.Packages[1].IsSelected = true;
+
+        Assert.Equal("Maps", dialog.Tags);
+    }
 }

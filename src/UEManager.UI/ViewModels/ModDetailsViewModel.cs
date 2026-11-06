@@ -58,6 +58,12 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
 
     public string? CatalogId => mod.CatalogId;
 
+    /// <summary>The mods on the card stand apart from the list that tags filter, so they have no tags to add.</summary>
+    public bool CanTag => !mod.Recommended;
+
+    /// <summary>The player's tags; null with none and while they are edited, so the row stays away.</summary>
+    public string? TagsText => mod.Tags is { Count: > 0 } && !IsRenaming ? ModTags.Join(mod.Tags) : null;
+
     public string SizeText => $"{Format.Size(mod.TotalSize)}  ·  {L.Plural(files.Count, "{0} file", "{0} files")}";
 
     public IReadOnlyList<ModFileItem> Files => files;
@@ -91,9 +97,10 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     [RelayCommand]
     private Task KeepChangedFiles() => owner.KeepChangedFilesAsync([mod.Id], mod);
 
-    /// <summary>The name and version can be changed in place of the title; the bottom row then saves or cancels.</summary>
+    /// <summary>The name, version and tags can be changed in place of the title; the bottom row then saves or cancels.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsShowing))]
+    [NotifyPropertyChangedFor(nameof(TagsText))]
     private bool isRenaming;
 
     public bool IsShowing => !IsRenaming;
@@ -105,27 +112,59 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     [ObservableProperty]
     private string newVersion = "";
 
+    [ObservableProperty]
+    private string newTags = "";
+
+    /// <summary>The form opened to add a tag, so the cursor starts in the tags box, after the tags the mod has.</summary>
+    internal bool AddingTag { get; private set; }
+
+    /// <summary>The mod's row opened the form: when it is done, so is the window.</summary>
+    private bool closeWhenDone;
+
     [RelayCommand]
-    private void Rename()
+    private void Rename() => OpenForm(addingTag: false);
+
+    [RelayCommand]
+    private void AddTag() => OpenForm(addingTag: true);
+
+    /// <summary>The button in the mod's row: straight to its tags, and back to the list after them.</summary>
+    internal void OpenToAddTag()
+    {
+        closeWhenDone = true;
+        OpenForm(addingTag: true);
+    }
+
+    private void OpenForm(bool addingTag)
     {
         NewName = mod.Name;
         NewVersion = mod.Version ?? "";
+        NewTags = ModTags.Join(mod.Tags);
+        if (addingTag && NewTags.Length > 0)
+            NewTags += ", ";
+        AddingTag = addingTag;
         IsRenaming = true;
     }
 
     [RelayCommand]
-    private void CancelRename() => IsRenaming = false;
+    private void CancelRename()
+    {
+        IsRenaming = false;
+        if (closeWhenDone)
+            owner.CloseModDetails();
+    }
 
     private bool CanSaveRename() => !string.IsNullOrWhiteSpace(NewName);
 
     [RelayCommand(CanExecute = nameof(CanSaveRename))]
     private async Task SaveRename()
     {
-        if (await owner.RenameModAsync(mod, NewName, NewVersion))
+        if (await owner.RenameModAsync(mod, NewName, NewVersion, NewTags))
         {
             IsRenaming = false;
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(Summary));
+            if (closeWhenDone)
+                owner.CloseModDetails();
         }
     }
 

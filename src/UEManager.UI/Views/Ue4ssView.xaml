@@ -124,7 +124,7 @@
                 </Border>
                 <DockPanel Margin="0,12,0,10" Visibility="{Binding HasLog, Converter={StaticResource Visible}}">
                     <CheckBox DockPanel.Dock="Left" VerticalAlignment="Center" Content="{ui:Loc 'Only errors and warnings'}" IsChecked="{Binding OnlyProblems}" />
-                    <TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="320" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="SearchBox" DockPanel.Dock="Right" Width="320" Style="{StaticResource TextBox.Search}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="Ctrl+F" Tag="{ui:Loc 'Search the log, such as a mod name'}" />
                     <TextBlock Margin="16,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource Text.Small}"
                                Text="{Binding FoundText}" Visibility="{Binding IsSearching, Converter={StaticResource Visible}}" />

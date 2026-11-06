@@ -68,7 +68,7 @@
                     <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding CountText}" />
                 </StackPanel>
             </Border>
-            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Filter: mod name, author, tag or description'}" />
+            <TextBox Style="{StaticResource TextBox.Search}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Filter: mod name, author, tag or description'}" />
         </DockPanel>
 
         <!-- Nothing matches the search -->
