@@ -130,7 +130,27 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     [ObservableProperty]
     private string tags = "";
 
-    partial void OnTagsChanged(string value) => tagsTyped |= !fillingTags;
+    partial void OnTagsChanged(string value)
+    {
+        tagsTyped |= !fillingTags;
+        OnPropertyChanged(nameof(Suggestions));
+        OnPropertyChanged(nameof(HasSuggestions));
+        AcceptSuggestionCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>Tags to pick under the box; see <see cref="TagHints"/>.</summary>
+    public IReadOnlyList<string> Suggestions => TagHints.For(Tags, TagHints.Own(manager.Mods));
+
+    public bool HasSuggestions => Suggestions.Count > 0;
+
+    [RelayCommand]
+    private void AddSuggestion(string tag) => Tags = TagHints.Apply(Tags, tag);
+
+    private bool CanAcceptSuggestion() => TagHints.IsTyping(Tags) && Suggestions.Count > 0;
+
+    /// <summary>Tab completes the tag being typed with the first one offered.</summary>
+    [RelayCommand(CanExecute = nameof(CanAcceptSuggestion))]
+    private void AcceptSuggestion() => AddSuggestion(Suggestions[0]);
 
     [ObservableProperty]
     private string? replaceText;

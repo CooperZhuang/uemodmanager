@@ -487,10 +487,23 @@ window itself (Esc keeps the set), and changes no mods.
 A mod's tags are words of the player's own, apart by commas, such as "Combat, UI"
 (`tags` in `mods.json`). The install review has a field for them, and **Add tag** is
 a button in a mod's row and in its details; **Edit** in the details takes them too.
-Once a mod has a tag, buttons above the list show **All** and each tag with its
-count, and a click shows only the mods with that tag, one tag at a time. A row shows
+Under the box, tags to pick: the player's own, the most used first, then common
+ones in the app's language. They narrow as the player types, **Tab** takes the
+first one, and a click adds one; a tag already in the box is not offered again.
+Once a mod has a tag, buttons above the list show **All tags** and each tag with
+its count, and a click shows only the mods with that tag, one tag at a time. A row shows
 its tags, and the search finds them. An update keeps a mod's tags. They change no
 file of the mod. The mods on the card stand apart from the list and have no tags.
+
+## Sorting and showing the list
+
+A click on a column header of the Mods page sorts the list by it, and a second click
+reverses the order: **Mod** A to Z, **Installed** newest first, **Status** enabled
+mods first, **Type** by its name, and **Integrity** with problems first (files
+changed, then missing, then in place, then off). Mods that are equal there go by
+their name. Left of the tags, **All**, **Enabled** and **Disabled** with their counts
+choose which mods the list shows; **Enabled** hides the disabled ones. The state,
+a tag and the search work together. The sort and the state stay after a restart.
 
 ## Same file names
 

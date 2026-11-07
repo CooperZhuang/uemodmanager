@@ -503,6 +503,22 @@
         </Setter>
     </Style>
 
+    <!-- A tag to pick under a tags box: small and quiet, blue under the pointer. It never takes the focus from the box. -->
+    <Style x:Key="Button.Suggestion" TargetType="Button" BasedOn="{StaticResource Button.StatusBox}">
+        <Setter Property="Margin" Value="0,0,6,6" />
+        <Setter Property="Padding" Value="9,4" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Line}" />
+        <Setter Property="Background" Value="{StaticResource Brush.Field}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Brush.Info}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.Info}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- A table column header that sorts the list. Tag holds the glyph: a red arrow on the sorted
          column, a grey dash (E738) on a column that can be sorted but is not. -->
     <!-- A name that opens more about it, such as a mod's name in the Mods list: underlined on hover. -->

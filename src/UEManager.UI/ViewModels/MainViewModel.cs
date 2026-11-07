@@ -75,7 +75,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             $"{AppInfo.ReleaseFilePrefix}_{profile.Id}_");
         Ue4ssLogPanel = new Ue4ssLogViewModel(this);
         ModsView = CollectionViewSource.GetDefaultView(Mods);
-        ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText) && ModTags.Has(mod.Record, SelectedTag);
+        ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText) && ModTags.Has(mod.Record, SelectedTag)
+            && StateFilter switch
+            {
+                ModStateFilter.Enabled => mod.Enabled,
+                ModStateFilter.Disabled => !mod.Enabled,
+                _ => true,
+            };
+        stateFilter = Enum.TryParse<ModStateFilter>(settings.ModsState, out var state) ? state : ModStateFilter.All;
         sortField = Enum.TryParse<ModSortField>(settings.ModsSort, out var field) ? field : ModSortField.Name;
         sortDescending = settings.ModsSortDescending;
         ApplySort();
@@ -305,6 +312,17 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public bool HasTagFilters => TagFilters.Count > 0;
 
+    /// <summary>The mods the list shows by their state; the choice stays after a restart.</summary>
+    [ObservableProperty]
+    private ModStateFilter stateFilter;
+
+    /// <summary>The buttons All, Enabled and Disabled above the list, each with its count.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<TagFilterItem> stateFilters = [];
+
+    /// <summary>The row of filter buttons shows once there is a mod in the list.</summary>
+    public bool HasFilterRow => Mods.Count > 0;
+
     [ObservableProperty]
     private int unmanagedCount;
 
@@ -313,17 +331,23 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public ICollectionView ModsView { get; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph))]
+    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph), nameof(StatusSortGlyph), nameof(TypeSortGlyph), nameof(IntegritySortGlyph))]
     private ModSortField sortField;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph))]
+    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph), nameof(StatusSortGlyph), nameof(TypeSortGlyph), nameof(IntegritySortGlyph))]
     private bool sortDescending;
 
     /// <summary>The glyph next to each sortable column header.</summary>
     public string NameSortGlyph => SortGlyph(ModSortField.Name);
 
     public string InstalledSortGlyph => SortGlyph(ModSortField.Installed);
+
+    public string StatusSortGlyph => SortGlyph(ModSortField.Status);
+
+    public string TypeSortGlyph => SortGlyph(ModSortField.Type);
+
+    public string IntegritySortGlyph => SortGlyph(ModSortField.Integrity);
 
     public string AppName => AppInfo.Name;
 
@@ -1507,8 +1531,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>
-    /// A click on the column the list is already sorted by reverses the order. A new
-    /// column starts with names A to Z, or with the newest installation first.
+    /// A click on the column the list is already sorted by reverses the order. A new column starts with names A to Z,
+    /// the newest installation first, enabled mods first, types A to Z, or problems first.
     /// </summary>
     [RelayCommand]
     private void SortBy(ModSortField field)
@@ -1553,6 +1577,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         RefreshTagFilters();
     }
 
+    partial void OnStateFilterChanged(ModStateFilter value)
+    {
+        settings.ModsState = value == ModStateFilter.All ? null : value.ToString();
+        SaveSettings();
+        RefreshModsFilter();
+        RefreshTagFilters();
+    }
+
     private void RefreshModsFilter()
     {
         ModsView.Refresh();
@@ -1562,9 +1594,21 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         OnPropertyChanged(nameof(EmptyHint));
     }
 
-    /// <summary>Builds the buttons above the list anew. A tag no mod has any more shows all mods again; a click on the active tag does too.</summary>
+    /// <summary>
+    /// Builds the buttons above the list anew, with their counts. A tag no mod has any more shows all mods again; a click
+    /// on the active state or tag does too.
+    /// </summary>
     internal void RefreshTagFilters()
     {
+        var enabled = Mods.Count(mod => mod.Enabled);
+        TagFilterItem State(string label, ModStateFilter state)
+        {
+            var active = StateFilter == state;
+            return new TagFilterItem(label, active, new RelayCommand(() => StateFilter = active ? ModStateFilter.All : state));
+        }
+        StateFilters = [State(L.F($"All ({Mods.Count})"), ModStateFilter.All), State(L.F($"Enabled ({enabled})"), ModStateFilter.Enabled),
+            State(L.F($"Disabled ({Mods.Count - enabled})"), ModStateFilter.Disabled)];
+        OnPropertyChanged(nameof(HasFilterRow));
         var tags = ModTags.Count(Mods.Select(mod => mod.Record));
         if (SelectedTag is not null && !tags.Any(entry => entry.Tag.Equals(SelectedTag, StringComparison.OrdinalIgnoreCase)))
             SelectedTag = null;
@@ -1573,7 +1617,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             var active = string.Equals(tag, SelectedTag, StringComparison.OrdinalIgnoreCase);
             return new TagFilterItem(label, active, new RelayCommand(() => SelectedTag = active ? null : tag));
         }
-        TagFilters = tags.Count == 0 ? [] : [Filter(L.T("All"), null), .. tags.Select(entry => Filter($"{entry.Tag} ({entry.Count})", entry.Tag))];
+        TagFilters = tags.Count == 0 ? [] : [Filter(L.T("All tags"), null), .. tags.Select(entry => Filter($"{entry.Tag} ({entry.Count})", entry.Tag))];
     }
 
     private void ApplySort() => ((ListCollectionView)ModsView).CustomSort = new ModOrder(SortField, SortDescending);

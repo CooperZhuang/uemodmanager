@@ -64,12 +64,34 @@
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" Visibility="{Binding CanTag, Converter={StaticResource Visible}}">
                     <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Tags', Tracked=True}" />
-                    <TextBox x:Name="TagsBox" Margin="0,6,0,0" Text="{Binding NewTags, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Separate with commas, such as Combat, UI'}">
+                    <TextBox x:Name="TagsBox" Margin="0,6,0,0" Text="{Binding NewTags, UpdateSourceTrigger=PropertyChanged, NotifyOnTargetUpdated=True}"
+                             ui:CaretAtEnd.OnUpdate="True" Tag="{ui:Loc 'Separate with commas, such as Combat, UI'}">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
                             <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                            <KeyBinding Key="Tab" Command="{Binding AcceptSuggestionCommand}" />
                         </TextBox.InputBindings>
                     </TextBox>
+                    <!-- Tags to pick: the player's own first, then common ones; they narrow as the player types, and Tab takes the first. -->
+                    <DockPanel Margin="0,8,0,0" Visibility="{Binding HasSuggestions, Converter={StaticResource Visible}}">
+                        <TextBlock DockPanel.Dock="Left" Margin="0,4,8,0" VerticalAlignment="Top" Style="{StaticResource Text.Small}" Text="{ui:Loc 'Suggestions:'}" />
+                        <ItemsControl x:Name="TagHints" ItemsSource="{Binding Suggestions}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource Button.Suggestion}" CommandParameter="{Binding}"
+                                            Command="{Binding DataContext.AddSuggestionCommand, ElementName=TagHints}">
+                                        <TextBlock FontSize="12" Text="{Binding}" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+
                 </StackPanel>
             </Grid>
 

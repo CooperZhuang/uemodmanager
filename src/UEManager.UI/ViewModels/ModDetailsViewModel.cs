@@ -113,7 +113,23 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     private string newVersion = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Suggestions), nameof(HasSuggestions))]
+    [NotifyCanExecuteChangedFor(nameof(AcceptSuggestionCommand))]
     private string newTags = "";
+
+    /// <summary>Tags to pick under the box; see <see cref="TagHints"/>.</summary>
+    public IReadOnlyList<string> Suggestions => TagHints.For(NewTags, TagHints.Own(owner.Mods.Select(item => item.Record)));
+
+    public bool HasSuggestions => Suggestions.Count > 0;
+
+    [RelayCommand]
+    private void AddSuggestion(string tag) => NewTags = TagHints.Apply(NewTags, tag);
+
+    private bool CanAcceptSuggestion() => TagHints.IsTyping(NewTags) && Suggestions.Count > 0;
+
+    /// <summary>Tab completes the tag being typed with the first one offered.</summary>
+    [RelayCommand(CanExecute = nameof(CanAcceptSuggestion))]
+    private void AcceptSuggestion() => AddSuggestion(Suggestions[0]);
 
     /// <summary>The form opened to add a tag, so the cursor starts in the tags box, after the tags the mod has.</summary>
     internal bool AddingTag { get; private set; }

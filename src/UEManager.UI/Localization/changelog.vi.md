@@ -2,6 +2,11 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.9 (2026-11-07)
+- Lọc danh sách mod theo Tất cả, Đã bật hoặc Đã tắt; Đã bật sẽ ẩn các mod đã tắt
+- Sắp xếp danh sách theo trạng thái, loại và tình trạng, không chỉ theo tên và ngày
+- Gợi ý nhãn dưới ô Nhãn: nhãn của bạn và nhãn phổ biến, lọc theo khi bạn gõ; Tab để tự hoàn thành
+
 ## 1.5.8 (2026-11-07)
 - Khi trùng tên tệp với một mod đã cài, cửa sổ cài đặt hỏi cập nhật mod đó hay giữ cả hai
 - Giữ cả hai sẽ đặt mod mới vào thư mục riêng trong ~mods, kèm lưu ý có thể chỉ một kiểu được hiển thị

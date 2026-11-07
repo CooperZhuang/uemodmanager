@@ -26,6 +26,9 @@ public sealed class AppSettings
 
     public bool ModsSortDescending { get; set; }
 
+    /// <summary>The mods the Mods page shows by their state, "Enabled" or "Disabled"; null for all of them.</summary>
+    public string? ModsState { get; set; }
+
     /// <summary>The openmods page's sort field, "Name" or "Updated"; null for the default, the newest release first.</summary>
     public string? CatalogSort { get; set; }
 

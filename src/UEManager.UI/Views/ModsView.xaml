@@ -33,6 +33,13 @@
             </Style.Triggers>
         </Style>
 
+        <!-- One button of the row above the list: a state or a tag. -->
+        <DataTemplate x:Key="FilterButton" DataType="{x:Type vm:TagFilterItem}">
+            <Button Style="{StaticResource Button.TagFilter}" Command="{Binding Select}">
+                <TextBlock MaxWidth="240" FontSize="12" TextTrimming="CharacterEllipsis" Text="{Binding Label}" />
+            </Button>
+        </DataTemplate>
+
         <!-- A mod's row: in the table, and for the recommended mod in its card above it. -->
         <DataTemplate x:Key="ModRow" DataType="{x:Type vm:ModItemViewModel}">
             <Border x:Name="Row" Padding="22,12" Background="Transparent"
@@ -239,22 +246,27 @@
                      Tag="{ui:Loc 'Filter: mod name, version, PAK / IoStore, file name or tag'}" />
         </DockPanel>
 
-        <!-- The player's tags; none are shown until a mod has one. -->
-        <ItemsControl Margin="0,0,0,6" ItemsSource="{Binding TagFilters}" Focusable="False"
-                      Visibility="{Binding HasTagFilters, Converter={StaticResource Visible}}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type vm:TagFilterItem}">
-                    <Button Style="{StaticResource Button.TagFilter}" Command="{Binding Select}">
-                        <TextBlock MaxWidth="240" FontSize="12" TextTrimming="CharacterEllipsis" Text="{Binding Label}" />
-                    </Button>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Which mods the list shows: by their state, and by the player's tags once a mod has one. -->
+        <DockPanel Margin="0,0,0,6" Visibility="{Binding HasFilterRow, Converter={StaticResource Visible}}">
+            <ItemsControl DockPanel.Dock="Left" VerticalAlignment="Top" ItemsSource="{Binding StateFilters}" Focusable="False"
+                          ItemTemplate="{StaticResource FilterButton}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <Border DockPanel.Dock="Left" Width="1" Height="18" Margin="4,4,10,0" VerticalAlignment="Top" Background="{StaticResource Brush.LineStrong}"
+                    Visibility="{Binding HasTagFilters, Converter={StaticResource Visible}}" />
+            <ItemsControl ItemsSource="{Binding TagFilters}" Focusable="False" ItemTemplate="{StaticResource FilterButton}"
+                          Visibility="{Binding HasTagFilters, Converter={StaticResource Visible}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </DockPanel>
 
         <!-- A test without mods is on -->
         <Border Margin="0,0,0,12" Style="{StaticResource Card}" Padding="22,16"
@@ -284,12 +296,18 @@
                         <ColumnDefinition Width="{DynamicResource Col.Date}" />
                         <ColumnDefinition Width="{DynamicResource Col.Actions}" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Status', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}" />
+                    <Button Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Status', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}"
+                            Tag="{Binding StatusSortGlyph}" ToolTip="{ui:Loc 'Sort by status'}"
+                            Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Status}" />
                     <Button Grid.Column="1" Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Mod', Tracked=True}"
                             Tag="{Binding NameSortGlyph}" ToolTip="{ui:Loc 'Sort by name'}"
                             Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Name}" />
-                    <TextBlock Grid.Column="2" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Type', Tracked=True}" />
-                    <TextBlock Grid.Column="3" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Integrity', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}" />
+                    <Button Grid.Column="2" Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Type', Tracked=True}"
+                            Tag="{Binding TypeSortGlyph}" ToolTip="{ui:Loc 'Sort by type'}"
+                            Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Type}" />
+                    <Button Grid.Column="3" Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Integrity', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}"
+                            Tag="{Binding IntegritySortGlyph}" ToolTip="{ui:Loc 'Sort by integrity'}"
+                            Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Integrity}" />
                     <Button Grid.Column="4" Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Installed', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}"
                             Tag="{Binding InstalledSortGlyph}" ToolTip="{ui:Loc 'Sort by installation date'}"
                             Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Installed}" />

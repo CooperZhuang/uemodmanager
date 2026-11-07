@@ -48,7 +48,7 @@ public class ModTagFilterTests : IDisposable
     public void The_buttons_name_all_mods_and_each_tag_with_its_count() => WithMods(model =>
     {
         Assert.True(model.HasTagFilters);
-        Assert.Equal(["All", "Combat (2)", "Maps (2)"], model.TagFilters.Select(filter => filter.Label));
+        Assert.Equal(["All tags", "Combat (2)", "Maps (2)"], model.TagFilters.Select(filter => filter.Label));
         Assert.Equal([true, false, false], model.TagFilters.Select(filter => filter.IsActive));
         Assert.Equal(4, Shown(model).Length);
     });
@@ -60,13 +60,13 @@ public class ModTagFilterTests : IDisposable
 
         Assert.Equal(["Shield", "Sword"], Shown(model));
         Assert.True(Filter(model, "Combat (2)").IsActive);
-        Assert.False(Filter(model, "All").IsActive);
+        Assert.False(Filter(model, "All tags").IsActive);
         Assert.Equal("2 of 4 shown", model.ModsCountText);
 
-        Filter(model, "All").Select.Execute(null);
+        Filter(model, "All tags").Select.Execute(null);
 
         Assert.Equal(4, Shown(model).Length);
-        Assert.True(Filter(model, "All").IsActive);
+        Assert.True(Filter(model, "All tags").IsActive);
     });
 
     [Fact]
@@ -103,7 +103,7 @@ public class ModTagFilterTests : IDisposable
         model.RefreshTagFilters();
 
         Assert.Null(model.SelectedTag);
-        Assert.Equal(["All", "Maps (1)"], model.TagFilters.Select(filter => filter.Label));
+        Assert.Equal(["All tags", "Maps (1)"], model.TagFilters.Select(filter => filter.Label));
         Assert.Equal(["Map", "Plain"], Shown(model));
     });
 

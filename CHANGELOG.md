@@ -4,6 +4,11 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.9 (2026-11-07)
+- Filter the mod list by All, Enabled or Disabled; Enabled hides the disabled mods
+- Sort the list by Status, Type and Integrity too, not only by name and date
+- Tag suggestions under the Tags field: your own tags and common ones, narrowed as you type; Tab completes
+
 ## 1.5.8 (2026-11-07)
 - Same file names as an installed mod: the install window asks whether to update it or keep both
 - Keep both puts the new mod in a folder of its own in ~mods, with a note that only one style may show
