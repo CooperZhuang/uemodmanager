@@ -1,4 +1,5 @@
 using System.Text.Json;
+using UEManager.Core.Mods;
 using UEManager.Core.Storage;
 
 namespace UEManager.Core.Games;
@@ -89,6 +90,18 @@ public sealed class GameProfile
     /// folder is known for sure: without it, save backups are not offered for the game.
     /// </summary>
     public string? SaveFolder { get; init; }
+
+    /// <summary>
+    /// The address of a mod's page on the mod site, with <c>{id}</c> for the mod's number there. Downloads from
+    /// the site keep that number in their file name (see <see cref="ModNaming.SiteModId"/>). Null: no mod page links.
+    /// </summary>
+    public string? ModPageUrl { get; init; }
+
+    /// <summary>The page of the mod installed from <paramref name="sourceFileName"/>; null when the name has no mod number.</summary>
+    public string? ModPage(string? sourceFileName) =>
+        ModPageUrl is { Length: > 0 } template && ModNaming.SiteModId(sourceFileName) is { } id
+            ? template.Replace("{id}", id, StringComparison.Ordinal)
+            : null;
 
     /// <summary>The profiles built into the application, sorted by display name.</summary>
     public static IReadOnlyList<GameProfile> BuiltIn()

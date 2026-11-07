@@ -23,7 +23,17 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         this.libraryFolder = libraryFolder;
         Integrity = ModManager.Integrity(record);
         HasUe4ssErrors = owner.HadUe4ssErrors(record);
+        ModPageUrl = record.Recommended ? null : owner.Profile.ModPage(record.SourceFileName);
     }
+
+    /// <summary>
+    /// The mod's page on the mod site, from the number in its download's file name; null without one, and for the
+    /// mods on the card, which have their own notes and links.
+    /// </summary>
+    public string? ModPageUrl { get; }
+
+    /// <summary>"No mod page" in the row: a mod of the list whose download's name has no mod number. The card's mods show neither.</summary>
+    public bool ShowsNoModPage => !record.Recommended && ModPageUrl is null;
 
     internal ModRecord Record => record;
 
@@ -144,6 +154,13 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
 
     [RelayCommand]
     private void OpenFolder() => owner.OpenPath(libraryFolder);
+
+    [RelayCommand]
+    private void OpenModPage()
+    {
+        if (ModPageUrl is not null)
+            owner.OpenPath(ModPageUrl);
+    }
 
     [RelayCommand]
     private void ShowDetails() => owner.ShowModDetails(record);

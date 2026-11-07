@@ -88,23 +88,40 @@
                     <TextBlock Grid.Column="4" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Visibility="{DynamicResource Mods.WideOnly}"
                                Text="{Binding InstalledText}" ToolTip="{Binding InstalledFullText}" />
 
-                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE713;"
-                                Command="{Binding EditSettingsCommand}" ToolTip="{Binding EditSettingsHint}"
-                                ToolTipService.ShowOnDisabled="True"
-                                Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
-                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE7A7;"
-                                Command="{Binding ResetSettingsCommand}" ToolTip="{ui:Loc 'Reset the settings to the ones the mod came with'}"
-                                Visibility="{Binding CanResetSettings, Converter={StaticResource Visible}}" />
-                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8EC;"
-                                Command="{Binding AddTagCommand}" ToolTip="{ui:Loc 'Add tag'}"
-                                Visibility="{Binding CanTag, Converter={StaticResource Visible}}" />
-                        <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
-                                Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the files of this mod in their folders'}" />
-                        <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE838;"
-                                Command="{Binding OpenFolderCommand}" ToolTip="{ui:Loc 'Open the manager\'s copy of this mod'}" />
-                        <Button Margin="4,0,0,0" Style="{StaticResource Button.IconDanger}" ui:Icon.Glyph="&#xE74D;"
-                                Command="{Binding UninstallCommand}" ToolTip="{ui:Loc 'Uninstall'}" />
+                    <StackPanel Grid.Column="5" VerticalAlignment="Center">
+                        <!-- Above the icons, on their right: the mod's page, known from the number in its download's file name. -->
+                        <StackPanel Margin="0,0,8,6" HorizontalAlignment="Right" Orientation="Horizontal"
+                                    Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
+                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                       Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
+                            <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}"
+                                    Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,8,6" HorizontalAlignment="Right" Orientation="Horizontal" Background="Transparent"
+                                    ToolTip="{ui:Loc 'Only a download that keeps the mod site\'s file name shows its mod page.'}"
+                                    Visibility="{Binding ShowsNoModPage, Converter={StaticResource Visible}}">
+                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                       Foreground="{StaticResource Brush.TextDim}" Text="&#xE774;" />
+                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.TextDim}" Text="{ui:Loc 'No mod page'}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE713;"
+                                    Command="{Binding EditSettingsCommand}" ToolTip="{Binding EditSettingsHint}"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    Visibility="{Binding HasSettings, Converter={StaticResource Visible}}" />
+                            <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE7A7;"
+                                    Command="{Binding ResetSettingsCommand}" ToolTip="{ui:Loc 'Reset the settings to the ones the mod came with'}"
+                                    Visibility="{Binding CanResetSettings, Converter={StaticResource Visible}}" />
+                            <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8EC;"
+                                    Command="{Binding AddTagCommand}" ToolTip="{ui:Loc 'Add tag'}"
+                                    Visibility="{Binding CanTag, Converter={StaticResource Visible}}" />
+                            <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
+                                    Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the files of this mod in their folders'}" />
+                            <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE838;"
+                                    Command="{Binding OpenFolderCommand}" ToolTip="{ui:Loc 'Open the manager\'s copy of this mod'}" />
+                            <Button Margin="4,0,0,0" Style="{StaticResource Button.IconDanger}" ui:Icon.Glyph="&#xE74D;"
+                                    Command="{Binding UninstallCommand}" ToolTip="{ui:Loc 'Uninstall'}" />
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>

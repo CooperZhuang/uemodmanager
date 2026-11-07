@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.6.1 (2026-11-07)
+- Nút Mở trang mod ở hàng và chi tiết của mỗi mod, cho mod có tệp tải về giữ nguyên tên tệp của trang web mod; ứng dụng đọc số của mod từ tên đó, không cần mạng
+- Mod đã cài bằng phiên bản cũ cũng có liên kết này; mod khác hiện "Không có trang mod", còn mod trên thẻ không hiện gì
+- Lần tải thứ hai của cùng một tệp, có tên kết thúc bằng (1), nay cũng nhận được tên và phiên bản
+- Chưa thể kiểm tra cập nhật thật: việc này cần quyền truy cập API của trang web mod, yêu cầu vẫn đang chờ duyệt, nên Mở trang mod là mức tối đa ứng dụng làm được lúc này
+
 ## 1.6.0 (2026-11-07)
 - Có thể cài Mods Menu và PBZModLoader cùng lúc: Mods Menu 0.9.0 và PBZModLoader 2.1.0 trở lên chạy cùng nhau
 - Có cảnh báo khi một phiên bản cũ đã biết của một bên sẽ gây lỗi, và lối vào hid của PBZModLoader không dùng cạnh Mods Menu

@@ -45,6 +45,9 @@
   // "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/<tag>/<file>.zip",
   // "ue4ssPackageSha256": "<sha-256 of that file>",
 
+  // "Open mod page" for a mod whose download kept the mod site's file name: {id} is the mod's number in that name.
+  "modPageUrl": "https://www.nexusmods.com/phantombladezero/mods/{id}",
+
   // Started by "Launch game" only when the game was not found through Steam or Epic.
   // Steam starts this small exe, and it starts platform/steam/PBZ.exe.
   "executable": "steam/PBZ.exe"

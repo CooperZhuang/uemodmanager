@@ -137,6 +137,11 @@ public class StagingTests
     [InlineData(@"C:\Downloads\PhantomTweaks 1.0.0 44 1.0.0 2026-10-29T09-10Z iFHyWBRqE.zip", "PhantomTweaks", "1.0.0")]
     [InlineData(@"C:\Downloads\PBZ SpeakerHighlight PVLW 0.1.0 27 1 2026-10-29T06-37Z 5qSwPXtlu.zip", "PBZ SpeakerHighlight PVLW", "1")]
     [InlineData(@"C:\Downloads\PBZTuner_V1.0.2_21_3_2026-10-29T12-51Z_HOPKBToED.zip", "PBZTuner", "3")]
+    [InlineData(@"C:\Downloads\PBZMapMarkers 1.8.2 Fog Teleport 134 1.8.2 2026-11-05T07-30Z YQ3oJLMF9(1).zip", "PBZMapMarkers 1.8.2 Fog Teleport", "1.8.2")]
+    [InlineData(@"C:\Downloads\Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS (2).zip", "Travel Anywhere", "1.0.1")]
+    [InlineData(@"C:\Downloads\Sharp Blades-12-1-2-1730000000 (1).zip", "Sharp Blades", "1.2")]
+    [InlineData(@"C:\Downloads\Outfit (2).zip", "Outfit (2)", null)]
+    [InlineData(@"C:\Downloads\Sharp Blades v1.3.0 (1).zip", "Sharp Blades v1.3.0 (1)", null)]
     public void Names_come_from_the_download(string source, string name, string? version)
     {
         Assert.Equal((name, version), ModNaming.FromSource(source));

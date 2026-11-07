@@ -118,7 +118,17 @@
                 <TextBlock Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding InstalledText}" />
 
                 <TextBlock Grid.Row="1" Text="{ui:Loc 'Installed from', Tracked=True}" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
+                <DockPanel Grid.Row="1" Grid.Column="1">
+                    <!-- A download that kept the mod site's file name has the mod's number, so its page is known. -->
+                    <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center"
+                                Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
+                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="11"
+                                   Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
+                        <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Text}"
+                                Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                    </StackPanel>
+                    <TextBlock Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
+                </DockPanel>
 
                 <TextBlock Grid.Row="2" Text="{ui:Loc 'Catalog id', Tracked=True}" Visibility="{Binding CatalogId, Converter={StaticResource VisibleIfSet}}" />
                 <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding CatalogId}"

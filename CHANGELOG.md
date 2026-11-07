@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.6.1 (2026-11-07)
+- Open mod page in each mod's row and details, for a mod whose download kept the mod site's file name; the app reads the mod's number from that name, with no network
+- Mods installed with an older version get the link too; other mods show "No mod page", and the mods on the card show neither
+- A second download of the same file, whose name ends in (1), now also gets its name and version
+- Not possible yet: a real update check. It needs access to the mod site's API, which still waits for approval, so Open mod page is the most the app can do for now
+
 ## 1.6.0 (2026-11-07)
 - Mods Menu and PBZModLoader can be installed together: Mods Menu 0.9.0 and PBZModLoader 2.1.0 or newer run side by side
 - A warning when a known older version of either would cause problems, and PBZModLoader's hid entry stays out beside Mods Menu

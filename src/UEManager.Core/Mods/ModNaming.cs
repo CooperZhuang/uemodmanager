@@ -11,19 +11,19 @@ public static partial class ModNaming
         var stem = Directory.Exists(trimmed) ? Path.GetFileName(trimmed) : Path.GetFileNameWithoutExtension(trimmed);
 
         string? version = null;
-        var nexus = NexusFileName().Match(stem);
-        if (nexus.Success)
+        var site = SiteMatch(stem);
+        if (site is { Dated: false } nexus)
         {
-            stem = nexus.Groups["name"].Value;
-            version = nexus.Groups["version"].Value.Replace('-', '.');
+            stem = nexus.Match.Groups["name"].Value;
+            version = nexus.Match.Groups["version"].Value.Replace('-', '.');
         }
-        else if (NexusDatedFileName().Match(stem) is { Success: true } dated)
+        else if (site is { Dated: true } dated)
         {
             // The name often repeats a version of its own, such as "PhantomTweaks 1.0.0"; the download's version counts.
-            stem = dated.Groups["name"].Value;
+            stem = dated.Match.Groups["name"].Value;
             if (TrailingVersion().Match(stem) is { Success: true } inName)
                 stem = inName.Groups["name"].Value;
-            version = dated.Groups["version"].Value;
+            version = dated.Match.Groups["version"].Value;
         }
         else if (TrailingVersion().Match(stem) is { Success: true } trailing)
         {
@@ -37,6 +37,46 @@ public static partial class ModNaming
         var name = Whitespace().Replace(stem.Replace('_', ' '), " ").Trim();
         return (name.Length > 0 ? name : "Unnamed mod", version);
     }
+
+    /// <summary>
+    /// The mod's number on the mod site, from a download that kept the site's file name, such as 61 in
+    /// "Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip"; null for any other name. It needs no
+    /// network: the number is part of the name. A folder unpacked under that name has it too.
+    /// </summary>
+    public static string? SiteModId(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return null;
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(fileName));
+        // A folder has no extension, and a dotted version in its name would look like one: try the name as it is first.
+        foreach (var stem in new[] { name, Path.GetFileNameWithoutExtension(name) })
+        {
+            if (SiteMatch(stem) is { } site)
+                return site.Match.Groups["id"].Value;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// One of the mod site's two name patterns on <paramref name="stem"/>, as it is or without the copy number a
+    /// browser adds to a second download of the same file, such as "(1)" or " (2)". Other names keep such a number.
+    /// </summary>
+    private static (Match Match, bool Dated)? SiteMatch(string stem)
+    {
+        string[] candidates = CopyNumber().Match(stem) is { Success: true } copy ? [stem, copy.Groups["stem"].Value] : [stem];
+        foreach (var candidate in candidates)
+        {
+            if (NexusFileName().Match(candidate) is { Success: true } plain)
+                return (plain, false);
+            if (NexusDatedFileName().Match(candidate) is { Success: true } dated)
+                return (dated, true);
+        }
+        return null;
+    }
+
+    /// <summary>A browser's copy number at the end of a name, such as "YQ3oJLMF9(1)" or "LbtEo64mS (2)".</summary>
+    [GeneratedRegex(@"^(?<stem>.+?)\s*\(\d{1,3}\)$")]
+    private static partial Regex CopyNumber();
 
     /// <summary>Nexus Mods names downloads "Name-ModId-Version-Timestamp", such as "Sharp Blades-12-1-2-1730000000".</summary>
     [GeneratedRegex(@"^(?<name>.+?)-(?<id>\d+)-(?<version>\d+(?:-\d+)*)-(?<stamp>\d{9,})$")]
