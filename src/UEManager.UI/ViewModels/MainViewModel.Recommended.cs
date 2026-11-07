@@ -61,14 +61,13 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Before PBZModLoader goes in: the copy installed by hand, once many files, goes out when the player agrees, as only
-    /// one entry DLL may be in the game. False stops the install. With Mods Menu in the game the review stops it anyway,
-    /// so nothing is cleaned up for an install that cannot follow.
+    /// one entry DLL may be in the game. False stops the install.
     /// </summary>
     private async Task<bool> CleanOldModLoaderAsync(InstallPreview preview, string? id)
     {
-        if (!ModManager.IsModLoader(preview, id) || manager!.IsModsMenuInstalled || manager.FindOldModLoader() is not { } old)
+        if (!ModManager.IsModLoader(preview, id) || manager!.FindOldModLoader() is not { } old)
             return true;
-        var message = L.T("A PBZModLoader installed by hand is in the game. The manager's version is one DLL, so these files are no longer needed:") + "\n\n" + string.Join("\n", old.Places)
+        var message = L.T("A PBZModLoader installed by hand is in the game. The manager puts in its own copy, so these files of the hand install go to a backup first:") + "\n\n" + string.Join("\n", old.Places)
             + "\n\n" + L.T("Your mods and mods.ini stay where they are. The removed files go to a backup folder in the manager's data.");
         if (old.SourceOnlyMods.Count > 0)
             message += "\n\n" + L.F($"These mods have only TypeScript source and will not run with this version: {string.Join(", ", old.SourceOnlyMods)}.");

@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.6.0 (2026-11-07)
+- Mods Menu and PBZModLoader can be installed together: Mods Menu 0.9.0 and PBZModLoader 2.1.0 or newer run side by side
+- A warning when a known older version of either would cause problems, and PBZModLoader's hid entry stays out beside Mods Menu
+- Show files lists the files in the mods folder that the manager did not install
+- The UE4SS window shows its note on which release to take only for a download by hand
+
 ## 1.5.9 (2026-11-07)
 - Filter the mod list by All, Enabled or Disabled; Enabled hides the disabled mods
 - Sort the list by Status, Type and Integrity too, not only by name and date

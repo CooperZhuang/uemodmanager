@@ -305,10 +305,14 @@ game, one is not used, or the mod loads twice and most likely crashes the game. 
 install keeps the copy that is in the game, and the other copy takes its place. With
 one of the two loaders in the game, the copy for it is ticked at first.
 
-Mods Menu and PBZModLoader cause problems together, so the manager installs only one of
-them at a time: the review stops the other, and the Mods page warns when both are in the
-game. A new install of Mods Menu first shows a note that points to PBZModLoader. Either
-loader counts when it is in the mod list, even turned off, and when it was put in by hand.
+Mods Menu 0.9.0 and PBZModLoader 2.1.0 or newer run together, so both install like any
+other mod. An older version of either causes problems with the other: the review warns
+when it knows such a version, from the mod list or the download's name, and so does the
+Mods page while both are in the game. Mods Menu uses `hid.dll`, so the review stops
+PBZModLoader's hid entry beside it, and Mods Menu while PBZModLoader is on that entry. With
+both loaders in the game, a zip with a copy for each ticks the copy for PBZModLoader.
+Either loader counts when it is in the mod list, even turned off, and when it was put in
+by hand.
 
 A script mod below one of those two loaders' folders waits for its loader: the review
 stops it while that loader is missing. For a zip with a copy for each loader and neither
@@ -504,6 +508,11 @@ changed, then missing, then in place, then off). Mods that are equal there go by
 their name. Left of the tags, **All**, **Enabled** and **Disabled** with their counts
 choose which mods the list shows; **Enabled** hides the disabled ones. The state,
 a tag and the search work together. The sort and the state stay after a restart.
+
+Below the list, a box counts the files in `~mods` that no mod in the list placed,
+such as a mod put in by hand. **Show files** lists them in the tree of their
+folders, with their sizes and **Open folder**; the manager never changes or removes
+them.
 
 ## Same file names
 

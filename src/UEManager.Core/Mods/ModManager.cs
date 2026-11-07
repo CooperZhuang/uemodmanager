@@ -156,11 +156,17 @@ public sealed class ModManager
             warnings.AddRange(package.Warnings);
         }
 
-        // The two script loaders cause problems together, and only one may be in the game: a player's choice, not a replace.
-        if (IsModsMenu(selected) && IsModLoaderInstalled)
-            problems.Add($"Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. PBZModLoader is installed, and we recommend to keep it: it is safe to use and open source.");
-        else if (IsModLoader(preview, catalogId) && IsModsMenuInstalled)
-            problems.Add($"Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. Uninstall Mods Menu first: we recommend PBZModLoader, as it is safe to use and open source.");
+        // The two script loaders run together since Mods Menu 0.9.0 and PBZModLoader 2.1.0. An older one of either causes
+        // problems with the other, so a known older version is worth a word. Only one of them can be the game's hid.dll.
+        var menuNow = IsModsMenu(selected) && IsModLoaderInstalled;
+        var loaderNow = IsModLoader(preview, catalogId) && IsModsMenuInstalled;
+        if ((menuNow && (IsOlder(preview.SuggestedVersion, MenuWithLoader) || IsOlder(InstalledModLoaderVersion, LoaderWithMenu)))
+            || (loaderNow && (IsOlder(preview.SuggestedVersion, LoaderWithMenu) || IsOlder(InstalledModsMenuVersion, MenuWithLoader))))
+            warnings.Add($"Mods Menu 0.9.0 and PBZModLoader 2.1.0 or newer run together. An older version of either causes problems with the other: update the older one first.");
+        if (loaderNow && selected.Any(p => p.RelativePaths.Any(path => Path.GetFileName(path).Equals(ModsMenuEntry, StringComparison.OrdinalIgnoreCase))))
+            problems.Add($"Mods Menu uses hid.dll, so PBZModLoader cannot use its hid entry beside it. Choose another entry.");
+        else if (menuNow && IsModLoaderEntry(Path.Combine(Game.BinariesPath, ModsMenuEntry)))
+            problems.Add($"PBZModLoader uses hid.dll, which Mods Menu needs. Change PBZModLoader to another entry first.");
 
         // A script mod runs only in its loader, so it waits for that loader. A loader's own download may bring its mods along.
         foreach (var needed in selected.Select(p => p.NeedsLoader).OfType<string>().Distinct())
@@ -1869,11 +1875,56 @@ public sealed class ModManager
         get
         {
             lock (gate)
-                return mods.Any(m => m.Files.Any(f => f.FileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                        && (m.CatalogId?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true
-                            || m.SourceFileName?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true))
-                    || HasModLoaderEntry || IsInProject(OldModLoaderStart);
+                return mods.Any(IsModLoaderRecord) || HasModLoaderEntry || IsInProject(OldModLoaderStart);
         }
+    }
+
+    private static bool IsModLoaderRecord(ModRecord mod) =>
+        mod.Files.Any(f => f.FileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        && (mod.CatalogId?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true
+            || mod.SourceFileName?.Contains(ModLoaderName, StringComparison.OrdinalIgnoreCase) == true);
+
+    /// <summary>The first versions of the two script loaders that run together.</summary>
+    private static readonly Version MenuWithLoader = new(0, 9, 0);
+
+    private static readonly Version LoaderWithMenu = new(2, 1, 0);
+
+    /// <summary>Mods Menu's entry DLL, which PBZModLoader can have too, as one of its other entries.</summary>
+    private const string ModsMenuEntry = "hid.dll";
+
+    /// <summary>The version of Mods Menu in the list, as the player or its download named it; null when not known.</summary>
+    private string? InstalledModsMenuVersion
+    {
+        get
+        {
+            lock (gate)
+                return mods.FirstOrDefault(m => m.Files.Any(f => f.FileName.EndsWith("/" + ModsMenuStart, StringComparison.OrdinalIgnoreCase)))?.Version;
+        }
+    }
+
+    private string? InstalledModLoaderVersion
+    {
+        get
+        {
+            lock (gate)
+                return mods.FirstOrDefault(IsModLoaderRecord)?.Version;
+        }
+    }
+
+    /// <summary>Both script loaders are in the game, and a known version of one of them is too old to run beside the other.</summary>
+    public bool HasOldScriptLoader =>
+        IsModsMenuInstalled && IsModLoaderInstalled
+        && (IsOlder(InstalledModsMenuVersion, MenuWithLoader) || IsOlder(InstalledModLoaderVersion, LoaderWithMenu));
+
+    /// <summary>Whether a version is known and older than the one named, such as "0.8.5-beta" than 0.9.0.</summary>
+    internal static bool IsOlder(string? version, Version than)
+    {
+        var match = version is null ? null : System.Text.RegularExpressions.Regex.Match(version.Trim().TrimStart('v', 'V'), @"^\d+(\.\d+){0,3}");
+        if (match is not { Success: true })
+            return false;
+        // "0.9" is 0.9.0: a part that is not written counts as 0.
+        var parts = match.Value.Split('.').Concat(["0", "0"]).Take(Math.Max(3, match.Value.Split('.').Length));
+        return Version.TryParse(string.Join('.', parts), out var parsed) && parsed < than;
     }
 
     /// <summary>The names PBZModLoader's entry DLL can have, next to the game's exe.</summary>
@@ -1992,9 +2043,9 @@ public sealed class ModManager
     {
         if (preview.Packages.FirstOrDefault(p => p.IsAlternate && IsInstalled(p)) is { } made)
             return made;
+        // With both loaders in the game, the copy for PBZModLoader: only one copy may be in the game.
         var (menu, loader) = (IsModsMenuInstalled, IsModLoaderInstalled);
-        return menu && loader ? null
-            : preview.Packages.FirstOrDefault(p => p.IsAlternate && p.Variant == (menu ? PackageScanner.ForModsMenu : PackageScanner.ForModLoader));
+        return preview.Packages.FirstOrDefault(p => p.IsAlternate && p.Variant == (menu && !loader ? PackageScanner.ForModsMenu : PackageScanner.ForModLoader));
     }
 
     /// <summary>Whether a mod in the list has this part's files: a choice of a download that the player made before.</summary>

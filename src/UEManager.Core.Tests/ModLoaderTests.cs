@@ -217,29 +217,93 @@ public class ModLoaderTests : IDisposable
         return manager.Install(preview, preview.Packages.Where(p => !p.IsAlternate).ToList(), name, null, catalogId: catalogId);
     }
 
-    [Fact]
-    public void Mods_Menu_and_the_loader_are_never_installed_together()
-    {
-        var menu = InstallAll(ModsMenu(), "Mods Menu");
-        Assert.True(manager.IsModsMenuInstalled);
-        Assert.False(manager.IsModLoaderInstalled);
+    private const string LoaderId = "KintaroModding/phantombladezero_pbzmodloader";
 
+    [Fact]
+    public void Mods_Menu_and_the_loader_install_together_either_way()
+    {
+        InstallAll(ModsMenu(), "Mods Menu");
         using (var loader = manager.Inspect(Loader()))
         {
-            foreach (var part in loader.Packages)
-                Assert.Contains("Uninstall Mods Menu first", Assert.Single(manager.Check(loader, [part], "KintaroModding/phantombladezero_pbzmodloader").Problems, p => p.ToString().Contains("Mods Menu and PBZModLoader")).ToString());
+            var check = manager.Check(loader, loader.Packages.Where(p => !p.IsAlternate).ToList(), LoaderId);
+            Assert.True(check.CanInstall);
+            Assert.Empty(check.Warnings);
         }
-
-        manager.SetEnabled(menu.Id, false);
+        InstallAll(Loader(), "PBZModLoader", LoaderId);
         Assert.True(manager.IsModsMenuInstalled);
-        manager.Uninstall(menu.Id);
-        Assert.False(manager.IsModsMenuInstalled);
-
-        InstallAll(Loader(), "PBZModLoader", "KintaroModding/phantombladezero_pbzmodloader");
         Assert.True(manager.IsModLoaderInstalled);
+        Assert.False(manager.HasOldScriptLoader);
 
+        foreach (var menu in manager.Mods.Where(m => m.Name == "Mods Menu").ToList())
+            manager.Uninstall(menu.Id);
         using var next = manager.Inspect(ModsMenu());
-        Assert.Contains(manager.Check(next, next.Packages.ToList()).Problems, p => p.ToString().Contains("PBZModLoader is installed"));
+        var again = manager.Check(next, next.Packages.ToList());
+        Assert.True(again.CanInstall);
+        Assert.Empty(again.Warnings);
+    }
+
+    [Fact]
+    public void An_older_Mods_Menu_beside_the_loader_is_worth_a_warning_and_no_stop()
+    {
+        InstallAll(Loader(), "PBZModLoader", LoaderId);
+        folder.File(@"Downloads\Mods Menu 149 0.7.2 2026-11-05T12-29Z azp3elGxE\TestGame\Binaries\Win64\hid.dll", "its entry");
+        folder.File(@"Downloads\Mods Menu 149 0.7.2 2026-11-05T12-29Z azp3elGxE\TestGame\Content\JavaScript\PBZModsMenu\bootstrap.js", "its start");
+        using var old = manager.Inspect(folder.Combine("Downloads", "Mods Menu 149 0.7.2 2026-11-05T12-29Z azp3elGxE"));
+        Assert.Equal("0.7.2", old.SuggestedVersion);
+
+        var check = manager.Check(old, old.Packages.ToList());
+
+        Assert.True(check.CanInstall);
+        Assert.Contains("update the older one first", Assert.Single(check.Warnings).ToString());
+
+        manager.Install(old, old.Packages.ToList(), "Mods Menu", "0.7.2");
+        Assert.True(manager.HasOldScriptLoader);
+    }
+
+    [Fact]
+    public void An_older_loader_in_the_list_is_worth_a_warning_when_Mods_Menu_comes()
+    {
+        using (var loader = manager.Inspect(Loader()))
+            manager.Install(loader, loader.Packages.Where(p => !p.IsAlternate).ToList(), "PBZModLoader", "2.0.1", catalogId: LoaderId);
+        using var menu = manager.Inspect(ModsMenu());
+
+        var check = manager.Check(menu, menu.Packages.ToList());
+
+        Assert.True(check.CanInstall);
+        Assert.Single(check.Warnings);
+    }
+
+    [Theory]
+    [InlineData("0.8.5-beta", true)]
+    [InlineData("0.9.0", false)]
+    [InlineData("0.9", false)]
+    [InlineData("v0.10.1", false)]
+    [InlineData("1", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    [InlineData("beta", false)]
+    public void A_version_counts_as_older_only_when_it_is_known(string? version, bool older) =>
+        Assert.Equal(older, ModManager.IsOlder(version, new Version(0, 9, 0)));
+
+    [Fact]
+    public void The_loaders_hid_entry_stays_out_beside_Mods_Menu()
+    {
+        InstallAll(ModsMenu(), "Mods Menu");
+        using var loader = manager.Inspect(Loader());
+
+        var hid = loader.Packages.Single(p => p.Variant == "hid");
+        Assert.Contains(manager.Check(loader, [hid], LoaderId).Problems, p => p.ToString().Contains("cannot use its hid entry"));
+        var dxgi = loader.Packages.Single(p => p.Variant == "dxgi");
+        Assert.True(manager.Check(loader, [dxgi], LoaderId).CanInstall);
+    }
+
+    [Fact]
+    public void Mods_Menu_waits_while_the_loader_is_on_its_hid_entry()
+    {
+        folder.File(@"Game\TestGame\Binaries\Win64\hid.dll", "the loader [PBZMOD] by hand");
+        using var menu = manager.Inspect(ModsMenu());
+
+        Assert.Contains(manager.Check(menu, menu.Packages.ToList()).Problems, p => p.ToString().Contains("PBZModLoader uses hid.dll"));
     }
 
     [Fact]
@@ -289,7 +353,7 @@ public class ModLoaderTests : IDisposable
 
         folder.File(@"Game\TestGame\Content\JavaScript\PBZModsMenu\bootstrap.js", "by hand");
         using (var both = manager.Inspect(source))
-            Assert.Null(manager.PreferredChoice(both));
+            Assert.Equal("PBZModLoader", manager.PreferredChoice(both)!.Variant);
 
         File.Delete(Path.Combine(game.BinariesPath, "version.dll"));
         using var menu = manager.Inspect(source);

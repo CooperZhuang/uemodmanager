@@ -216,16 +216,16 @@
             </StackPanel>
         </Border>
 
-        <!-- Both script loaders are in the game -->
+        <!-- Both script loaders are in the game, and one of them is too old to run beside the other -->
         <Border Margin="0,12,0,0" Style="{StaticResource Card}" Padding="22,14"
-                Visibility="{Binding HasBothScriptLoaders, Converter={StaticResource Visible}}">
+                Visibility="{Binding HasOldScriptLoader, Converter={StaticResource Visible}}">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Left" Margin="0,0,16,0" Style="{StaticResource Text.Icon}" FontSize="18"
                            Foreground="{StaticResource Brush.Warning}" Text="&#xE7BA;" />
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" Text="{ui:Loc 'Mods Menu and PBZModLoader are both installed'}" />
+                    <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" Text="{ui:Loc 'Mods Menu or PBZModLoader needs an update'}" />
                     <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" TextTrimming="None" TextWrapping="Wrap"
-                               Text="{ui:Loc 'They cause problems together. Uninstall one of them. We recommend to keep PBZModLoader: it is safe to use and open source.'}" />
+                               Text="{ui:Loc 'An older version of one of them causes problems with the other. Mods Menu 0.9.0 and PBZModLoader 2.1.0 or newer run together: update the older one.'}" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -325,7 +325,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Files the manager did not place -->
+        <!-- Files the manager did not place: a note, not a warning, as they can be meant to be there. -->
         <Border Margin="0,16,0,0" Style="{StaticResource Card}" Padding="22,16"
                 Visibility="{Binding HasUnmanaged, Converter={StaticResource Visible}}">
             <DockPanel>
@@ -333,8 +333,10 @@
                         ui:Icon.Glyph="&#xE838;" Command="{Binding OpenModFolderCommand}" />
                 <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Content="{ui:Loc 'Refresh'}"
                         ui:Icon.Glyph="&#xE72C;" Command="{Binding RefreshCommand}" />
-                <TextBlock DockPanel.Dock="Left" Margin="0,0,16,0" Style="{StaticResource Text.Icon}" FontSize="18"
-                           Foreground="{StaticResource Brush.Warning}" Text="&#xE7BA;" />
+                <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Content="{ui:Loc 'Show files'}"
+                        ui:Icon.Glyph="&#xE8FD;" Command="{Binding ShowUnmanagedCommand}" />
+                <TextBlock DockPanel.Dock="Left" Margin="0,0,16,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="18"
+                           Foreground="{StaticResource Brush.TextMuted}" Text="&#xE8A5;" />
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock FontWeight="SemiBold" Text="{Binding UnmanagedText}" />
                     <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}"

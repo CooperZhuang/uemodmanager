@@ -616,8 +616,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public bool HasUnmanaged => UnmanagedCount > 0;
 
-    /// <summary>Both script loaders are in the game, as from before the manager kept them apart.</summary>
-    public bool HasBothScriptLoaders => manager is { IsModsMenuInstalled: true, IsModLoaderInstalled: true };
+    /// <summary>Both script loaders are in the game, and a known version of one is too old to run beside the other.</summary>
+    public bool HasOldScriptLoader => manager is { HasOldScriptLoader: true };
 
     /// <summary>How many mods a test without mods turned off; 0 when no such test is on.</summary>
     public int TestOffCount => manager?.OffForTest.Count ?? 0;
@@ -928,7 +928,10 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                     parts = [taken];
                     check = manager.Check(preview, parts, id);
                 }
-                var direct = parts.Count == 1 && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
+                // A mod of the card may have several parts, such as PBZModLoader's DLL and its start file: all of them go.
+                var ours = string.Equals(id, RecommendedMain.Mod?.Repo, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, RecommendedExtra.Mod?.Repo, StringComparison.OrdinalIgnoreCase);
+                var direct = (parts.Count == 1 || ours) && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
                     && (check.Replaces is null || string.Equals(check.Replaces.CatalogId, id, StringComparison.OrdinalIgnoreCase));
                 var choice = direct
                     ? new InstallChoice(parts, name, version, check.Replaces is not null, id)
@@ -946,14 +949,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <param name="showMods">Switch to the Mods page afterwards; the openmods page stays where it is.</param>
     private async Task InstallChoiceAsync(InstallPreview preview, InstallChoice choice, bool showMods)
     {
-        // Mods Menu and PBZModLoader cause problems together, and the app points to the one it can stand behind.
-        if (!choice.Replace && ModManager.IsModsMenu(choice.Packages))
-        {
-            if (!await AskAsync(L.T("We recommend PBZModLoader"),
-                    L.T("Mods Menu and PBZModLoader cause problems together, so only one of them can be installed at a time. We cannot fix this while the source code of Mods Menu is closed. We recommend PBZModLoader: it is safe to use and open source."),
-                    L.T("Install Mods Menu"), width: 580))
-                return;
-        }
         ModRecord? installed = null;
         await RunAsync(L.F($"Installing {choice.Name}…"), async () => installed = await Task.Run(() =>
             manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings, choice.Tags is null ? null : ModTags.Parse(choice.Tags), choice.OwnFolder)));
@@ -1833,7 +1828,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen || UnmanagedRows is not null;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

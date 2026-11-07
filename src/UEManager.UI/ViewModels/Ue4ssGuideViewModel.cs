@@ -14,7 +14,11 @@ public sealed partial class Ue4ssGuideViewModel(MainViewModel owner, GameInstall
 
     public string DownloadUrl => game.Profile.Ue4ssDownloadUrl ?? OfficialReleases;
 
-    public string? Note => game.Profile.Ue4ssNote is { } note ? L.T(note) : null;
+    /// <summary>
+    /// The game profile's note on which UE4SS to take, for a download by hand. The one-click install takes the right
+    /// release itself, so the note stays away then.
+    /// </summary>
+    public string? Note => release is null && game.Profile.Ue4ssNote is { } note ? L.T(note) : null;
 
     public string DownloadText => L.F($"Download the UE4SS release for {L.T(game.Profile.DisplayName)}.");
 
