@@ -99,7 +99,7 @@ public sealed class InstallDialogEntryTests : IDisposable
     }
 
     [Fact]
-    public void A_new_mod_starts_without_tags_and_takes_what_the_player_types()
+    public async Task A_new_mod_starts_without_tags_and_takes_what_the_player_types()
     {
         File(@"Sharp\Sharp_P.pak");
         var manager = Manager();
@@ -111,7 +111,7 @@ public sealed class InstallDialogEntryTests : IDisposable
         dialog.Tags = "Combat, UI";
         dialog.InstallCommand.Execute(null);
 
-        Assert.Equal("Combat, UI", dialog.Result.Result!.Tags);
+        Assert.Equal("Combat, UI", (await dialog.Result)!.Tags);
     }
 
     [Fact]
@@ -131,5 +131,131 @@ public sealed class InstallDialogEntryTests : IDisposable
         dialog.Packages[1].IsSelected = true;
 
         Assert.Equal("Maps", dialog.Tags);
+    }
+
+    private (ModManager Manager, ModRecord Red) RedInstalled()
+    {
+        File(@"Red\Skin_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Red"));
+        return (manager, manager.Install(preview, preview.Packages.ToList(), "Red", null));
+    }
+
+    [Fact]
+    public void A_download_with_other_file_names_has_no_choice()
+    {
+        var (manager, _) = RedInstalled();
+        File(@"Blue\Other_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.False(dialog.HasPlaces);
+        Assert.Null(dialog.KeepBothText);
+    }
+
+    [Fact]
+    public async Task The_same_file_names_offer_an_update_first_as_before()
+    {
+        var (manager, red) = RedInstalled();
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.True(dialog.HasPlaces);
+        Assert.Equal(["Update \"Red\"", "Keep both: install this as another mod, in a folder of its own in ~mods"], dialog.Places.Select(p => p.Label));
+        Assert.True(dialog.Places[0].IsSelected);
+        Assert.Equal("Update", dialog.ConfirmText);
+        Assert.Contains("Red", dialog.ReplaceText);
+        Assert.Null(dialog.KeepBothText);
+
+        dialog.InstallCommand.Execute(null);
+
+        var choice = (await dialog.Result)!;
+        Assert.True(choice.Replace);
+        Assert.Null(choice.OwnFolder);
+        Assert.Equal(red.Id, manager.Mods.Single().Id);
+    }
+
+    [Fact]
+    public async Task Keep_both_warns_and_shows_the_folder_and_installs_as_a_new_mod()
+    {
+        var (manager, _) = RedInstalled();
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        dialog.Places[1].IsSelected = true;
+
+        Assert.False(dialog.Places[0].IsSelected);
+        Assert.Equal("Install", dialog.ConfirmText);
+        Assert.Null(dialog.ReplaceText);
+        Assert.Contains("only one style or version", dialog.KeepBothText);
+        Assert.Contains("Red", dialog.KeepBothText);
+        Assert.Contains(dialog.Rows, row => row.Name.EndsWith("Blue", StringComparison.Ordinal));
+
+        dialog.Name = "Blue style";
+        Assert.Contains(dialog.Rows, row => row.Name.EndsWith("Blue style", StringComparison.Ordinal));
+
+        dialog.InstallCommand.Execute(null);
+
+        var choice = (await dialog.Result)!;
+        Assert.False(choice.Replace);
+        Assert.Equal("Blue style", choice.OwnFolder);
+        manager.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, ownFolder: choice.OwnFolder);
+        Assert.Equal(2, manager.Mods.Count);
+    }
+
+    [Fact]
+    public void Back_to_update_takes_the_warning_and_the_folder_away()
+    {
+        var (manager, _) = RedInstalled();
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        dialog.Places[1].IsSelected = true;
+        dialog.Places[0].IsSelected = true;
+
+        Assert.False(dialog.Places[1].IsSelected);
+        Assert.Null(dialog.KeepBothText);
+        Assert.Equal("Update", dialog.ConfirmText);
+    }
+
+    [Fact]
+    public void A_mod_that_shares_too_little_stops_until_the_player_keeps_both()
+    {
+        File(@"Big\One_P.pak");
+        File(@"Big\Two_P.pak");
+        File(@"Big\Three_P.pak");
+        var manager = Manager();
+        using (var big = manager.Inspect(Path.Combine(root, "Big")))
+            manager.Install(big, big.Packages.ToList(), "Big", null);
+        File(@"Small\One_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Small"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        var keep = Assert.Single(dialog.Places);
+        Assert.True(keep.KeepsBoth);
+        Assert.False(keep.IsSelected);
+        Assert.False(dialog.InstallCommand.CanExecute(null));
+
+        keep.IsSelected = true;
+
+        Assert.True(dialog.InstallCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void A_download_from_the_catalog_has_no_choice()
+    {
+        var (manager, _) = RedInstalled();
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { }, new CatalogSource("someone/blue", "Blue", "1.0"));
+
+        Assert.False(dialog.HasPlaces);
     }
 }

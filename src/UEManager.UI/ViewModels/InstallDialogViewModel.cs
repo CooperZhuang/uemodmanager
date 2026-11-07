@@ -9,8 +9,9 @@ namespace UEManager.UI.ViewModels;
 
 /// <param name="KeepSettings">On an update, keep the settings files the player changed instead of the new defaults.</param>
 /// <param name="Tags">The tags as the player typed them; null keeps the ones of the mod it updates.</param>
+/// <param name="OwnFolder">The folder below ~mods for the files that go there; null puts them directly in ~mods.</param>
 public sealed record InstallChoice(IReadOnlyList<PackageGroup> Packages, string Name, string? Version, bool Replace,
-    string? CatalogId = null, bool KeepSettings = true, string? Tags = null);
+    string? CatalogId = null, bool KeepSettings = true, string? Tags = null, string? OwnFolder = null);
 
 /// <summary>A download from the catalog: the mod's id there, and the name and version the catalog gives.</summary>
 public sealed record CatalogSource(string Id, string Name, string Version);
@@ -27,6 +28,8 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     private bool selecting;
     private bool fillingTags;
     private bool tagsTyped;
+    private bool placing;
+    private string placesKey = "";
 
     public InstallDialogViewModel(ModManager manager, InstallPreview preview, Action showUe4ssGuide, CatalogSource? catalog = null)
     {
@@ -94,6 +97,32 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     [ObservableProperty]
     private string name;
 
+    /// <summary>A kept mod's folder takes its name.</summary>
+    partial void OnNameChanged(string value)
+    {
+        if (SelectedPlace is { KeepsBoth: true })
+            Recheck();
+    }
+
+    /// <summary>What to do with a download that has the same file names as an installed mod; empty for any other.</summary>
+    public ObservableCollection<PlaceOptionViewModel> Places { get; } = [];
+
+    public bool HasPlaces => Places.Count > 0;
+
+    private PlaceOptionViewModel? SelectedPlace => Places.FirstOrDefault(p => p.IsSelected);
+
+    /// <summary>The folder below ~mods for this install, as the chosen place has it.</summary>
+    private string? OwnFolder => SelectedPlace switch
+    {
+        null => null,
+        { KeepsBoth: true } => manager.NewModFolder(Name),
+        var place => place.Folder,
+    };
+
+    /// <summary>Both mods are in the game then, but the game may show only one of them.</summary>
+    [ObservableProperty]
+    private string? keepBothText;
+
     [ObservableProperty]
     private string version;
 
@@ -132,7 +161,8 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         check?.Replaces is not null,
         catalog?.Id,
         KeepSettings,
-        Tags));
+        Tags,
+        OwnFolder));
 
     [RelayCommand]
     private void Cancel() => result.TrySetResult(null);
@@ -161,9 +191,48 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         Recheck();
     }
 
+    /// <summary>The choice follows the ticked parts. Each mod that this may update is a place, an update first, as before; keeping both is the last.</summary>
+    private void RefreshPlaces(IReadOnlyCollection<PackageGroup> selected)
+    {
+        var found = manager.SameNameMods(selected, catalog?.Id);
+        var key = string.Join('|', found.Select(f => $"{f.Mod.Id}:{f.CanUpdate}"));
+        if (key == placesKey)
+            return;
+        placesKey = key;
+        placing = true;
+        Places.Clear();
+        if (found.Count > 0)
+        {
+            foreach (var mod in found.Where(f => f.CanUpdate))
+                Places.Add(new PlaceOptionViewModel(L.F($"Update \"{mod.Mod.Name}\""), false, mod.Folder, OnPlaceChanged));
+            Places.Add(new PlaceOptionViewModel(L.T("Keep both: install this as another mod, in a folder of its own in ~mods"), true, null, OnPlaceChanged));
+            if (!Places[0].KeepsBoth)
+                Places[0].IsSelected = true;
+        }
+        placing = false;
+        OnPropertyChanged(nameof(HasPlaces));
+    }
+
+    private void OnPlaceChanged(PlaceOptionViewModel place)
+    {
+        if (placing)
+            return;
+        placing = true;
+        foreach (var other in Places.Where(p => p != place))
+            other.IsSelected = false;
+        placing = false;
+        Recheck();
+    }
+
     private void Recheck()
     {
-        check = manager.Check(preview, Packages.Where(p => p.IsSelected).Select(p => p.Package).ToList(), catalog?.Id);
+        var chosen = Packages.Where(p => p.IsSelected).Select(p => p.Package).ToList();
+        RefreshPlaces(chosen);
+        var ownFolder = OwnFolder;
+        KeepBothText = SelectedPlace is { KeepsBoth: true }
+            ? L.F($"This mod and {string.Join(", ", manager.SameNameMods(chosen, catalog?.Id).Select(f => f.Mod.Name))} may change the same things in the game. Then only one style or version shows, even with both turned on. Turn off the one you do not want. Only the mod's author can make both work together, with one combined mod.")
+            : null;
+        check = manager.Check(preview, chosen, catalog?.Id, ownFolder);
         Problems.Clear();
         foreach (var problem in check.Problems)
             Problems.Add(L.F(problem));
@@ -191,7 +260,7 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         ConfirmText = old is null ? L.T("Install") : L.T("Update");
         CanInstall = check.CanInstall;
         NeedsUe4ss = check.NeedsUe4ss;
-        Rows = ModDetailsViewModel.Tree(FilesOf(Packages.Where(p => p.IsSelected).Select(p => p.Package)));
+        Rows = ModDetailsViewModel.Tree(FilesOf(chosen, ownFolder));
     }
 
     /// <summary>The files of the ticked parts, in the tree of their folders in the game.</summary>
@@ -218,7 +287,7 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     }
 
     /// <summary>Each file of the parts where it goes in the game, with its size and what it is there.</summary>
-    private IEnumerable<ModFileItem> FilesOf(IEnumerable<PackageGroup> packages)
+    private IEnumerable<ModFileItem> FilesOf(IEnumerable<PackageGroup> packages, string? ownFolder)
     {
         var root = manager.Game.RootPath;
         var placed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -226,7 +295,7 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         {
             for (var i = 0; i < package.Files.Count; i++)
             {
-                var relative = package.RelativePaths[i];
+                var relative = ModManager.InFolder(ownFolder, package.Target, package.RelativePaths[i]);
                 var path = Path.Combine(manager.TargetFolder(package.Target), relative.Replace('/', Path.DirectorySeparatorChar));
                 // A shared library that several parts bring lands once.
                 if (!placed.Add(path))
@@ -238,6 +307,26 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
                 yield return new ModFileItem(Path.GetRelativePath(root, path), path, Format.Size(new FileInfo(package.Files[i]).Length), state, tone);
             }
         }
+    }
+}
+
+/// <summary>One answer when a download has the same file names as an installed mod: update that mod, or keep both.</summary>
+/// <param name="folder">Where the mod it updates has its files below ~mods; null directly in ~mods, or when keeping both.</param>
+public sealed partial class PlaceOptionViewModel(string label, bool keepsBoth, string? folder, Action<PlaceOptionViewModel> changed) : LocalizedObservableObject
+{
+    public string Label => label;
+
+    public bool KeepsBoth => keepsBoth;
+
+    public string? Folder => folder;
+
+    [ObservableProperty]
+    private bool isSelected;
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        if (value)
+            changed(this);
     }
 }
 

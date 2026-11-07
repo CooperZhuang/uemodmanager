@@ -31,6 +31,9 @@ internal static class AppInfo
     /// <summary>The invite to the community's Discord server.</summary>
     public const string DiscordUrl = "https://discord.gg/8vtph8SCFe";
 
+    /// <summary>PayPal's page for a donation to the project.</summary>
+    public const string DonateUrl = "https://www.paypal.com/donate/?business=thanks-kintaro%40outlook.com&currency_code=EUR&item_name=thank+you+kintaro&no_recurring=1";
+
     public static string Version { get; } =
         Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
         ?? "0.0.0";

@@ -81,6 +81,20 @@
                     </StackPanel>
 
                     <StackPanel DockPanel.Dock="Bottom" Margin="24,0,24,22">
+                        <!-- A donation; the X removes the button from here for good, and the About page keeps it. -->
+                        <Border Margin="0,0,0,10" CornerRadius="18" Background="{StaticResource Brush.Donate}"
+                                Visibility="{Binding ShowDonateButton, Converter={StaticResource Visible}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Style="{StaticResource Button.DonateRemove}" Command="{Binding RemoveDonateButtonCommand}"
+                                        ToolTip="{ui:Loc 'Remove this button'}" />
+                                <Button Grid.Column="1" Style="{StaticResource Button.DonateBesideX}" Content="{ui:Loc 'DONATE'}"
+                                        Command="{Binding ShowDonationCommand}" />
+                            </Grid>
+                        </Border>
                         <Button Margin="0,0,0,10" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
                                 Command="{Binding OpenDiscordCommand}" ToolTip="{ui:Loc 'Questions, news and help: the community on Discord'}" />
                         <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Launch game'}" ui:Icon.Glyph="&#xE768;"
@@ -450,6 +464,24 @@
                     </ItemsControl>
                     <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                             Command="{Binding CloseThanksCommand}" IsCancel="True" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===== A donation ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding IsDonationOpen, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource Dialog}" Width="520">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Thank you for using UE MM'}" />
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'UE MM is free and open source. Every feature works the same with or without a donation.'}" />
+                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding DonationOptionalText}" />
+                    <StackPanel Margin="0,24,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{ui:Loc 'Close'}" Command="{Binding CloseDonationCommand}" IsCancel="True" />
+                        <Button Margin="8,0,0,0" MinWidth="120" Style="{StaticResource Button.Donate}" Content="{ui:Loc 'DONATE'}"
+                                Command="{Binding DonateCommand}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>

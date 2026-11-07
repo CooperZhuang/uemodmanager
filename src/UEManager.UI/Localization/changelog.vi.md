@@ -2,6 +2,11 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.5.8 (2026-11-07)
+- Khi trùng tên tệp với một mod đã cài, cửa sổ cài đặt hỏi cập nhật mod đó hay giữ cả hai
+- Giữ cả hai sẽ đặt mod mới vào thư mục riêng trong ~mods, kèm lưu ý có thể chỉ một kiểu được hiển thị
+- Nút Ủng hộ phía trên nút Discord: hoàn toàn tùy ý, nút X gỡ nó vĩnh viễn (trang Giới thiệu vẫn giữ nút)
+
 ## 1.5.7 (2026-11-06)
 - Nhãn cho mod: thêm khi cài hoặc bằng nút Thêm nhãn, rồi lọc danh sách chỉ với một cú nhấp
 - Nút X trong ô tìm kiếm xóa nội dung, phím Esc cũng vậy

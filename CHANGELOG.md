@@ -4,6 +4,11 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.5.8 (2026-11-07)
+- Same file names as an installed mod: the install window asks whether to update it or keep both
+- Keep both puts the new mod in a folder of its own in ~mods, with a note that only one style may show
+- Donate button above the Discord button: fully optional, and its X removes it for good (the About page keeps it)
+
 ## 1.5.7 (2026-11-06)
 - Tags for your mods: add them at install or with the Add tag button, then filter the list with one click
 - An X in the search boxes clears the text, and so does Esc

@@ -35,6 +35,13 @@
     <SolidColorBrush x:Key="Brush.Discord" Color="#4D59D5" />
     <SolidColorBrush x:Key="Brush.DiscordBright" Color="#5865F2" />
 
+    <!-- PayPal's blue, a brighter one under the pointer, and a darker one for the X beside it. -->
+    <SolidColorBrush x:Key="Brush.Donate" Color="#00266C" />
+    <SolidColorBrush x:Key="Brush.DonateHover" Color="#083590" />
+    <SolidColorBrush x:Key="Brush.DonateEdge" Color="#001A4A" />
+    <SolidColorBrush x:Key="Brush.DonateEdgeHover" Color="#00266C" />
+    <SolidColorBrush x:Key="Brush.OnDonate" Color="#DDE1E8" />
+
     <SolidColorBrush x:Key="Brush.Success" Color="#86B793" />
     <SolidColorBrush x:Key="Brush.Warning" Color="#D9A84E" />
     <SolidColorBrush x:Key="Brush.Danger" Color="#E5485F" />

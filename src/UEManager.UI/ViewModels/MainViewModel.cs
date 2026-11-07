@@ -932,7 +932,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         ModRecord? installed = null;
         await RunAsync(L.F($"Installing {choice.Name}…"), async () => installed = await Task.Run(() =>
-            manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings, choice.Tags is null ? null : ModTags.Parse(choice.Tags))));
+            manager!.Install(preview, choice.Packages, choice.Name, choice.Version, choice.Replace, choice.CatalogId, choice.KeepSettings, choice.Tags is null ? null : ModTags.Parse(choice.Tags), choice.OwnFolder)));
         if (installed is null)
             return;
         RefreshMods();
@@ -1789,7 +1789,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

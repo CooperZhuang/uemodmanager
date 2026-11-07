@@ -123,7 +123,8 @@ public sealed class ModManager
     /// The catalog entry the download comes from, if any. The installed mod with the same id is the
     /// one it updates, and it never takes over the files of another enabled mod.
     /// </param>
-    public InstallCheck Check(InstallPreview preview, IReadOnlyCollection<PackageGroup> selected, string? catalogId = null)
+    /// <param name="ownFolder">The folder below ~mods for the files that go there; null puts them directly in ~mods.</param>
+    public InstallCheck Check(InstallPreview preview, IReadOnlyCollection<PackageGroup> selected, string? catalogId = null, string? ownFolder = null)
     {
         var problems = new List<FormattableString>();
         var warnings = new List<FormattableString>();
@@ -187,7 +188,7 @@ public sealed class ModManager
             warnings.Add($"UE4SS is not installed in this game. Lua, DLL and Blueprint mods only run with it. They are installed anyway and start working once UE4SS is in place.");
 
         var entries = selected
-            .SelectMany(p => p.RelativePaths.Select((path, i) => (p.Target, Path: path, Source: p.Files[i])))
+            .SelectMany(p => p.RelativePaths.Select((path, i) => (p.Target, Path: InFolder(ownFolder, p.Target, path), Source: p.Files[i])))
             .ToList();
         // A shared library that goes with several selected UE4SS mods is the same file each time.
         foreach (var duplicate in entries.GroupBy(e => (e.Target, e.Path.ToUpperInvariant()))
@@ -245,7 +246,7 @@ public sealed class ModManager
                     problems.Add($"\"{other.Name}\" uses the same files. Disable or uninstall it first.");
             }
             // The download's other choice is installed: this one takes its place, so the mod is never in the game twice.
-            if (replaces is null && owners.Count == 0)
+            if (replaces is null && owners.Count == 0 && ownFolder is null)
             {
                 var others = preview.Packages.Where(p => p.VariantOf is not null && !selected.Contains(p) && selected.Any(s => s.VariantOf == p.VariantOf)).ToList();
                 replaces = mods.FirstOrDefault(m => others.Any(o => IsSameMod(m, o.RelativePaths.Select(path => (o.Target, path)))));
@@ -280,14 +281,15 @@ public sealed class ModManager
     /// Either way, the player's version is backed up first.
     /// </param>
     /// <param name="tags">The mod's tags, none when empty; null keeps the ones of the mod it updates.</param>
+    /// <param name="ownFolder">The folder below ~mods for the files that go there; see <see cref="Check"/>.</param>
     public ModRecord Install(InstallPreview preview, IReadOnlyCollection<PackageGroup> selected,
         string name, string? version, bool replace = false, string? catalogId = null, bool keepSettings = true,
-        IReadOnlyList<string>? tags = null)
+        IReadOnlyList<string>? tags = null, string? ownFolder = null)
     {
         lock (gate)
         {
             EnsureCanChange();
-            var check = Check(preview, selected, catalogId);
+            var check = Check(preview, selected, catalogId, ownFolder);
             // The install window shows every problem before this; a direct call reports the first.
             if (!check.CanInstall)
                 throw new ModException(check.Problems[0]);
@@ -331,7 +333,7 @@ public sealed class ModManager
                 {
                     for (var i = 0; i < package.Files.Count; i++)
                     {
-                        var relative = package.RelativePaths[i];
+                        var relative = InFolder(ownFolder, package.Target, package.RelativePaths[i]);
                         // A shared library that goes with several selected UE4SS mods is kept once.
                         if (record.Files.Any(f => IsSameFile(f, package.Target, relative)))
                             continue;
@@ -2000,6 +2002,52 @@ public sealed class ModManager
     {
         lock (gate)
             return mods.Any(m => part.RelativePaths.Any(path => m.Files.Any(f => IsSameFile(f, part.Target, path))));
+    }
+
+    /// <summary>A file's path below its target folder, when the files that go to ~mods take a folder of their own there.</summary>
+    public static string InFolder(string? ownFolder, DeployTarget target, string path) =>
+        ownFolder is not null && target == DeployTarget.Mods ? $"{ownFolder}/{path}" : path;
+
+    /// <summary>
+    /// The installed mods with a file of the same name as one that these parts place in ~mods: a new version of one of
+    /// them, or another mod whose author chose the same name, such as another style of an outfit. Only the player can
+    /// tell, so a download by hand asks. A download from the catalog knows which mod it updates.
+    /// </summary>
+    public IReadOnlyList<SameNameMod> SameNameMods(IReadOnlyCollection<PackageGroup> selected, string? catalogId = null)
+    {
+        var names = selected.Where(p => p.Target == DeployTarget.Mods).SelectMany(p => p.RelativePaths).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (catalogId is not null || names.Count == 0)
+            return [];
+        lock (gate)
+        {
+            var found = new List<SameNameMod>();
+            foreach (var mod in mods)
+            {
+                var file = mod.Files.FirstOrDefault(f => f.Target == DeployTarget.Mods && names.Contains(Path.GetFileName(f.FileName)));
+                if (file is null)
+                    continue;
+                var slash = file.FileName.LastIndexOf('/');
+                var folder = slash < 0 ? null : file.FileName[..slash];
+                found.Add(new SameNameMod(mod, folder, IsSameMod(mod, selected.SelectMany(p => p.RelativePaths.Select(path => (p.Target, InFolder(folder, p.Target, path)))))));
+            }
+            return found;
+        }
+    }
+
+    /// <summary>A folder below ~mods for a mod kept beside others with the same file names: its name, with a number when that is taken.</summary>
+    public string NewModFolder(string name)
+    {
+        var safe = FileSystem.SafeName(name, "Mod");
+        var place = safe;
+        lock (gate)
+        {
+            for (var number = 2;
+                 Directory.Exists(Path.Combine(Game.ModsPath, place))
+                 || mods.Any(m => m.Files.Any(f => f.Target == DeployTarget.Mods && f.FileName.StartsWith(place + "/", StringComparison.OrdinalIgnoreCase)));
+                 number++)
+                place = $"{safe} {number}";
+        }
+        return place;
     }
 
     /// <summary>

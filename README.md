@@ -492,6 +492,26 @@ count, and a click shows only the mods with that tag, one tag at a time. A row s
 its tags, and the search finds them. An update keeps a mod's tags. They change no
 file of the mod. The mods on the card stand apart from the list and have no tags.
 
+## Same file names
+
+Some authors give different mods the same file names, such as `Skin_P.pak` in two
+styles of one outfit. A new version of a mod has the same names too, and only the
+player can tell the two apart. So when a download by hand has a file of the same name
+as a mod's in `~mods`, the install review asks. **Update** that mod is ticked at first,
+as it is its usual meaning. **Keep both** installs the download as another mod, with
+its files in a folder of its own below `~mods`, named after the mod, as the game also
+loads paks from there. Each mod then has its on/off switch, and an update of either
+keeps its place. The review warns that two mods may still change the same things in
+the game: only one style or version shows then, and only the author can make both
+work together, with one combined mod.
+
+## Donating
+
+**Donate** above the Discord button opens a thank-you window with the PayPal link. A
+donation is fully optional, and every feature works the same without one. The small X on the
+button asks first, then removes it from the sidebar for good (`hideDonateButton` in
+`settings.json`). The About page keeps the button at its top.
+
 ## Keyboard
 
 | Key | Does |

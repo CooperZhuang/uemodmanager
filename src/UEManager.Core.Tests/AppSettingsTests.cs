@@ -25,6 +25,23 @@ public class AppSettingsTests
     }
 
     [Fact]
+    public void The_removed_donate_button_stays_removed_and_old_settings_keep_it()
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        Directory.CreateDirectory(paths.Root);
+        File.WriteAllText(paths.SettingsFile, "{\"backUpSavesOnLaunch\":true}");
+
+        var settings = AppSettings.Load(paths);
+        Assert.False(settings.HideDonateButton);
+
+        settings.HideDonateButton = true;
+        settings.Save(paths);
+
+        Assert.True(AppSettings.Load(paths).HideDonateButton);
+    }
+
+    [Fact]
     public void The_window_place_survives_a_restart()
     {
         using var folder = new TestFolder();
