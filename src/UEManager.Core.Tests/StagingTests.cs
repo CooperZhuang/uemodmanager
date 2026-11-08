@@ -157,6 +157,39 @@ public class StagingTests
         Assert.DoesNotContain(scan.IgnoredFiles, f => f.EndsWith("SpeakerHighlight.json", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void A_pak_of_that_name_stays_in_the_mods_folder_and_the_settings_file_is_a_part_of_its_own()
+    {
+        using var folder = new TestFolder();
+        folder.File(@"staging\SpeakerHighlight_P.pak", "pak");
+        folder.File(@"staging\ProjectPBZ\Content\Paks\~mods\SpeakerHighlight.json", "{}");
+
+        var scan = PackageScanner.Scan(folder.Combine("staging"), projectFolder: "ProjectPBZ", exeFolder: "platform/steam");
+
+        var pak = Assert.Single(scan.Packages, p => p.Target == DeployTarget.Mods);
+        Assert.Equal(["SpeakerHighlight_P.pak"], pak.RelativePaths);
+        var settings = Assert.Single(scan.Packages, p => p.Target == DeployTarget.InstallRoot);
+        Assert.Equal(["ProjectPBZ/Content/Paks/~mods/SpeakerHighlight.json"], settings.RelativePaths);
+    }
+
+    [Fact]
+    public void The_settings_file_goes_with_each_copy_of_a_two_loader_zip_and_the_order_stays()
+    {
+        using var folder = new TestFolder();
+        folder.File(@"staging\ProjectPBZ\Content\JavaScript\PBZModsMenu\Mods\PVLW_SpeakerHighlight\main.js", "menu copy");
+        folder.File(@"staging\ProjectPBZ\PBZModLoader\mods\PVLW_SpeakerHighlight\main.js", "loader copy");
+        folder.File(@"staging\ProjectPBZ\Content\Paks\~mods\SpeakerHighlight.json", "{}");
+        var scan = PackageScanner.Scan(folder.Combine("staging"), projectFolder: "ProjectPBZ", exeFolder: "platform/steam");
+
+        Assert.Equal(2, scan.Packages.Count);
+        Assert.All(scan.Packages, copy =>
+        {
+            Assert.True(copy.IsAlternate);
+            Assert.Contains("ProjectPBZ/Content/Paks/~mods/SpeakerHighlight.json", copy.RelativePaths);
+        });
+        Assert.Equal([PackageScanner.ForModsMenu, PackageScanner.ForModLoader], scan.Packages.Select(p => p.Variant));
+    }
+
     [Theory]
     [InlineData(@"C:\Downloads\Sharp Blades-12-1-2-1730000000.zip", "Sharp Blades", "1.2")]
     [InlineData(@"C:\Downloads\Sharp_Blades_P.pak", "Sharp Blades", null)]
