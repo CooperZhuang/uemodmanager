@@ -354,6 +354,29 @@ public class DownloadLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Data_files_beside_the_games_folders_describe_the_download_and_get_no_warning()
+    {
+        // As the Quest Guide: MANIFEST.json and VALIDATION.json beside the folders that go into the game.
+        using var preview = Inspect(
+            @"Guide-1.2\TestGame\Content\JavaScript\Guide\main.js",
+            @"Guide-1.2\MANIFEST.json",
+            @"Guide-1.2\VALIDATION.json");
+
+        Assert.Empty(preview.LeftOutFiles);
+        Assert.DoesNotContain(WarningsFor(preview), w => w.StartsWith("Files left out", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_data_file_in_another_folder_still_gets_the_warning()
+    {
+        using var preview = Inspect(
+            @"Guide-1.2\TestGame\Content\JavaScript\Guide\main.js",
+            @"Guide-1.2\Extras\preset.json");
+
+        Assert.Equal(["Mod/Guide-1.2/Extras/preset.json"], preview.LeftOutFiles);
+    }
+
+    [Fact]
     public void A_download_only_for_the_loader_still_waits_for_it()
     {
         using var preview = Inspect(

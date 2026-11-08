@@ -457,7 +457,9 @@ public static class PackageScanner
         var used = packages.SelectMany(p => p.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var ignored = files.Where(f => !used.Contains(f)).Select(f => RelativePath(root, f)).Order(NaturalOrder.Instance).ToList();
         var placed = used.Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var leftOut = ignored.Where(f => !placed.Contains(Path.GetFileName(f)) && MayMatter(f, projectFolder, exeFolder)).ToList();
+        var gameRoots = GameRootsIn(files.Select(f => RelativePath(root, f)), projectFolder);
+        var leftOut = ignored.Where(f => !placed.Contains(Path.GetFileName(f)) && MayMatter(f, projectFolder, exeFolder)
+            && !DescribesDownload(f, gameRoots)).ToList();
         var nestedArchives = files.Count(f => FileSystem.HasExtension(f, FileSystem.ArchiveExtensions));
         var runtime = files.Any(f => Path.GetFileName(f).Equals("UE4SS.dll", StringComparison.OrdinalIgnoreCase));
         return new ScanResult(packages, ignored, leftOut, nestedArchives, runtime);
@@ -535,6 +537,31 @@ public static class PackageScanner
 
     /// <summary>Files that show a mod on its page, kept beside its files: no mod reads them from outside the game's folders.</summary>
     private static readonly string[] PageFiles = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".mp4", ".webm", ".url", ".lnk"];
+
+    /// <summary>Data files that may describe a download, such as the Quest Guide's MANIFEST.json and VALIDATION.json.</summary>
+    private static readonly string[] InfoFiles = [".json", ".xml", ".yaml", ".yml", ".toml", ".csv"];
+
+    /// <summary>The folders of a download that hold the game's project folder: the download is laid out as the game's own folders there.</summary>
+    private static HashSet<string> GameRootsIn(IEnumerable<string> paths, string? projectFolder)
+    {
+        var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(projectFolder))
+            return roots;
+        foreach (var parts in paths.Select(path => path.Split('/')))
+        {
+            var at = Array.FindIndex(parts, part => part.Equals(projectFolder, StringComparison.OrdinalIgnoreCase));
+            if (at >= 0 && at < parts.Length - 1)
+                roots.Add(string.Join('/', parts[..at]));
+        }
+        return roots;
+    }
+
+    /// <summary>
+    /// A data file beside the game's folders of a download laid out as them: the author copies those folders into the
+    /// game, so the file describes the download and the review does not warn about it. Elsewhere it may be a mod's file.
+    /// </summary>
+    private static bool DescribesDownload(string path, HashSet<string> gameRoots) =>
+        FileSystem.HasExtension(path, InfoFiles) && gameRoots.Contains(path.LastIndexOf('/') is var slash and >= 0 ? path[..slash] : "");
 
     /// <summary>The file in which a download gives its name and version to mod tools, at its top.</summary>
     private const string ModInfoFile = "modinfo.ini";

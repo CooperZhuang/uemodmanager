@@ -2,22 +2,28 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.6.2 (2026-11-08)
+- Tệp tải về từ cùng trang mod với một mod đã cài nhưng có tên tệp khác (như mod đổi từ pak sang script) giờ sẽ hỏi: mặc định "Giữ cả hai", hoặc chọn "Cập nhật" (cảm ơn CooperZhuang)
+- Tệp cấu hình mà mod script để trong ~mods giờ được cài cùng mod đó (cảm ơn CooperZhuang)
+- Tệp tải về có phần dành cho nhiều trình nạp được cài đầy đủ theo hướng dẫn của tác giả; thiếu trình nạp giờ chỉ là cảnh báo, không chặn cài đặt (cảm ơn CooperZhuang)
+- Không còn cảnh báo "Tệp bị bỏ qua" cho các tệp dữ liệu như MANIFEST.json nằm cạnh các thư mục game trong tệp tải về
+
 ## 1.6.1 (2026-11-07)
-- Nút Mở trang mod ở hàng và chi tiết của mỗi mod, cho mod có tệp tải về giữ nguyên tên tệp của trang web mod; ứng dụng đọc số của mod từ tên đó, không cần mạng
+- Thêm nút Mở trang mod vào dòng và phần chi tiết của mỗi mod có tệp tải về giữ nguyên tên từ trang web mod; ứng dụng đọc mã số mod từ tên tệp mà không cần kết nối mạng
 - Mod đã cài bằng phiên bản cũ cũng có liên kết này; mod khác hiện "Không có trang mod", còn mod trên thẻ không hiện gì
-- Lần tải thứ hai của cùng một tệp, có tên kết thúc bằng (1), nay cũng nhận được tên và phiên bản
-- Chưa thể kiểm tra cập nhật thật: việc này cần quyền truy cập API của trang web mod, yêu cầu vẫn đang chờ duyệt, nên Mở trang mod là mức tối đa ứng dụng làm được lúc này
+- Giờ đây ứng dụng cũng nhận diện được tên và phiên bản mod khi cùng một tệp được tải lần thứ hai, với tên tệp có thêm (1)
+- Chưa thể tự kiểm tra bản cập nhật cho mod vì yêu cầu cấp quyền truy cập API của trang web mod vẫn đang chờ duyệt; hiện tại ứng dụng chỉ có thể mở trang mod để bạn tự kiểm tra
 
 ## 1.6.0 (2026-11-07)
 - Có thể cài Mods Menu và PBZModLoader cùng lúc: Mods Menu 0.9.0 và PBZModLoader 2.1.0 trở lên chạy cùng nhau
-- Có cảnh báo khi một phiên bản cũ đã biết của một bên sẽ gây lỗi, và lối vào hid của PBZModLoader không dùng cạnh Mods Menu
+- Cảnh báo nếu một trong hai đang dùng phiên bản cũ đã được xác định là gây xung đột; PBZModLoader không được dùng hid.dll để nạp vào game khi có Mods Menu
 - Nút Xem tệp liệt kê các tệp trong thư mục mod không do trình quản lý cài
 - Cửa sổ UE4SS chỉ hiện lưu ý chọn bản phát hành khi bạn tải thủ công
 
 ## 1.5.9 (2026-11-07)
 - Lọc danh sách mod theo Tất cả, Đã bật hoặc Đã tắt; Đã bật sẽ ẩn các mod đã tắt
 - Sắp xếp danh sách theo trạng thái, loại và tình trạng, không chỉ theo tên và ngày
-- Gợi ý nhãn dưới ô Nhãn: nhãn của bạn và nhãn phổ biến, lọc theo khi bạn gõ; Tab để tự hoàn thành
+- Gợi ý nhãn dưới ô Nhãn: gồm nhãn của bạn và các nhãn phổ biến, được lọc theo nội dung bạn nhập; nhấn Tab để tự động hoàn thành
 
 ## 1.5.8 (2026-11-07)
 - Khi trùng tên tệp với một mod đã cài, cửa sổ cài đặt hỏi cập nhật mod đó hay giữ cả hai

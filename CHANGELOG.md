@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.6.2 (2026-11-08)
+- A download from the same mod page as an installed mod, with other file names (such as a pak that became a script), now asks: Keep both comes first, or Update (thanks, CooperZhuang)
+- A settings file that a script mod keeps in ~mods installs with that mod (thanks, CooperZhuang)
+- A download with parts for several loaders installs whole, as its author says; a missing loader is now a warning, not a stop (thanks, CooperZhuang)
+- No "Files left out" warning for data files such as MANIFEST.json beside the game's folders of a download
+
 ## 1.6.1 (2026-11-07)
 - Open mod page in each mod's row and details, for a mod whose download kept the mod site's file name; the app reads the mod's number from that name, with no network
 - Mods installed with an older version get the link too; other mods show "No mod page", and the mods on the card show neither
