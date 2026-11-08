@@ -142,6 +142,37 @@ public sealed class InstallDialogEntryTests : IDisposable
     }
 
     [Fact]
+    public async Task Only_the_same_mod_page_ticks_keep_both_first_and_offers_the_update()
+    {
+        File(@"Auto Collect Loot 70 1.3.0 2026-10-31T03-18Z pZyhlgONj\zzz_PBZAutoCollect_P.pak");
+        var manager = Manager();
+        using (var old = manager.Inspect(Path.Combine(root, "Auto Collect Loot 70 1.3.0 2026-10-31T03-18Z pZyhlgONj")))
+            manager.Install(old, old.Packages.ToList(), "Auto Collect Loot", "1.3.0");
+        File(@"Auto Collect Loot 70 1.7.2 2026-11-04T23-30Z hs0itkqF1\TestGame\Content\JavaScript\PBZAutoCollect\main.js");
+        using var preview = manager.Inspect(Path.Combine(root, "Auto Collect Loot 70 1.7.2 2026-11-04T23-30Z hs0itkqF1"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.Equal("An installed mod comes from the same mod page. Keep both, or update it:", dialog.PlacesTitle);
+        Assert.Equal(["Keep both: install this as another mod", "Update \"Auto Collect Loot\""], dialog.Places.Select(p => p.Label));
+        Assert.True(dialog.Places[0].IsSelected);
+        Assert.Equal("Install", dialog.ConfirmText);
+        Assert.Contains("same mod page as Auto Collect Loot", dialog.KeepBothText);
+
+        dialog.Places[1].IsSelected = true;
+
+        Assert.Equal("Update", dialog.ConfirmText);
+        Assert.Null(dialog.KeepBothText);
+
+        dialog.Places[0].IsSelected = true;
+        dialog.InstallCommand.Execute(null);
+
+        var choice = (await dialog.Result)!;
+        Assert.False(choice.Replace);
+        Assert.NotNull(choice.OwnFolder);
+    }
+
+    [Fact]
     public void A_download_with_other_file_names_has_no_choice()
     {
         var (manager, _) = RedInstalled();
@@ -164,6 +195,7 @@ public sealed class InstallDialogEntryTests : IDisposable
         var dialog = new InstallDialogViewModel(manager, preview, () => { });
 
         Assert.True(dialog.HasPlaces);
+        Assert.Equal("An installed mod has the same file names. Update it, or keep both:", dialog.PlacesTitle);
         Assert.Equal(["Update \"Red\"", "Keep both: install this as another mod, in a folder of its own in ~mods"], dialog.Places.Select(p => p.Label));
         Assert.True(dialog.Places[0].IsSelected);
         Assert.Equal("Update", dialog.ConfirmText);

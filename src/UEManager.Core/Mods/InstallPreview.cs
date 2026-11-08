@@ -59,10 +59,15 @@ public sealed record InstallCheck(IReadOnlyList<FormattableString> Problems, IRe
     public bool HasEditedSettings => EditedSettings is { Count: > 0 };
 }
 
-/// <summary>An installed mod with a file of the same name as one of a download's files that go to ~mods, such as another style of an outfit.</summary>
+/// <summary>
+/// An installed mod with a file of the same name as one of a download's files that go to ~mods, such as another style of
+/// an outfit, or one from the same mod page.
+/// </summary>
 /// <param name="Folder">Its own folder below ~mods; null when its files are directly in ~mods.</param>
 /// <param name="CanUpdate">Enough of its files are in the download for it to be an older copy.</param>
-public sealed record SameNameMod(ModRecord Mod, string? Folder, bool CanUpdate);
+/// <param name="BySiteNumber">Only the number on the mod site in the download's file name matches, no file: the same
+/// page, which can hold several files, so keeping both comes first.</param>
+public sealed record SameNameMod(ModRecord Mod, string? Folder, bool CanUpdate, bool BySiteNumber = false);
 
 /// <summary>What a PBZModLoader installed by hand keeps in the game and the manager's copy does not need.</summary>
 /// <param name="Places">Files and folders, below the install folder.</param>

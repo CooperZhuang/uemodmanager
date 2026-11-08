@@ -224,5 +224,68 @@ public class SameNameModsTests : IDisposable
         var update = Assert.Single(manager.SameNameMods(preview.Packages.ToList(), siteId: "70"));
         Assert.Equal("Auto Collect Loot", update.Mod.Name);
         Assert.True(update.CanUpdate);
+        Assert.True(update.BySiteNumber);
+    }
+
+    private const string OldPak = "Auto Collect Loot 70 1.3.0 2026-10-31T03-18Z pZyhlgONj";
+    private const string NewScript = "Auto Collect Loot 70 1.7.2 2026-11-04T23-30Z hs0itkqF1";
+    // A script that needs no loader, so the install is not held back by one.
+    private const string Script = @"TestGame\Content\JavaScript\PBZAutoCollect\main.js";
+
+    private ModRecord InstallDownload(string name, string relative, string? ownFolder = null)
+    {
+        folder.File($@"Downloads\{name}\{relative}", name);
+        using var preview = manager.Inspect(folder.Combine("Downloads", name));
+        var parts = preview.Packages.ToList();
+        var check = manager.Check(preview, parts, null, ownFolder);
+        return manager.Install(preview, parts, name, null, check.Replaces is not null, ownFolder: ownFolder);
+    }
+
+    [Fact]
+    public void Keeping_both_keeps_the_mod_of_the_same_page()
+    {
+        InstallDownload(OldPak, "zzz_PBZAutoCollect_P.pak");
+
+        InstallDownload(NewScript, Script, manager.NewModFolder("Auto Collect Loot"));
+
+        Assert.Equal([OldPak, NewScript], manager.Mods.Select(m => m.Name));
+        Assert.True(File.Exists(Deployed("zzz_PBZAutoCollect_P.pak")));
+    }
+
+    [Fact]
+    public void Update_replaces_the_mod_of_the_same_page()
+    {
+        InstallDownload(OldPak, "zzz_PBZAutoCollect_P.pak");
+
+        InstallDownload(NewScript, Script);
+
+        Assert.Equal(NewScript, Assert.Single(manager.Mods).Name);
+        Assert.False(File.Exists(Deployed("zzz_PBZAutoCollect_P.pak")));
+    }
+
+    [Fact]
+    public void An_update_with_the_same_files_and_number_asks_nothing_as_before()
+    {
+        InstallDownload(NewScript, Script);
+        const string next = "Auto Collect Loot 70 1.7.3 2026-11-06T10-00Z AbCdEf123";
+        folder.File($@"Downloads\{next}\{Script}", next);
+        using var preview = manager.Inspect(folder.Combine("Downloads", next));
+        var parts = preview.Packages.ToList();
+
+        Assert.Empty(manager.SameNameMods(parts, siteId: "70"));
+        Assert.Equal(NewScript, manager.Check(preview, parts).Replaces?.Name);
+    }
+
+    [Fact]
+    public void Another_page_number_is_another_mod()
+    {
+        InstallDownload(OldPak, "zzz_PBZAutoCollect_P.pak");
+        const string other = "Better Loot 71 1.0.0 2026-11-04T23-30Z hs0itkqF2";
+        folder.File($@"Downloads\{other}\{Script}", other);
+        using var preview = manager.Inspect(folder.Combine("Downloads", other));
+        var parts = preview.Packages.ToList();
+
+        Assert.Empty(manager.SameNameMods(parts, siteId: "71"));
+        Assert.Null(manager.Check(preview, parts).Replaces);
     }
 }

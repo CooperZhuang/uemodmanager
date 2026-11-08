@@ -257,11 +257,11 @@ public sealed class ModManager
                 var others = preview.Packages.Where(p => p.VariantOf is not null && !selected.Contains(p) && selected.Any(s => s.VariantOf == p.VariantOf)).ToList();
                 replaces = mods.FirstOrDefault(m => others.Any(o => IsSameMod(m, o.RelativePaths.Select(path => (o.Target, path)))));
             }
-            // A download whose Nexus mod number matches an installed mod is its update, even when the mod moved from a
-            // pak to a script and the file names changed: the old one goes, the new one takes its place.
-            var siteId = ModNaming.SiteModId(preview.SourceFileName);
-            if (replaces is null && siteId is not null)
-                replaces = mods.FirstOrDefault(m => ModNaming.SiteModId(m.SourceFileName) == siteId);
+            // The player chose Update for a mod of the same mod page that shares no file, such as one that moved from a
+            // pak to a script: the old one goes. Keep both gives the new one a folder of its own, so the old one stays.
+            if (replaces is null && owners.Count == 0 && ownFolder is null
+                && ModNaming.SiteModId(preview.SourceFileName) is { } siteId)
+                replaces = SameSiteMod(selected, siteId);
             if (replaces is not null)
                 editedSettings = EditedSettings(replaces);
 
@@ -2088,18 +2088,25 @@ public sealed class ModManager
                 found.Add(new SameNameMod(mod, folder, IsSameMod(mod, selected.SelectMany(p => p.RelativePaths.Select(path => (p.Target, InFolder(folder, p.Target, path)))))));
                 taken.Add(mod.Id);
             }
-            // The same Nexus mod number means the same mod, even when a pak became a script and the file names
-            // changed: the download is that mod's update. One is enough, and the one whose files the download
-            // already replaces is the better target.
-            if (siteId is not null)
-            {
-                var update = mods.Where(m => ModNaming.SiteModId(m.SourceFileName) == siteId && !taken.Contains(m.Id))
-                    .OrderByDescending(m => selected.Any(p => p.RelativePaths.Any(path => m.Files.Any(f => IsSameFile(f, p.Target, path)))))
-                    .FirstOrDefault();
-                if (update is not null)
-                    found.Add(new SameNameMod(update, null, true));
-            }
+            // Only the number on the mod site matches: the same mod page, such as a mod that moved from a pak to a
+            // script. It can be the mod's update or another file of that page, so the review asks.
+            if (siteId is not null && SameSiteMod(selected, siteId) is { } samePage && !taken.Contains(samePage.Id))
+                found.Add(new SameNameMod(samePage, null, true, BySiteNumber: true));
             return found;
+        }
+    }
+
+    /// <summary>
+    /// The installed mod that has the download's number on the mod site (see <see cref="ModNaming.SiteModId"/>) and
+    /// none of its files: a download with one of its files is an update by its files, as before. A page can hold several
+    /// files, such as optional ones, so this is only offered; one mod is enough.
+    /// </summary>
+    private ModRecord? SameSiteMod(IReadOnlyCollection<PackageGroup> selected, string siteId)
+    {
+        lock (gate)
+        {
+            return mods.FirstOrDefault(m => ModNaming.SiteModId(m.SourceFileName) == siteId
+                && !selected.Any(p => p.RelativePaths.Any(path => m.Files.Any(f => IsSameFile(f, p.Target, path)))));
         }
     }
 

@@ -93,7 +93,7 @@
                             Background="{StaticResource Brush.InfoPanel}" BorderBrush="{StaticResource Brush.Info}"
                             Visibility="{Binding HasPlaces, Converter={StaticResource Visible}}">
                         <StackPanel>
-                            <TextBlock TextWrapping="Wrap" LineHeight="19" Text="{ui:Loc 'An installed mod has the same file names. Update it, or keep both:'}" />
+                            <TextBlock TextWrapping="Wrap" LineHeight="19" Text="{Binding PlacesTitle}" />
                             <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Places}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:PlaceOptionViewModel}">
