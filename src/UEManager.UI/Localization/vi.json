@@ -628,6 +628,7 @@
   "{0} is already running with the data folder\n\n{1}\n\nbut it does not answer. Close it, or end UEModManager.exe in the Task Manager, then start the app again.": "{0} đang chạy với thư mục dữ liệu\n\n{1}\n\nnhưng không phản hồi. Hãy đóng nó, hoặc kết thúc UEModManager.exe trong Task Manager, rồi khởi động lại ứng dụng.",
   "{0} is in more than one selected part. Select only one of them.": "{0} có trong nhiều phần được chọn. Hãy chỉ chọn một trong số đó.",
   "{0} is in the game already. The manager keeps a copy of it and puts it back when the mod is disabled or removed.": "{0} đã có trong game. Trình quản lý giữ một bản sao của nó và khôi phục lại khi mod bị tắt hoặc gỡ bỏ.",
+  "{0} is not installed, so the part for it does not run yet. The other parts of this download run without it.": "{0} chưa được cài, nên phần dành cho nó chưa chạy. Các phần khác của tệp tải về này chạy được mà không cần nó.",
   "{0} is running. Close the game first, then try again.": "{0} đang chạy. Hãy đóng game trước, rồi thử lại.",
   "{0} known line does no harm.": "{0} dòng đã biết là vô hại.",
   "{0} known lines do no harm.": "{0} dòng đã biết là vô hại.",

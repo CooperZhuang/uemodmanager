@@ -169,11 +169,22 @@ public sealed class ModManager
             problems.Add($"PBZModLoader uses hid.dll, which Mods Menu needs. Change PBZModLoader to another entry first.");
 
         // A script mod runs only in its loader, so it waits for that loader. A loader's own download may bring its mods along.
+        // A download that also has parts which run without that loader, such as the Quest Guide's branch for UE4SS, is
+        // installed whole, as its author says: the loader's part then waits in the game, and the review says so.
+        var runsWithout = selected.Any(p => p.NeedsLoader is null
+            && p.Files.Any(f => !SettingsFiles.IsPakSettings(f) && !SettingsFiles.IsDocument(f)));
         foreach (var needed in selected.Select(p => p.NeedsLoader).OfType<string>().Distinct())
         {
-            if (needed == PackageScanner.ForModsMenu && !IsModsMenuInstalled)
+            var missing = needed == PackageScanner.ForModsMenu
+                ? !IsModsMenuInstalled
+                : needed == PackageScanner.ForModLoader && !IsModLoaderInstalled && !IsModLoader(preview, catalogId);
+            if (!missing)
+                continue;
+            if (runsWithout)
+                warnings.Add($"{needed} is not installed, so the part for it does not run yet. The other parts of this download run without it.");
+            else if (needed == PackageScanner.ForModsMenu)
                 problems.Add($"This mod runs in Mods Menu, which is not installed. Install Mods Menu first, then this mod.");
-            else if (needed == PackageScanner.ForModLoader && !IsModLoaderInstalled && !IsModLoader(preview, catalogId))
+            else
                 problems.Add($"This mod runs in PBZModLoader, which is not installed. Install it first from the top of the Mods page, then this mod.");
         }
 

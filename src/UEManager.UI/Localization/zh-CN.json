@@ -628,6 +628,7 @@
   "{0} is already running with the data folder\n\n{1}\n\nbut it does not answer. Close it, or end UEModManager.exe in the Task Manager, then start the app again.": "{0} 已在使用以下数据文件夹运行：\n\n{1}\n\n但没有响应。请关闭程序，或在任务管理器中结束 UEModManager.exe，然后重新启动。",
   "{0} is in more than one selected part. Select only one of them.": "所选的多个安装项都包含 {0}，请只选择其中一项。",
   "{0} is in the game already. The manager keeps a copy of it and puts it back when the mod is disabled or removed.": "{0} 已存在于游戏中。管理器会保留它的副本，并在禁用或移除模组时还原。",
+  "{0} is not installed, so the part for it does not run yet. The other parts of this download run without it.": "{0} 未安装，因此对应的部分暂时不会运行。此下载的其他部分无需它即可运行。",
   "{0} is running. Close the game first, then try again.": "{0} 正在运行。请先关闭游戏，再重试。",
   "{0} known line does no harm.": "{0} 行已知日志无害。",
   "{0} known lines do no harm.": "{0} 行已知日志无害。",

@@ -333,4 +333,36 @@ public class DownloadLayoutTests : IDisposable
         Assert.Contains("No mod files were found", problem);
         Assert.Contains("(TestGame, TestGame/Binaries/Win64)", problem);
     }
+
+    [Fact]
+    public void A_download_with_a_branch_that_runs_without_the_loader_installs_whole_with_a_warning()
+    {
+        // As the Quest Guide: a UE4SS mod, its JavaScript for UE4SS and Mods Menu, and a copy for PBZModLoader. Its author
+        // says to install all of them; they agree in the game which one runs.
+        using var preview = Inspect(
+            @"QuestGuide\Scripts\main.lua",
+            @"TestGame\Content\JavaScript\UE4SSQuestGuide\standalone.js",
+            @"TestGame\PBZModLoader\mods\pbz-quest-guide\main.js");
+
+        var check = manager.Check(preview, preview.Packages.ToList());
+
+        Assert.Equal(3, preview.Packages.Count);
+        Assert.DoesNotContain(preview.Packages, p => p.IsAlternate);
+        Assert.Empty(check.Problems);
+        Assert.Contains("PBZModLoader is not installed, so the part for it does not run yet. The other parts of this download run without it.",
+            check.Warnings.Select(w => w.ToString()));
+    }
+
+    [Fact]
+    public void A_download_only_for_the_loader_still_waits_for_it()
+    {
+        using var preview = Inspect(
+            @"TestGame\PBZModLoader\mods\SpeakerHighlight\main.js",
+            @"TestGame\Content\Paks\~mods\SpeakerHighlight.json");
+
+        var check = manager.Check(preview, preview.Packages.ToList());
+
+        Assert.Single(preview.Packages);
+        Assert.Contains(check.Problems, p => p.ToString().StartsWith("This mod runs in PBZModLoader, which is not installed", StringComparison.Ordinal));
+    }
 }
