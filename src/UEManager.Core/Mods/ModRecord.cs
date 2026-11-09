@@ -40,9 +40,9 @@ public sealed class ModRecord
 
     public List<ModFileRecord> Files { get; set; } = [];
 
-    /// <summary>Short type name for the interface, such as IoStore or UE4SS Lua.</summary>
+    /// <summary>Short type name for the interface, such as IoStore or UE4SS Lua. A settings file the mod made says nothing about it.</summary>
     [JsonIgnore]
-    public string TypeLabel => ModTypes.Label(Files.Select(f => (f.Target, f.FileName)));
+    public string TypeLabel => ModTypes.Label(Files.Where(f => !f.Made).Select(f => (f.Target, f.FileName)));
 
     [JsonIgnore]
     public long TotalSize => Files.Sum(f => f.Size);
@@ -137,9 +137,17 @@ public sealed class ModFileRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ReplacedSha256 { get; set; }
 
-    /// <summary>A settings file or a kept one whose manager copy holds the player's changes.</summary>
+    /// <summary>
+    /// A settings file the mod made in the game itself, such as Auto Collect Loot's PBZAutoCollect.txt in ~mods. No
+    /// download brings it, so all of it is the player's settings: an update takes it over, an uninstall backs it up,
+    /// and "Reset settings" leaves it, as the mod shipped no version of it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Made { get; set; }
+
+    /// <summary>A settings file or a kept one whose manager copy holds the player's changes; a made one always does.</summary>
     [JsonIgnore]
-    public bool IsEdited => IsPlayerFile && !string.Equals(Sha256, DefaultSha256 ?? Sha256, StringComparison.OrdinalIgnoreCase);
+    public bool IsEdited => IsPlayerFile && (Made || !string.Equals(Sha256, DefaultSha256 ?? Sha256, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// A Lua library in UE4SS's shared folder ("shared/json/json.lua"), next to UE4SS's own. Several mods may bring

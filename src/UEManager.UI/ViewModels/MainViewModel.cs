@@ -107,12 +107,32 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             else if (gameRunningSince is { } since)
             {
                 gameRunningSince = null;
+                await TakeMadeSettingsAsync();
                 await ReportUe4ssErrorsAsync(game, since);
             }
         }
         finally
         {
             watching = false;
+        }
+    }
+
+    /// <summary>
+    /// A script mod may make its settings file in the mods folder while the game runs, such as Auto Collect Loot's
+    /// PBZAutoCollect.txt: when the game closes, the manager takes it into the mod, as it does at its own start.
+    /// </summary>
+    private async Task TakeMadeSettingsAsync()
+    {
+        if (manager is not { } current)
+            return;
+        try
+        {
+            if (await Task.Run(() => current.TakeMadeSettings()) > 0)
+                RefreshMods();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"The settings files that mods made could not be taken: {ex.Message}");
         }
     }
 

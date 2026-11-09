@@ -72,7 +72,7 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     public bool HasSettings => record.Files.Any(f => f.IsSettingsFile);
 
     /// <summary>The mod has a settings file or one whose changed version the player kept: Reset settings puts back the mod's own.</summary>
-    public bool CanResetSettings => record.Files.Any(f => f.IsPlayerFile);
+    public bool CanResetSettings => record.Files.Any(f => f.IsPlayerFile && !f.Made);
 
     /// <summary>The settings files in the game, for the settings editor; none while the mod is disabled.</summary>
     public IReadOnlyList<SettingsFileItem> DeployedSettingsFiles =>

@@ -430,12 +430,16 @@ public static class PackageScanner
         // name in the download, it goes into ~mods as a part of its own.
         if (!string.IsNullOrWhiteSpace(projectFolder))
         {
-            var modsFolder = Path.Combine(root, projectFolder, ContentFolder, PaksFolder, "~mods");
             var inPackages = packages.SelectMany(p => p.Files).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f) && IsInside(f, modsFolder) && !inPackages.Contains(f)).ToList())
+            foreach (var file in files.Where(f => SettingsFiles.IsPakSettings(f) && !inPackages.Contains(f)).ToList())
             {
+                // The path from the project folder on: a download often has a folder of its own above it.
+                var parts = RelativePath(root, file).Split('/');
+                var project = Array.FindIndex(parts, part => part.Equals(projectFolder, StringComparison.OrdinalIgnoreCase));
+                if (project < 0 || !StartsAt(parts, project + 1, $"{ContentFolder}/{PaksFolder}/~mods"))
+                    continue;
                 var name = Path.GetFileNameWithoutExtension(file);
-                var place = RelativePath(root, file);
+                var place = string.Join('/', parts[project..]);
                 var owner = packages
                     .Where(p => IsGameFiles(p) && LastName(p).Contains(name, StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(p => LastName(p).Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -575,6 +579,34 @@ public static class PackageScanner
     private const string ModsMenuFolder = "Content/JavaScript/PBZModsMenu";
 
     private const string ModLoaderFolder = "PBZModLoader/mods";
+
+    /// <summary>The project's folder for scripts, which the game, Mods Menu and other scripts read.</summary>
+    private const string JavaScriptFolder = "Content/JavaScript";
+
+    /// <summary>
+    /// The name of a script mod's own folder, from the path of one of its files below the install folder: the folder right
+    /// below PBZModLoader's mods folder, Mods Menu's Mods folder or the project's JavaScript folder, such as PBZAutoCollect
+    /// for ProjectPBZ/Content/JavaScript/PBZModsMenu/Mods/PBZAutoCollect/main.js. Null for any other file, and for the
+    /// loaders' own folders.
+    /// </summary>
+    public static string? ScriptModFolder(string pathBelowInstall, string? projectFolder)
+    {
+        var parts = pathBelowInstall.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+        if (string.IsNullOrWhiteSpace(projectFolder) || parts.Length == 0 || !parts[0].Equals(projectFolder, StringComparison.OrdinalIgnoreCase))
+            return null;
+        foreach (var folder in new[] { ModLoaderFolder, ModsMenuFolder + "/Mods", JavaScriptFolder })
+        {
+            var below = 1 + folder.Split('/').Length;
+            // The mod's folder, with at least one of its files in it.
+            if (!StartsAt(parts, 1, folder) || below + 1 >= parts.Length)
+                continue;
+            var name = parts[below];
+            var loader = folder == JavaScriptFolder
+                && (name.Equals(Path.GetFileName(ModsMenuFolder), StringComparison.OrdinalIgnoreCase) || name.Equals(ForModLoader, StringComparison.OrdinalIgnoreCase));
+            return loader ? null : name;
+        }
+        return null;
+    }
 
     /// <summary>The folder a loader keeps its other entry DLLs in, each in a folder of its own.</summary>
     private const string AlternateEntries = "alternative-entries";

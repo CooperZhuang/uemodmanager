@@ -48,10 +48,8 @@ public sealed class ModManager
         offForTest = state?.OffForTest ?? [];
         sets = state?.Sets ?? [];
         FollowMovedInstall();
-        // A mod's own settings file in the mods folder, which the mod creates while the game runs, is part of
-        // the mod: the manager backs it up on uninstall and leaves it out of the unmanaged files.
-        if (mods.Any(AdoptOwnSettings))
-            Save();
+        // A settings file a script mod made in the mods folder while the game ran is part of the mod.
+        TakeMadeSettings();
         OtherInstallRoot = FindOtherInstall();
     }
 
@@ -363,7 +361,7 @@ public sealed class ModManager
                         // A shared library that goes with several selected UE4SS mods is kept once.
                         if (record.Files.Any(f => IsSameFile(f, package.Target, relative)))
                             continue;
-                        var kept = keepSettings ? EditedSettingsCopy(old, package.Target, relative) : null;
+                        var kept = keepSettings ? EditedSettingsCopy(old, package.Target, relative) ?? MadeCopy(old, package.Target, relative) : null;
                         var keptByPlayer = old?.Files.Any(f => f.Kept && IsSameFile(f, package.Target, relative)) == true;
                         AddToLibrary(record, package.Target, relative, package.Files[i], kept, keptByPlayer);
                     }
@@ -371,8 +369,19 @@ public sealed class ModManager
                         && !package.RelativePaths.Any(p => p.Equals($"{package.Name}/{Ue4ssEnabledMarker}", StringComparison.OrdinalIgnoreCase)))
                         AddToLibrary(record, package.Target, $"{package.Name}/{Ue4ssEnabledMarker}", source: null);
                 }
+                // A settings file the old version made in the game comes with no download: the new version takes it over
+                // as the player has it, unless the player chose the new version's defaults. Then the mod makes a new one,
+                // and the old one is in the backup.
+                if (old is not null && keepSettings)
+                {
+                    foreach (var made in old.Files.Where(f => f.Made && !record.Files.Any(n => SamePlace(PlaceOf(n), PlaceOf(f)))))
+                    {
+                        AddToLibrary(record, made.Target, made.FileName, LibraryPath(old, made));
+                        record.Files[^1].Made = true;
+                    }
+                }
                 Deploy(record);
-                AdoptOwnSettings(record);
+                TakeMadeSettings(record);
                 if (old is not null)
                     mods.Remove(old);
                 mods.Insert(position, record);
@@ -681,7 +690,8 @@ public sealed class ModManager
             EnsureCanChange();
             var mod = Find(id);
             SaveEditedSettings(mod);
-            var edited = mod.Files.Where(f => f.IsEdited).ToList();
+            // A file the mod made has no shipped version to go back to.
+            var edited = mod.Files.Where(f => f.IsEdited && !f.Made).ToList();
             if (edited.Count == 0)
             {
                 Save();
@@ -1303,52 +1313,85 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// The name a mod gives its settings file in the mods folder, from the folder its own files sit in,
-    /// such as "PBZAutoCollect" for the Auto Collect Loot script. Null when its files sit loose in ~mods.
+    /// Takes the settings files that script mods made in the mods folder into those mods (see
+    /// <see cref="TakeMadeSettings(ModRecord)"/>). The app does this at its start and when the game closes, as a mod
+    /// makes such a file while the game runs. Only the library and the mod list change, so the game may run.
     /// </summary>
-    private static string? OwnSettingsName(ModRecord mod) =>
-        mod.Files
-            .Select(f => f.FileName.Replace('\\', '/'))
-            .Where(f => f.Contains('/'))
-            .Select(f => f[..f.LastIndexOf('/')])
-            .Select(f => f[(f.LastIndexOf('/') + 1)..])
-            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
-
-    /// <summary>
-    /// The mod's own settings file in the mods folder, which the mod creates and reads while the game runs,
-    /// such as PBZAutoCollect.txt. Null when there is none.
-    /// </summary>
-    private string? OwnSettingsFile(ModRecord mod)
+    /// <returns>How many mods took a file.</returns>
+    public int TakeMadeSettings()
     {
-        var name = OwnSettingsName(mod);
-        if (name is null || !Directory.Exists(Game.ModsPath))
-            return null;
-        return Directory.EnumerateFiles(Game.ModsPath, name + ".*", SearchOption.TopDirectoryOnly)
-            .FirstOrDefault(f => SettingsFiles.IsPakSettings(f));
+        lock (gate)
+        {
+            var taken = mods.Count(TakeMadeSettings);
+            if (taken > 0)
+            {
+                try
+                {
+                    Save();
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // The files stay taken in this run; the next start takes them again.
+                    Log.Warn($"The mod list could not be saved after taking settings files that mods made: {ex.Message}");
+                }
+            }
+            return taken;
+        }
     }
 
     /// <summary>
-    /// Takes the mod's own settings file in the mods folder into the mod, so the manager owns it: it is
-    /// backed up on uninstall and kept out of the list of files the manager did not install. A file another
-    /// mod already owns is never taken, whatever its name says; nor is one for a mod that keeps files in the
-    /// mods folder itself, as its settings come with its download.
+    /// Takes a settings file that a script mod made at the top of the mods folder into the mod, such as the
+    /// PBZAutoCollect.txt that Auto Collect Loot writes at its first game start. Its name is the mod's own folder name
+    /// (<see cref="PackageScanner.ScriptModFolder"/>). From then on it is one of the mod's settings files
+    /// (<see cref="ModFileRecord.Made"/>): kept on an update, backed up and removed on an uninstall, and no longer among
+    /// the files no mod placed. Only an enabled mod takes one, as only a running mod makes it; never a file another mod
+    /// owns, and never for a mod that brings its own files into the mods folder, as its settings come with its download.
     /// </summary>
-    private bool AdoptOwnSettings(ModRecord mod)
+    private bool TakeMadeSettings(ModRecord mod)
     {
-        var path = OwnSettingsFile(mod);
-        if (path is null)
+        if (!mod.Enabled || !Directory.Exists(Game.ModsPath)
+            || mod.Files.Any(f => !f.Made && IsInFolder(PlaceOf(f), Game.ModsPath)))
             return false;
-        var relative = Path.GetFileName(path);
-        if (mod.Files.Any(f => f.Target == DeployTarget.Mods))
-            return false;
-        if (mods.Any(other => other.Files.Any(f => f.Target == DeployTarget.Mods
-            && string.Equals(f.FileName, relative, StringComparison.OrdinalIgnoreCase))))
-            return false;
-        AddToLibrary(mod, DeployTarget.Mods, relative, path);
-        mod.Files.Last().DeployedPath = path;
-        Log.Info($"Took the settings file {relative} of \"{mod.Name}\" into the mod.");
-        return true;
+        var names = mod.Files
+            .Where(f => f.Target == DeployTarget.InstallRoot)
+            .Select(f => PackageScanner.ScriptModFolder(f.FileName, ProjectFolder))
+            .OfType<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var took = false;
+        foreach (var name in names)
+        {
+            var path = Directory.EnumerateFiles(Game.ModsPath, name + ".*", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals(name, StringComparison.OrdinalIgnoreCase)
+                    && SettingsFiles.IsPakSettings(f));
+            if (path is null || mod.Files.Concat(mods.SelectMany(m => m.Files)).Any(f => SamePlace(PlaceOf(f), path)))
+                continue;
+            try
+            {
+                AddToLibrary(mod, DeployTarget.Mods, Path.GetFileName(path), path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Warn($"The settings file {Path.GetFileName(path)} that \"{mod.Name}\" made could not be taken into the mod: {ex.Message}");
+                continue;
+            }
+            var file = mod.Files[^1];
+            file.Made = true;
+            file.DeployedPath = path;
+            Log.Info($"Took the settings file {file.FileName} that \"{mod.Name}\" made into the mod.");
+            took = true;
+        }
+        return took;
     }
+
+    /// <summary>Where a mod's file is in the game, or goes there when the mod is enabled.</summary>
+    private string PlaceOf(ModFileRecord file) => file.DeployedPath ?? Path.Combine(TargetFolder(file.Target), Local(file.FileName));
+
+    private static bool SamePlace(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsInFolder(string path, string folder) =>
+        Path.GetFullPath(path).StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder)) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
     private ModRecord Find(string id) =>
         mods.FirstOrDefault(m => m.Id == id) ?? throw new ModException($"That mod is no longer installed.");
@@ -1756,6 +1799,17 @@ public sealed class ModManager
     private string? EditedSettingsCopy(ModRecord? old, DeployTarget target, string relativePath)
     {
         var file = old?.Files.FirstOrDefault(f => f.IsEdited && IsSameFile(f, target, relativePath));
+        return file is null ? null : LibraryPath(old!, file);
+    }
+
+    /// <summary>
+    /// The library copy of a settings file the mod being replaced made at the place where the new version brings one of
+    /// its own, as when an author starts to ship it, or null: the player's version wins, as for any settings file.
+    /// </summary>
+    private string? MadeCopy(ModRecord? old, DeployTarget target, string relativePath)
+    {
+        var place = Path.Combine(TargetFolder(target), Local(relativePath));
+        var file = old?.Files.FirstOrDefault(f => f.Made && SamePlace(PlaceOf(f), place));
         return file is null ? null : LibraryPath(old!, file);
     }
 

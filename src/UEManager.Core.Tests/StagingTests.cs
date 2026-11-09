@@ -158,6 +158,20 @@ public class StagingTests
     }
 
     [Fact]
+    public void A_settings_file_in_the_mods_folder_is_found_below_the_downloads_own_folder()
+    {
+        using var folder = new TestFolder();
+        folder.File(@"staging\PBZ-SpeakerHighlight-PVLW\ProjectPBZ\PBZModLoader\mods\PVLW_SpeakerHighlight\main.js", "the mod");
+        folder.File(@"staging\PBZ-SpeakerHighlight-PVLW\ProjectPBZ\Content\Paks\~mods\SpeakerHighlight.json", "{}");
+
+        var scan = PackageScanner.Scan(folder.Combine("staging"), projectFolder: "ProjectPBZ", exeFolder: "platform/steam");
+
+        var package = Assert.Single(scan.Packages);
+        Assert.Contains("ProjectPBZ/Content/Paks/~mods/SpeakerHighlight.json", package.RelativePaths);
+        Assert.Empty(scan.LeftOutFiles);
+    }
+
+    [Fact]
     public void A_pak_of_that_name_stays_in_the_mods_folder_and_the_settings_file_is_a_part_of_its_own()
     {
         using var folder = new TestFolder();
