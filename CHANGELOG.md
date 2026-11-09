@@ -4,6 +4,11 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.6.3 (2026-11-09)
+- A settings file that a script mod makes in ~mods, such as Auto Collect Loot's PBZAutoCollect.txt, is now part of the mod: kept on an update, backed up on an uninstall, and no longer listed by Show files (thanks, CooperZhuang)
+- The manager takes such a file at its start and when the game closes
+- A settings file in ~mods now installs with its script mod also when the download has a folder of its own on top
+
 ## 1.6.2 (2026-11-08)
 - A download from the same mod page as an installed mod, with other file names (such as a pak that became a script), now asks: Keep both comes first, or Update (thanks, CooperZhuang)
 - A settings file that a script mod keeps in ~mods installs with that mod (thanks, CooperZhuang)

@@ -2,6 +2,11 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.6.3 (2026-11-09)
+- Tệp cấu hình mà mod script tạo trong ~mods, như PBZAutoCollect.txt của Auto Collect Loot, giờ thuộc về mod đó: được giữ khi cập nhật, được sao lưu khi gỡ cài đặt, và không còn hiện trong "Xem tệp" (cảm ơn CooperZhuang)
+- Trình quản lý nhận các tệp này khi khởi động và khi game đóng
+- Tệp cấu hình trong ~mods giờ cũng được cài cùng mod script khi tệp tải về có thêm một thư mục riêng ở trên cùng
+
 ## 1.6.2 (2026-11-08)
 - Tệp tải về từ cùng trang mod với một mod đã cài nhưng có tên tệp khác (như mod đổi từ pak sang script) giờ sẽ hỏi: mặc định "Giữ cả hai", hoặc chọn "Cập nhật" (cảm ơn CooperZhuang)
 - Tệp cấu hình mà mod script để trong ~mods giờ được cài cùng mod đó (cảm ơn CooperZhuang)
