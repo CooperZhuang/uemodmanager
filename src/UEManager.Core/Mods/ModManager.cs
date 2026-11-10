@@ -331,6 +331,7 @@ public sealed class ModManager
                 CatalogId = catalogId ?? old?.CatalogId,
                 Recommended = old?.Recommended ?? false,
                 Tags = tags is null ? old?.Tags : tags.Count == 0 ? null : [.. tags],
+                NotTracked = old?.NotTracked ?? false,
                 Variant = VariantOf(selected),
             };
             var libraryFolder = LibraryFolderOf(record);
@@ -433,6 +434,23 @@ public sealed class ModManager
                 return;
             Commit(undo: () => (mod.Name, mod.Version, mod.Tags) = (oldName, oldVersion, oldTags));
             Log.Info($"Renamed \"{oldName}\" ({oldVersion ?? "no version"}) to \"{mod.Name}\" ({mod.Version ?? "no version"}), tags: {ModTags.Join(mod.Tags)}.");
+        }
+    }
+
+    /// <summary>
+    /// Whether the update check asks for the mod's page version; see <see cref="ModRecord.NotTracked"/>. Only the mod list
+    /// changes, so the game may run.
+    /// </summary>
+    public void SetTracked(string id, bool tracked)
+    {
+        lock (gate)
+        {
+            var mod = Find(id);
+            if (mod.NotTracked == !tracked)
+                return;
+            mod.NotTracked = !tracked;
+            Commit(undo: () => mod.NotTracked = tracked);
+            Log.Info(tracked ? $"\"{mod.Name}\" is checked for updates again." : $"\"{mod.Name}\" is not checked for updates: the player keeps this version.");
         }
     }
 

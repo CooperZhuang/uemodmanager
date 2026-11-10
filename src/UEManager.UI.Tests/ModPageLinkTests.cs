@@ -128,6 +128,24 @@ public class ModPageLinkTests : IDisposable
     });
 
     [Fact]
+    public void A_mod_the_player_keeps_shows_not_tracked_instead_of_a_result() => With("https://example.test/game/mods/{id}", model =>
+    {
+        model.ShowModUpdates(new Dictionary<string, string> { ["61"] = "1.0.2" });
+        var record = new ModRecord { Id = "a", Name = "Travel Anywhere", Version = "1.0.1", SourceFileName = SiteDownload, NotTracked = true };
+
+        var row = new ModItemViewModel(model, record, Path.Combine(folder, "library"));
+        model.Mods.Add(row);
+
+        Assert.True(row.IsNotTracked);
+        Assert.False(row.IsUpdateAvailable);
+        Assert.False(row.IsUpToDate);
+        Assert.False(model.HasModUpdates);
+        Assert.False(new ModDetailsViewModel(model, record, [], [], folder).TrackUpdates);
+        // Without a mod page there is nothing to track.
+        Assert.False(new ModItemViewModel(model, new ModRecord { Id = "b", Name = "Own", SourceFileName = "Own.zip", NotTracked = true }, folder).IsNotTracked);
+    });
+
+    [Fact]
     public void The_check_at_start_is_on_until_the_player_turns_it_off() => With("https://example.test/game/mods/{id}", model =>
     {
         Assert.True(model.CheckModUpdatesAtStart);
@@ -135,6 +153,44 @@ public class ModPageLinkTests : IDisposable
         model.CheckModUpdatesAtStart = false;
 
         Assert.False(AppSettings.Load(new AppPaths(Path.Combine(folder, "Data"))).CheckModUpdatesAtStart);
+    });
+
+    [Fact]
+    public void The_button_comes_back_after_its_wait_even_when_the_timer_fires_early() => UiThread.Run(() =>
+    {
+        var paths = new AppPaths(Path.Combine(folder, "Data"));
+        paths.EnsureWritable();
+        var profile = new GameProfile
+        {
+            Id = "test", DisplayName = "Test", ModPageUrl = "https://example.test/game/mods/{id}",
+            ModSiteApiUrl = "https://api.example.test/graphql", ModSiteGameId = "1",
+        };
+        var model = new MainViewModel(profile, paths, new ArtSet(null, null));
+        Assert.True(model.CanCheckModUpdates);
+
+        // The check at start: the button spins, then is ready at once, so the first visit never finds it grey.
+        model.BeginModUpdateCheck(byButton: false);
+        Assert.True(model.IsCheckingModUpdates);
+        Assert.False(model.CanCheckModUpdates);
+        model.EndModUpdateCheck();
+        Assert.True(model.CanCheckModUpdates);
+
+        // A press: after the check, the button waits.
+        model.BeginModUpdateCheck(byButton: true);
+        model.EndModUpdateCheck();
+        Assert.False(model.CanCheckModUpdates);
+
+        // A check 10 ms short of 30 seconds ago: the timer fired a little early.
+        model.lastModUpdateCheck = Environment.TickCount64 - 29_990;
+        model.OnModUpdateWaitTick();
+        Assert.False(model.CanCheckModUpdates);
+        Assert.Equal("You can check again 30 seconds after the last check.", model.CheckModUpdatesHint);
+
+        model.lastModUpdateCheck = Environment.TickCount64 - 30_100;
+        model.OnModUpdateWaitTick();
+        Assert.True(model.CanCheckModUpdates);
+        Assert.True(model.CheckModUpdatesCommand.CanExecute(null));
+        Assert.Equal("Check for updates", model.CheckModUpdatesHint);
     });
 
     [Fact]

@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.7.2 (2026-11-10)
+- A mod's details can turn off its update check, to keep that version: the box then says Not tracked, and the check leaves the mod out
+- The update check button comes back after its 30 second wait; before, it could stay grey for good
+- The button is ready on the first visit of the Mods page: only a press starts the wait, not the check at start
+- The button spins in green while a check runs, at least a second, so a click always shows something
+
 ## 1.7.1 (2026-11-10)
 - An update keeps the name you gave a mod with Edit, like its tags; a name the app made from the file name still follows the new download (thanks, qhq)
 

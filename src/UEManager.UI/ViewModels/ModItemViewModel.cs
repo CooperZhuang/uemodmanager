@@ -38,6 +38,9 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     /// <summary>The mod page has the installed version. Before a check, or when a check could not tell, the box stays empty.</summary>
     public bool IsUpToDate => update is { IsAvailable: false };
 
+    /// <summary>The player keeps this version, so the check leaves the mod out: the box says Not tracked.</summary>
+    public bool IsNotTracked => ModPageUrl is not null && record.NotTracked;
+
     public string? UpdateHint => update switch
     {
         { IsAvailable: true } => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),

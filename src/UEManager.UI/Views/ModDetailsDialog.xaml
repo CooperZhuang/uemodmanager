@@ -106,6 +106,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.Resources>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
@@ -138,6 +139,14 @@
                             <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
                                        Foreground="{StaticResource Brush.Success}" Text="Up to date" />
                         </StackPanel>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                    ToolTip="{ui:Loc 'You keep this version: the update check leaves this mod out. Its details turn the check back on.'}"
+                                    Visibility="{Binding IsNotTracked, Converter={StaticResource Visible}}">
+                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                       Foreground="{StaticResource Brush.TextDim}" Text="&#xE718;" />
+                            <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
+                                       Foreground="{StaticResource Brush.TextDim}" Text="Not tracked" />
+                        </StackPanel>
                     </StackPanel>
                     <TextBlock Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
                 </DockPanel>
@@ -152,6 +161,11 @@
                 <TextBlock Grid.Row="4" Text="{ui:Loc 'Tags', Tracked=True}" Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
                 <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Info}" Text="{Binding TagsText}"
                            Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
+
+                <!-- Only a mod with a mod page is checked for updates; the player may keep its version. -->
+                <TextBlock Grid.Row="5" Text="{ui:Loc 'Updates', Tracked=True}" Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
+                <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,4" Content="{ui:Loc 'Check this mod for updates'}" IsChecked="{Binding TrackUpdates}"
+                          Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
             </Grid>
 
             <!-- Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them. -->

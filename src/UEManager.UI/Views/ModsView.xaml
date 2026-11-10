@@ -119,6 +119,13 @@
                                                Foreground="{StaticResource Brush.Success}" Text="&#xE73E;" />
                                     <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.Success}" Text="Up to date" />
                                 </StackPanel>
+                                <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                            ToolTip="{ui:Loc 'You keep this version: the update check leaves this mod out. Its details turn the check back on.'}"
+                                            Visibility="{Binding IsNotTracked, Converter={StaticResource Visible}}">
+                                    <TextBlock Margin="1,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                               Foreground="{StaticResource Brush.TextDim}" Text="&#xE718;" />
+                                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.TextDim}" Text="Not tracked" />
+                                </StackPanel>
                             </Grid>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -356,9 +363,40 @@
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11" Text="{ui:Loc 'UPDATE CHECK NOTES'}" />
                             </StackPanel>
                         </Button>
-                        <Button VerticalAlignment="Center" Style="{StaticResource Button.Icon}"
-                                ui:Icon.Glyph="&#xE895;" Command="{Binding CheckModUpdatesCommand}"
-                                ToolTip="{Binding CheckModUpdatesHint}" ToolTipService.ShowOnDisabled="True" />
+                        <!-- While a check runs, a green copy of the icon spins in the button's place, at least a second, so a
+                             click always shows something; the button itself would only fade, as a disabled one does. -->
+                        <Grid VerticalAlignment="Center">
+                            <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE895;" Command="{Binding CheckModUpdatesCommand}"
+                                    ToolTip="{Binding CheckModUpdatesHint}" ToolTipService.ShowOnDisabled="True"
+                                    Visibility="{Binding IsCheckingModUpdates, Converter={StaticResource Hidden}}" />
+                            <Border Width="32" Height="32" Background="Transparent" RenderTransformOrigin="0.5,0.5" ToolTip="{Binding CheckModUpdatesHint}"
+                                    Visibility="{Binding IsCheckingModUpdates, Converter={StaticResource Visible}}">
+                                <Border.RenderTransform>
+                                    <RotateTransform />
+                                </Border.RenderTransform>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCheckingModUpdates}" Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard x:Name="Spin">
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                                             From="0" To="360" Duration="0:0:0.8" RepeatBehavior="Forever" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <StopStoryboard BeginStoryboardName="Spin" />
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="13"
+                                           Foreground="{StaticResource Brush.SuccessBright}" Text="&#xE895;" />
+                            </Border>
+                        </Grid>
                     </StackPanel>
                 </Grid>
                 <Border Style="{StaticResource Divider}" />

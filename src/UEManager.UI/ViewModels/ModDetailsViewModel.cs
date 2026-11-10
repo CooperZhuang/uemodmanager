@@ -66,6 +66,21 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
 
     public bool IsUpToDate => Update is { IsAvailable: false };
 
+    public bool IsNotTracked => ModPageUrl is not null && mod.NotTracked;
+
+    /// <summary>The check asks for this mod's page version; off keeps the installed version without a note on newer ones.</summary>
+    public bool TrackUpdates
+    {
+        get => !mod.NotTracked;
+        set
+        {
+            if (value == !mod.NotTracked)
+                return;
+            owner.SetModTracked(mod, value);
+            OnPropertyChanged(string.Empty);
+        }
+    }
+
     public string? UpdateHint => Update switch
     {
         { IsAvailable: true } update => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),

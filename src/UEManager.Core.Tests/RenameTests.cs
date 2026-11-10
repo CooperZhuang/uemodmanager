@@ -30,6 +30,26 @@ public class RenameTests : IDisposable
     private string Deployed(string name) => Path.Combine(game.ModsPath, name + "_P.pak");
 
     [Fact]
+    public void A_mod_left_out_of_the_update_check_stays_so_after_a_restart_and_an_update()
+    {
+        var mod = Install("Sharp");
+        gameRunning = true;
+
+        // Only the mod list changes, so it works while the game runs.
+        manager.SetTracked(mod.Id, false);
+
+        Assert.True(new ModManager(game, new AppPaths(folder.Combine("Data")), _ => false).Mods.Single().NotTracked);
+        gameRunning = false;
+        folder.File(@"Downloads\Sharp 2\Sharp_P.pak", "newer");
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Sharp 2"));
+        var updated = manager.Install(preview, preview.Packages.ToList(), "Sharp", "2", replace: true);
+        Assert.True(updated.NotTracked);
+
+        manager.SetTracked(updated.Id, true);
+        Assert.False(manager.Mods.Single().NotTracked);
+    }
+
+    [Fact]
     public void A_new_name_and_version_survive_a_restart_and_the_game_files_stay()
     {
         var mod = Install("Sharp");

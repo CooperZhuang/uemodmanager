@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.7.2 (2026-11-10)
+- Chi tiết mod có thể tắt việc kiểm tra cập nhật của mod đó để giữ phiên bản: ô sẽ hiện Not tracked, và việc kiểm tra bỏ qua mod đó
+- Nút kiểm tra cập nhật dùng lại được sau 30 giây chờ; trước đây nó có thể bị xám mãi
+- Nút dùng được ngay lần đầu mở trang Mod: chỉ khi bấm nút mới bắt đầu chờ, không phải lần kiểm tra khi khởi động
+- Nút xoay màu xanh lá khi đang kiểm tra, ít nhất một giây, nên mỗi lần bấm đều có phản hồi
+
 ## 1.7.1 (2026-11-10)
 - Khi cập nhật, tên bạn đặt cho mod bằng Sửa được giữ lại, giống như nhãn; tên do ứng dụng tạo từ tên tệp vẫn theo tệp tải về mới (cảm ơn qhq)
 

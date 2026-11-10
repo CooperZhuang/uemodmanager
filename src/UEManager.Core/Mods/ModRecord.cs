@@ -38,6 +38,13 @@ public sealed class ModRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? Tags { get; set; }
 
+    /// <summary>
+    /// The player keeps this version: the update check leaves the mod out, and its box says Not tracked. An update keeps
+    /// the choice, as it keeps the tags.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool NotTracked { get; set; }
+
     public List<ModFileRecord> Files { get; set; } = [];
 
     /// <summary>Short type name for the interface, such as IoStore or UE4SS Lua. A settings file the mod made says nothing about it.</summary>

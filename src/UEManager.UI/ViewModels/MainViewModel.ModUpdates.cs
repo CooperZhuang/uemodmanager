@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -26,6 +27,12 @@ public sealed partial class MainViewModel
 
     private static readonly TimeSpan ModUpdateTimeout = TimeSpan.FromSeconds(15);
 
+    /// <summary>The shortest time the button spins, however fast the mod site answers.</summary>
+    private static readonly TimeSpan ModUpdateSpin = TimeSpan.FromSeconds(1);
+
+    /// <summary>A check runs: the button in the mod list's header spins.</summary>
+    public bool IsCheckingModUpdates => checkingModUpdates;
+
     /// <summary>
     /// The page version per mod number on the site, from the last check. A mod's state comes from its own version at
     /// the time, so an update in the manager shows at once, without asking the site again.
@@ -33,13 +40,14 @@ public sealed partial class MainViewModel
     private readonly Dictionary<string, string> pageVersions = new(StringComparer.Ordinal);
 
     private bool checkingModUpdates;
-    private DateTime lastModUpdateCheck = DateTime.MinValue;
+    /// <summary>When the last check started, on the system's running clock (<see cref="Environment.TickCount64"/>), which a change of the PC's clock does not move; null before the first.</summary>
+    internal long? lastModUpdateCheck;
     private DispatcherTimer? modUpdateWait;
 
     /// <summary>The state of a mod for its update box; null when it was not checked, or the check could not tell.</summary>
     internal ModUpdateStatus? ModUpdateOf(ModRecord mod)
     {
-        if (ModNaming.SiteModId(mod.SourceFileName) is not { } id || !pageVersions.TryGetValue(id, out var page)
+        if (mod.NotTracked || ModNaming.SiteModId(mod.SourceFileName) is not { } id || !pageVersions.TryGetValue(id, out var page)
             || InstalledVersion(mod) is not { } installed)
             return null;
         return ModSiteVersions.Compare(installed, page) switch
@@ -58,6 +66,22 @@ public sealed partial class MainViewModel
         mod.Version is { Length: > 0 } version ? version
         : mod.SourceFileName is { Length: > 0 } source ? ModNaming.FromSource(source).Version
         : null;
+
+    /// <summary>The player keeps a mod's version, or tracks it again; see <see cref="ModRecord.NotTracked"/>.</summary>
+    internal void SetModTracked(ModRecord mod, bool tracked)
+    {
+        if (manager is null)
+            return;
+        try
+        {
+            manager.SetTracked(mod.Id, tracked);
+        }
+        catch (Exception ex) when (ex is ModException or IOException or UnauthorizedAccessException)
+        {
+            ShowToast(L.F($"Something went wrong: {ex.Message}"), isError: true);
+        }
+        RefreshMods();
+    }
 
     /// <summary>Puts in the page versions a check found, per mod number, and shows them in the rows.</summary>
     internal void ShowModUpdates(IReadOnlyDictionary<string, string> found)
@@ -92,6 +116,7 @@ public sealed partial class MainViewModel
         L.T("• A file version that differs from the page, such as 10 against 1.2.4, cannot be matched."),
         L.T("• Several files on one page, such as styles or optional files, share one version."),
         L.T("• A renamed download has no mod ID, so no mod page and no check."),
+        L.T("To keep a version, turn off Check this mod for updates in the mod's details: the box then says Not tracked, and the check leaves the mod out."),
         L.T("If a box looks wrong, compare the versions in its tooltip with the mod page, and fix yours with Edit."),
     ];
 
@@ -101,7 +126,12 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void CloseUpdateNotes() => IsUpdateNotesOpen = false;
 
-    private bool IsWaitingAfterModUpdateCheck => DateTime.UtcNow - lastModUpdateCheck < ModUpdateWait;
+    /// <summary>How long the button still waits after the last check; zero or less when it may check.</summary>
+    private TimeSpan ModUpdateWaitLeft => lastModUpdateCheck is { } started
+        ? ModUpdateWait - TimeSpan.FromMilliseconds(Environment.TickCount64 - started)
+        : TimeSpan.Zero;
+
+    private bool IsWaitingAfterModUpdateCheck => ModUpdateWaitLeft > TimeSpan.Zero;
 
     public bool CanCheckModUpdates => HasModSite && !checkingModUpdates && !IsWaitingAfterModUpdateCheck;
 
@@ -123,39 +153,58 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanCheckModUpdates))]
-    private Task CheckModUpdates() => CheckModUpdatesAsync();
+    private Task CheckModUpdates() => CheckModUpdatesAsync(byButton: true);
 
     /// <summary>
     /// Asks the mod site once for the page version of every mod with a mod page; the card's mods and mods without a mod
     /// page are left out, and with none of them nothing is sent. A failed check changes nothing in the rows; the log
-    /// says why. The button then waits 30 seconds.
+    /// says why. After a press on the button, it waits 30 seconds; the check at start leaves it ready, so the first visit
+    /// of the Mods page never finds it grey.
     /// </summary>
-    internal async Task CheckModUpdatesAsync()
+    internal async Task CheckModUpdatesAsync(bool byButton = false)
     {
         if (!CanCheckModUpdates || manager is not { } current)
             return;
         var ids = current.Mods
-            .Where(m => !m.Recommended && Profile.ModPage(m.SourceFileName) is not null)
+            .Where(m => !m.Recommended && !m.NotTracked && Profile.ModPage(m.SourceFileName) is not null)
             .Select(m => ModNaming.SiteModId(m.SourceFileName)!)
             .Distinct(StringComparer.Ordinal)
             .ToList();
-        checkingModUpdates = true;
-        lastModUpdateCheck = DateTime.UtcNow;
-        StartModUpdateWait();
-        OnModUpdateCheckChanged();
+        BeginModUpdateCheck(byButton);
         try
         {
-            if (ids.Count == 0)
-                return;
-            var found = await ModSiteVersions.FetchAsync(Http, Profile.ModSiteApiUrl!, Profile.ModSiteGameId!, ids, AppInfo.Version, ModUpdateTimeout);
-            if (found is not null)
+            // The button spins as long as the request takes, but at least a second, so a click is never without a sign;
+            // the rows change when it stops.
+            var shortest = Task.Delay(ModUpdateSpin);
+            var asking = ids.Count == 0
+                ? Task.FromResult<IReadOnlyDictionary<string, string>?>(null)
+                : ModSiteVersions.FetchAsync(Http, Profile.ModSiteApiUrl!, Profile.ModSiteGameId!, ids, AppInfo.Version, ModUpdateTimeout);
+            await Task.WhenAll(shortest, asking);
+            if (await asking is { } found)
                 ShowModUpdates(found);
         }
         finally
         {
-            checkingModUpdates = false;
-            OnModUpdateCheckChanged();
+            EndModUpdateCheck();
         }
+    }
+
+    /// <summary>A check starts: the button spins, and after a press it then waits.</summary>
+    internal void BeginModUpdateCheck(bool byButton)
+    {
+        checkingModUpdates = true;
+        if (byButton)
+        {
+            lastModUpdateCheck = Environment.TickCount64;
+            StartModUpdateWait();
+        }
+        OnModUpdateCheckChanged();
+    }
+
+    internal void EndModUpdateCheck()
+    {
+        checkingModUpdates = false;
+        OnModUpdateCheckChanged();
     }
 
     /// <summary>The button comes back when the wait is over.</summary>
@@ -163,19 +212,35 @@ public sealed partial class MainViewModel
     {
         if (modUpdateWait is null)
         {
-            modUpdateWait = new DispatcherTimer { Interval = ModUpdateWait };
-            modUpdateWait.Tick += (_, _) =>
-            {
-                modUpdateWait.Stop();
-                OnModUpdateCheckChanged();
-            };
+            modUpdateWait = new DispatcherTimer();
+            modUpdateWait.Tick += (_, _) => OnModUpdateWaitTick();
         }
         modUpdateWait.Stop();
+        modUpdateWait.Interval = ModUpdateWait;
         modUpdateWait.Start();
+    }
+
+    /// <summary>
+    /// The timer may fire a little early: then it waits for the rest, or the button would stay grey, as nothing else
+    /// brings it back.
+    /// </summary>
+    internal void OnModUpdateWaitTick()
+    {
+        var left = ModUpdateWaitLeft;
+        if (left > TimeSpan.Zero && modUpdateWait is not null)
+        {
+            modUpdateWait.Stop();
+            modUpdateWait.Interval = left + TimeSpan.FromMilliseconds(50);
+            modUpdateWait.Start();
+            return;
+        }
+        modUpdateWait?.Stop();
+        OnModUpdateCheckChanged();
     }
 
     private void OnModUpdateCheckChanged()
     {
+        OnPropertyChanged(nameof(IsCheckingModUpdates));
         OnPropertyChanged(nameof(CanCheckModUpdates));
         OnPropertyChanged(nameof(CheckModUpdatesHint));
         CheckModUpdatesCommand.NotifyCanExecuteChanged();
