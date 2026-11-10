@@ -10,11 +10,12 @@ public class ModSetTests : IDisposable
     private readonly TestFolder folder = new();
     private readonly GameInstall game;
     private readonly ModManager manager;
+    private bool gameRunning;
 
     public ModSetTests()
     {
         game = GameLocator.Resolve(TestFolder.Profile(), folder.Game(), GameStore.Manual)!;
-        manager = new ModManager(game, new AppPaths(folder.Combine("Data")));
+        manager = new ModManager(game, new AppPaths(folder.Combine("Data")), _ => gameRunning);
     }
 
     public void Dispose() => folder.Dispose();
@@ -123,11 +124,11 @@ public class ModSetTests : IDisposable
         Install("Sharp");
         manager.SaveSet("All");
 
-        var restarted = new ModManager(game, new AppPaths(folder.Combine("Data")));
+        var restarted = new ModManager(game, new AppPaths(folder.Combine("Data")), _ => false);
 
         Assert.Equal("All", Assert.Single(restarted.Sets).Name);
         restarted.DeleteSet("All");
-        Assert.Empty(new ModManager(game, new AppPaths(folder.Combine("Data"))).Sets);
+        Assert.Empty(new ModManager(game, new AppPaths(folder.Combine("Data")), _ => false).Sets);
         Assert.Throws<ModException>(() => restarted.DeleteSet("All"));
     }
 
@@ -169,7 +170,7 @@ public class ModSetTests : IDisposable
     }
 
     [Fact]
-    public void A_set_changes_nothing_when_a_file_was_changed()
+    public void A_set_changes_nothing_while_the_game_runs_or_a_file_was_changed()
     {
         var sharp = Install("Sharp");
         var swift = Install("Swift");
@@ -178,6 +179,9 @@ public class ModSetTests : IDisposable
         manager.SetEnabled(sharp.Id, false);
         manager.SetEnabled(swift.Id, true);
 
+        gameRunning = true;
+        Assert.Throws<ModException>(() => manager.ApplySet("Sharp only"));
+        gameRunning = false;
         File.WriteAllText(Deployed("Swift"), "changed by hand");
         Assert.Throws<ChangedFilesException>(() => manager.ApplySet("Sharp only"));
 
