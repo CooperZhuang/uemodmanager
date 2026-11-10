@@ -2,8 +2,11 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.7.1 (2026-11-10)
+- Khi cập nhật, tên bạn đặt cho mod bằng Sửa được giữ lại, giống như nhãn; tên do ứng dụng tạo từ tên tệp vẫn theo tệp tải về mới (cảm ơn qhq)
+
 ## 1.7.0 (2026-11-10)
-- Kiểm tra cập nhật cho mod có trang mod: một yêu cầu đến API công khai của trang web mod hỏi phiên bản trên trang của tất cả các mod đó, mỗi lần khởi động và bằng nút mới ở tiêu đề danh sách mod, sau đó nút chờ 30 giây
+- Kiểm tra cập nhật cho mod có trang mod: một yêu cầu đến API công khai của trang web mod hỏi phiên bản trên trang của tất cả các mod đó, mỗi lần khởi động và bằng nút mới ở tiêu đề danh sách mod, sau đó nút chờ 30 giây (cảm ơn msylgj)
 - Hàng của các mod này và chi tiết mod hiện Update available, mở danh sách tệp của trang, hoặc Up to date; mục Mod hiện UPDATE khi có mod có phiên bản mới hơn
 - Ghi chú kiểm tra cập nhật cạnh nút giải thích những gì được so sánh và khi nào việc kiểm tra không xác định được, như khi tác giả không cập nhật phiên bản trên trang
 - Ứng dụng chỉ gửi số của mod và không tải gì về; Cài đặt ▸ Cập nhật mod tắt việc kiểm tra khi khởi động

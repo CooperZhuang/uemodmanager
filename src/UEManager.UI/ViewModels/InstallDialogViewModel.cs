@@ -101,11 +101,39 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     [ObservableProperty]
     private string name;
 
+    /// <summary>The player typed in the name field: the review no longer fills it.</summary>
+    private bool nameTyped;
+
+    /// <summary>The review fills the name field, which is not the player typing.</summary>
+    private bool fillingName;
+
     /// <summary>A kept mod's folder takes its name.</summary>
     partial void OnNameChanged(string value)
     {
+        if (fillingName)
+            return;
+        nameTyped = true;
         if (SelectedPlace is { KeepsBoth: true })
             Recheck();
+    }
+
+    /// <summary>
+    /// The name to fill in: on an update by hand, the installed mod's name when the player gave it (with Edit or in an
+    /// earlier review), as the tags stay too; else the name from the download, or the catalog's.
+    /// </summary>
+    private string SuggestedName => catalog is null && check?.Replaces is { } old && !ModNaming.IsNameFromSource(old.Name, old.SourceFileName)
+        ? old.Name
+        : catalog?.Name ?? preview.SuggestedName;
+
+    /// <summary>Follows the choice, Update or Keep both, until the player types a name. True when the name changed.</summary>
+    private bool FillName()
+    {
+        if (nameTyped || Name == SuggestedName)
+            return false;
+        fillingName = true;
+        Name = SuggestedName;
+        fillingName = false;
+        return true;
     }
 
     /// <summary>What to do with a download that has the same file names as an installed mod; empty for any other.</summary>
@@ -282,6 +310,12 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         var ownFolder = OwnFolder;
         KeepBothText = SelectedPlace is { KeepsBoth: true } ? KeepBothNote(manager.SameNameMods(chosen, catalog?.Id, SiteId)) : null;
         check = manager.Check(preview, chosen, catalog?.Id, ownFolder);
+        // A kept mod's folder takes the name: with a new name, the review starts over with it.
+        if (FillName() && SelectedPlace is { KeepsBoth: true })
+        {
+            Recheck();
+            return;
+        }
         Problems.Clear();
         foreach (var problem in check.Problems)
             Problems.Add(L.F(problem));

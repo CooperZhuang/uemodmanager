@@ -173,6 +173,58 @@ public sealed class InstallDialogEntryTests : IDisposable
     }
 
     [Fact]
+    public void An_update_keeps_the_name_the_player_gave_the_mod()
+    {
+        // Issue #20: a name set with Edit went back to the download's name on each update.
+        var (manager, red) = RedInstalled();
+        manager.Rename(red.Id, "My red skin", null, ["Outfits"]);
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.Equal("Update", dialog.ConfirmText);
+        Assert.Equal("My red skin", dialog.Name);
+
+        // Keeping both makes another mod, which takes the download's name.
+        dialog.Places[1].IsSelected = true;
+        Assert.Equal("Blue", dialog.Name);
+        Assert.Contains(dialog.Rows, row => row.Name.EndsWith("Blue", StringComparison.Ordinal));
+
+        dialog.Places[0].IsSelected = true;
+        Assert.Equal("My red skin", dialog.Name);
+    }
+
+    [Fact]
+    public void An_update_of_a_mod_the_app_named_takes_the_new_downloads_name()
+    {
+        var (manager, _) = RedInstalled();
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        Assert.Equal("Update", dialog.ConfirmText);
+        Assert.Equal("Blue", dialog.Name);
+    }
+
+    [Fact]
+    public void A_name_the_player_types_in_the_review_stays()
+    {
+        var (manager, red) = RedInstalled();
+        manager.Rename(red.Id, "My red skin", null);
+        File(@"Blue\Skin_P.pak");
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+        var dialog = new InstallDialogViewModel(manager, preview, () => { });
+
+        dialog.Name = "Typed";
+        dialog.Places[1].IsSelected = true;
+        dialog.Places[0].IsSelected = true;
+
+        Assert.Equal("Typed", dialog.Name);
+    }
+
+    [Fact]
     public void A_download_with_other_file_names_has_no_choice()
     {
         var (manager, _) = RedInstalled();

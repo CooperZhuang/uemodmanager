@@ -39,6 +39,23 @@ public static partial class ModNaming
     }
 
     /// <summary>
+    /// Whether <paramref name="name"/> is one the app made from the download's file name, as the install review suggests
+    /// it now or as older versions did from the whole name; false for a name the player gave the mod. An update keeps a
+    /// player's name, and takes the new download's name for any other.
+    /// </summary>
+    public static bool IsNameFromSource(string name, string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return false;
+        var trimmed = Path.TrimEndingDirectorySeparator(source);
+        var stem = Path.GetFileNameWithoutExtension(trimmed);
+        var whole = Whitespace().Replace(stem.Replace('_', ' '), " ").Trim();
+        return string.Equals(name, FromSource(source).Name, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, whole, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, Path.GetFileName(trimmed), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// The mod's number on the mod site, from a download that kept the site's file name, such as 61 in
     /// "Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip"; null for any other name. It needs no
     /// network: the number is part of the name. A folder unpacked under that name has it too.

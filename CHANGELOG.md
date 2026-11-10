@@ -4,8 +4,11 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.7.1 (2026-11-10)
+- An update keeps the name you gave a mod with Edit, like its tags; a name the app made from the file name still follows the new download (thanks, qhq)
+
 ## 1.7.0 (2026-11-10)
-- Update check for mods with a mod page: one request to the mod site's public API asks for the page version of all of them, at each start and with the new button in the mod list's header, which then waits 30 seconds
+- Update check for mods with a mod page: one request to the mod site's public API asks for the page version of all of them, at each start and with the new button in the mod list's header, which then waits 30 seconds (thanks, msylgj)
 - Each of these rows and the mod details show Update available, which opens the page's files, or Up to date; the Mods entry shows UPDATE when a mod has a newer version
 - UPDATE CHECK NOTES next to the button explains what is compared and where the check cannot tell, such as a page version the author did not update
 - The app sends only the mod numbers and downloads nothing; Settings ▸ Mod updates turns off the check at start

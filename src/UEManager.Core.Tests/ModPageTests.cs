@@ -48,6 +48,19 @@ public class ModPageTests
         Assert.Null(ModNaming.SiteModId(fileName));
     }
 
+    [Theory]
+    [InlineData("Travel Anywhere", "Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip", true)]
+    [InlineData("Sharp Blades", "Sharp_Blades_P.pak", true)]
+    // Older versions named a download whose name ends in (1) after the whole name.
+    [InlineData("PBZMapMarkers 1.8.2 Fog Teleport 134 1.8.2 2026-11-05T07-30Z YQ3oJLMF9(1)", "PBZMapMarkers 1.8.2 Fog Teleport 134 1.8.2 2026-11-05T07-30Z YQ3oJLMF9(1).zip", true)]
+    [InlineData("Red", "Red", true)]
+    [InlineData("My travel mod", "Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip", false)]
+    [InlineData("Travel Anywhere", null, false)]
+    public void A_name_the_app_made_from_the_download_is_told_from_the_players(string name, string? source, bool fromSource)
+    {
+        Assert.Equal(fromSource, ModNaming.IsNameFromSource(name, source));
+    }
+
     [Fact]
     public void The_profile_makes_the_page_address_from_the_number()
     {
