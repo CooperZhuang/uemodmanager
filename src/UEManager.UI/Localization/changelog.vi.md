@@ -2,6 +2,10 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.6.4 (2026-11-10)
+- Chương trình trùng tên với exe của game nhưng nằm ở thư mục khác, như chương trình chạy bằng quyền quản trị viên, không còn bị coi là game đang chạy (cảm ơn High-cla)
+- Nhật ký ghi rõ tiến trình nào bị coi là game đang chạy, kèm đường dẫn của nó, hoặc lý do không đọc được đường dẫn
+
 ## 1.6.3 (2026-11-09)
 - Tệp cấu hình mà mod script tạo trong ~mods, như PBZAutoCollect.txt của Auto Collect Loot, giờ thuộc về mod đó: được giữ khi cập nhật, được sao lưu khi gỡ cài đặt, và không còn hiện trong "Xem tệp" (cảm ơn CooperZhuang)
 - Trình quản lý nhận các tệp này khi khởi động và khi game đóng

@@ -4,6 +4,10 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.6.4 (2026-11-10)
+- A program with the game's exe name in another folder, such as one started as administrator, no longer counts as the running game (thanks, High-cla)
+- The log names the process that counted as the running game, with its path, or why its path could not be read
+
 ## 1.6.3 (2026-11-09)
 - A settings file that a script mod makes in ~mods, such as Auto Collect Loot's PBZAutoCollect.txt, is now part of the mod: kept on an update, backed up on an uninstall, and no longer listed by Show files (thanks, CooperZhuang)
 - The manager takes such a file at its start and when the game closes
