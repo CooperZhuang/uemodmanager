@@ -503,6 +503,18 @@
         </Setter>
     </Style>
 
+    <!-- A newer version of a mod on its mod page: a blue box, in English in every language, that opens the page's files. -->
+    <Style x:Key="Button.UpdateAvailable" TargetType="Button" BasedOn="{StaticResource Button.StatusBox}">
+        <!-- One more pixel below: the "p" hangs under the line, and the text then looks centred. -->
+        <Setter Property="Padding" Value="7,1,7,2" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Info}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Info}" />
+        <Setter Property="Background" Value="{StaticResource Brush.InfoWash}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Content" Value="Update available" />
+    </Style>
+
     <!-- A tag to pick under a tags box: small and quiet, blue under the pointer. It never takes the focus from the box. -->
     <Style x:Key="Button.Suggestion" TargetType="Button" BasedOn="{StaticResource Button.StatusBox}">
         <Setter Property="Margin" Value="0,0,6,6" />

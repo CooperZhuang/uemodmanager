@@ -97,6 +97,15 @@ public sealed class GameProfile
     /// </summary>
     public string? ModPageUrl { get; init; }
 
+    /// <summary>
+    /// The mod site's public API, which the update check asks for the page version of the installed mods with a mod
+    /// page (see <see cref="Updates.ModSiteVersions"/>). Null, or no <see cref="ModSiteGameId"/>: no update check.
+    /// </summary>
+    public string? ModSiteApiUrl { get; init; }
+
+    /// <summary>The game's number on the mod site, which its API needs with every mod number.</summary>
+    public string? ModSiteGameId { get; init; }
+
     /// <summary>The page of the mod installed from <paramref name="sourceFileName"/>; null when the name has no mod number.</summary>
     public string? ModPage(string? sourceFileName) =>
         ModPageUrl is { Length: > 0 } template && ModNaming.SiteModId(sourceFileName) is { } id

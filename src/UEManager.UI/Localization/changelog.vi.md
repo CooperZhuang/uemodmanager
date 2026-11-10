@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 1.7.0 (2026-11-10)
+- Kiểm tra cập nhật cho mod có trang mod: một yêu cầu đến API công khai của trang web mod hỏi phiên bản trên trang của tất cả các mod đó, mỗi lần khởi động và bằng nút mới ở tiêu đề danh sách mod, sau đó nút chờ 30 giây
+- Hàng của các mod này và chi tiết mod hiện Update available, mở danh sách tệp của trang, hoặc Up to date; mục Mod hiện UPDATE khi có mod có phiên bản mới hơn
+- Ghi chú kiểm tra cập nhật cạnh nút giải thích những gì được so sánh và khi nào việc kiểm tra không xác định được, như khi tác giả không cập nhật phiên bản trên trang
+- Ứng dụng chỉ gửi số của mod và không tải gì về; Cài đặt ▸ Cập nhật mod tắt việc kiểm tra khi khởi động
+
 ## 1.6.4 (2026-11-10)
 - Chương trình trùng tên với exe của game nhưng nằm ở thư mục khác, như chương trình chạy bằng quyền quản trị viên, không còn bị coi là game đang chạy (cảm ơn High-cla)
 - Nhật ký ghi rõ tiến trình nào bị coi là game đang chạy, kèm đường dẫn của nó, hoặc lý do không đọc được đường dẫn

@@ -126,6 +126,18 @@
                                    Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
                         <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Text}"
                                 Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                        <!-- The update box, as in the mod's row. -->
+                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.UpdateAvailable}"
+                                Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
+                                Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                    ToolTip="{Binding UpdateHint}" Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}">
+                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                       Foreground="{StaticResource Brush.Success}" Text="&#xE73E;" />
+                            <!-- The table's own TextBlock style is for its captions. -->
+                            <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
+                                       Foreground="{StaticResource Brush.Success}" Text="Up to date" />
+                        </StackPanel>
                     </StackPanel>
                     <TextBlock Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
                 </DockPanel>

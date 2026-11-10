@@ -22,16 +22,27 @@ public static class ModVersion
             return true;
         var current = FromTag(installed);
         var offered = FromTag(latest);
-        if (Numbers(current) is not { } a || Numbers(offered) is not { } b)
-            return !string.Equals(current, offered, StringComparison.OrdinalIgnoreCase);
-        for (var i = 0; i < Math.Max(a.Length, b.Length); i++)
+        return CompareNumbers(current, offered) is { } order
+            ? order < 0
+            : !string.Equals(current, offered, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Two dotted numbers compared number by number, a missing part counting as 0, so "1.6" is "1.6.0": below 0 when
+    /// <paramref name="a"/> is older. Null when either is no dotted number, such as "1.2-beta".
+    /// </summary>
+    public static int? CompareNumbers(string a, string b)
+    {
+        if (Numbers(a) is not { } x || Numbers(b) is not { } y)
+            return null;
+        for (var i = 0; i < Math.Max(x.Length, y.Length); i++)
         {
-            var x = i < a.Length ? a[i] : 0;
-            var y = i < b.Length ? b[i] : 0;
-            if (x != y)
-                return y > x;
+            var left = i < x.Length ? x[i] : 0;
+            var right = i < y.Length ? y[i] : 0;
+            if (left != right)
+                return left.CompareTo(right);
         }
-        return false;
+        return 0;
     }
 
     private static long[]? Numbers(string version)

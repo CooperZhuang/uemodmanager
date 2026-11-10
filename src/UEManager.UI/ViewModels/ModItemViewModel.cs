@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using UEManager.Core.Mods;
-using UEManager.Core.Updates;
 using UEManager.UI.Services;
 
 namespace UEManager.UI.ViewModels;
@@ -10,7 +9,7 @@ namespace UEManager.UI.ViewModels;
 /// <summary>A button above the mod list that shows only the mods with one tag, or all mods.</summary>
 public sealed record TagFilterItem(string Label, bool IsActive, ICommand Select);
 
-/// <summary>One row in the mod list, with the transient result of its page update check.</summary>
+/// <summary>One row in the mod list. Rows are rebuilt after every change, so they hold no state of their own.</summary>
 public sealed partial class ModItemViewModel : LocalizedObservableObject
 {
     private readonly MainViewModel owner;
@@ -25,6 +24,33 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         Integrity = ModManager.Integrity(record);
         HasUe4ssErrors = owner.HadUe4ssErrors(record);
         ModPageUrl = record.Recommended ? null : owner.Profile.ModPage(record.SourceFileName);
+        update = ModPageUrl is null ? null : owner.ModUpdateOf(record);
+    }
+
+    private readonly ModUpdateStatus? update;
+
+    /// <summary>The line above the icons, with the mod page and the update box; the card's mods have neither.</summary>
+    public bool HasModPageLine => !record.Recommended;
+
+    /// <summary>The mod page has a newer version: the blue box, which opens the page's files.</summary>
+    public bool IsUpdateAvailable => update?.IsAvailable == true;
+
+    /// <summary>The mod page has the installed version. Before a check, or when a check could not tell, the box stays empty.</summary>
+    public bool IsUpToDate => update is { IsAvailable: false };
+
+    public string? UpdateHint => update switch
+    {
+        { IsAvailable: true } => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),
+        not null => L.F($"The mod page has version {update.Latest}, the one you have."),
+        _ => null,
+    };
+
+    /// <summary>The mod page's files, where the player downloads a newer version.</summary>
+    [RelayCommand]
+    private void OpenModFiles()
+    {
+        if (ModPageUrl is not null)
+            owner.OpenPath(ModPageUrl + "?tab=files");
     }
 
     /// <summary>
@@ -35,53 +61,6 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
 
     /// <summary>"No mod page" in the row: a mod of the list whose download's name has no mod number. The card's mods show neither.</summary>
     public bool ShowsNoModPage => !record.Recommended && ModPageUrl is null;
-
-    private ModPageUpdateResult? pageUpdate;
-    private int updateChecksInProgress;
-
-    public bool IsModUpdateAvailable => pageUpdate?.State == ModPageUpdateState.UpdateAvailable;
-
-    public string? ModUpdateText => ModPageUrl is null ? null
-        : updateChecksInProgress > 0 ? L.T("Checking for mod updates…")
-        : pageUpdate?.State switch
-        {
-            ModPageUpdateState.UpdateAvailable => L.F($"Update available: {pageUpdate.LatestVersion}"),
-            ModPageUpdateState.UpToDate => L.T("No newer page version"),
-            ModPageUpdateState.Unknown => pageUpdate.Failure switch
-            {
-                ModPageUpdateFailure.InvalidApiKey => L.T("Nexus Mods API key is invalid or expired. Replace it in Settings."),
-                ModPageUpdateFailure.AccessDenied => L.T("Nexus Mods API access was denied. Check your account permissions."),
-                ModPageUpdateFailure.RateLimited => L.T("Nexus Mods API rate limit reached. Try again later."),
-                _ => L.T("Could not check for updates"),
-            },
-            _ => null,
-        };
-
-    public string ModUpdateTone => IsModUpdateAvailable ? "warn" : "muted";
-
-    public string ModUpdateHint => L.T("Checks the mod version using the official Nexus Mods API when an API key is saved in Settings, otherwise the public page. This does not compare individual files or variants. Results are cached for 10 minutes. API permissions and rate limits still apply. Open the mod page to review and download manually.");
-
-    internal async Task CheckForUpdateAsync(ModPageUpdates updates, CancellationToken cancellationToken = default)
-    {
-        if (ModPageUrl is null)
-            return;
-        cancellationToken.ThrowIfCancellationRequested();
-        updateChecksInProgress++;
-        OnPropertyChanged(string.Empty);
-        try
-        {
-            // Keep the owner's concurrency slot until the shared request really finishes.
-            // Cancellation suppresses stale results, rather than releasing a slot while HTTP is still in flight.
-            var result = await updates.CheckAsync(ModPageUrl, record.Version);
-            cancellationToken.ThrowIfCancellationRequested();
-            pageUpdate = result;
-        }
-        finally
-        {
-            updateChecksInProgress--;
-            OnPropertyChanged(string.Empty);
-        }
-    }
 
     internal ModRecord Record => record;
 

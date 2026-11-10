@@ -179,10 +179,10 @@
                             <Grid>
                                 <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Mods'}" ui:Icon.Glyph="&#xE8F1;"
                                              IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />
-                                <!-- A new version of the recommended mod waits on this page. -->
+                                <!-- A new version of the recommended mod, or of a mod in the list, waits on this page. -->
                                 <TextBlock Margin="0,0,26,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}"
                                            FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Brush.Info}" IsHitTestVisible="False"
-                                           Text="{ui:Loc 'UPDATE'}" Visibility="{Binding IsRecommendedUpdateAvailable, Converter={StaticResource Visible}}" />
+                                           Text="{ui:Loc 'UPDATE'}" Visibility="{Binding IsAnyUpdateAvailable, Converter={StaticResource Visible}}" />
                             </Grid>
                             <RadioButton Style="{StaticResource NavItem}" Content="UE4SS" ui:Icon.Glyph="&#xE943;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Ue4ss}" />
@@ -435,6 +435,26 @@
                     </StackPanel>
                     <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                             Command="{Binding CloseNotesCommand}" IsCancel="True" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===== How the update check of mods with a mod page works, for the curious ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding IsUpdateNotesOpen, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource Dialog}" Width="820">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'UPDATE CHECK NOTES', Tracked=True}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'How the update check works'}" />
+                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding UpdateNotes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                            Command="{Binding CloseUpdateNotesCommand}" IsCancel="True" />
                 </StackPanel>
             </Border>
         </Grid>

@@ -13,7 +13,8 @@
         <GridLength x:Key="Col.Type">92</GridLength>
         <GridLength x:Key="Col.Integrity">136</GridLength>
         <GridLength x:Key="Col.Date">104</GridLength>
-        <GridLength x:Key="Col.Actions">212</GridLength>
+        <!-- Room for the mod page link and the update box of 100 above the icons, in every language. -->
+        <GridLength x:Key="Col.Actions">248</GridLength>
         <!-- What the table drops in a narrow window, so the mod's name keeps room; see ModsView.OnTableSizeChanged. -->
         <Visibility x:Key="Mods.WideOnly">Visible</Visibility>
 
@@ -65,9 +66,6 @@
                         <Button Style="{StaticResource Button.Name}" Content="{Binding Name}"
                                 Command="{Binding ShowDetailsCommand}" ToolTip="{ui:Loc 'Show the details of this mod and every file it placed'}" />
                         <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" Text="{Binding Detail}" />
-                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" Text="{Binding ModUpdateText}"
-                                   Foreground="{Binding ModUpdateTone, Converter={StaticResource Tone}}" ToolTip="{Binding ModUpdateHint}"
-                                   Visibility="{Binding ModUpdateText, Converter={StaticResource VisibleIfSet}}" />
                         <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Info}" Text="{Binding TagsText}"
                                    ToolTip="{Binding TagsText}" Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
                         <Button Margin="0,4,0,0" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Danger}"
@@ -92,20 +90,36 @@
                                Text="{Binding InstalledText}" ToolTip="{Binding InstalledFullText}" />
 
                     <StackPanel Grid.Column="5" VerticalAlignment="Center">
-                        <!-- Above the icons, on their right: the mod's page, known from the number in its download's file name. -->
+                        <!-- Above the icons, on their right: the mod's page, known from the number in its download's file name,
+                             and the update box. The box has a fixed width, empty before a check or without a page, so the
+                             links of all rows line up. -->
                         <StackPanel Margin="0,0,8,6" HorizontalAlignment="Right" Orientation="Horizontal"
-                                    Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
-                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
-                                       Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
-                            <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}"
-                                    Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
-                        </StackPanel>
-                        <StackPanel Margin="0,0,8,6" HorizontalAlignment="Right" Orientation="Horizontal" Background="Transparent"
-                                    ToolTip="{ui:Loc 'Only a download that keeps the mod site\'s file name shows its mod page.'}"
-                                    Visibility="{Binding ShowsNoModPage, Converter={StaticResource Visible}}">
-                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
-                                       Foreground="{StaticResource Brush.TextDim}" Text="&#xE774;" />
-                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.TextDim}" Text="{ui:Loc 'No mod page'}" />
+                                    Visibility="{Binding HasModPageLine, Converter={StaticResource Visible}}">
+                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal"
+                                        Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
+                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                           Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
+                                <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}"
+                                        Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                        ToolTip="{ui:Loc 'Only a download that keeps the mod site\'s file name shows its mod page.'}"
+                                        Visibility="{Binding ShowsNoModPage, Converter={StaticResource Visible}}">
+                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                           Foreground="{StaticResource Brush.TextDim}" Text="&#xE774;" />
+                                <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.TextDim}" Text="{ui:Loc 'No mod page'}" />
+                            </StackPanel>
+                            <Grid Width="100" Height="21" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Button HorizontalAlignment="Left" Style="{StaticResource Button.UpdateAvailable}"
+                                        Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
+                                        Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
+                                <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                            ToolTip="{Binding UpdateHint}" Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}">
+                                    <TextBlock Margin="1,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                               Foreground="{StaticResource Brush.Success}" Text="&#xE73E;" />
+                                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.Success}" Text="Up to date" />
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Margin="0,0,4,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE713;"
@@ -331,6 +345,21 @@
                     <Button Grid.Column="4" Style="{StaticResource Button.SortHeader}" Content="{ui:Loc 'Installed', Tracked=True}" Visibility="{DynamicResource Mods.WideOnly}"
                             Tag="{Binding InstalledSortGlyph}" ToolTip="{ui:Loc 'Sort by installation date'}"
                             Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:ModSortField.Installed}" />
+                    <!-- The update check: its notes, like the card's technical notes, and its button above the rows' last icon.
+                         The negative margin keeps the header as low as the sort labels make it. -->
+                    <StackPanel Grid.Column="5" Margin="0,-9" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal"
+                                Visibility="{Binding HasModSite, Converter={StaticResource Visible}}">
+                        <Button Margin="0,0,8,0" Padding="7,3" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowUpdateNotesCommand}"
+                                Foreground="{StaticResource Brush.Info}" BorderBrush="{StaticResource Brush.Info}" Background="{StaticResource Brush.InfoWash}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Text.Icon}" FontSize="11" Text="&#xE946;" />
+                                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11" Text="{ui:Loc 'UPDATE CHECK NOTES'}" />
+                            </StackPanel>
+                        </Button>
+                        <Button VerticalAlignment="Center" Style="{StaticResource Button.Icon}"
+                                ui:Icon.Glyph="&#xE895;" Command="{Binding CheckModUpdatesCommand}"
+                                ToolTip="{Binding CheckModUpdatesHint}" ToolTipService.ShowOnDisabled="True" />
+                    </StackPanel>
                 </Grid>
                 <Border Style="{StaticResource Divider}" />
 

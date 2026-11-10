@@ -30,10 +30,10 @@ public class ModPageLinkTests : IDisposable
     });
 
     private ModItemViewModel Row(MainViewModel model, string? source, bool recommended = false) =>
-        new(model, new ModRecord { Id = "a", Name = "Travel Anywhere", SourceFileName = source, Recommended = recommended }, Path.Combine(folder, "library"));
+        new(model, new ModRecord { Id = "a", Name = "Travel Anywhere", Version = "1.0.1", SourceFileName = source, Recommended = recommended }, Path.Combine(folder, "library"));
 
     private ModDetailsViewModel Details(MainViewModel model, string? source, bool recommended = false) =>
-        new(model, new ModRecord { Id = "a", Name = "Travel Anywhere", SourceFileName = source, Recommended = recommended }, [], [], folder);
+        new(model, new ModRecord { Id = "a", Name = "Travel Anywhere", Version = "1.0.1", SourceFileName = source, Recommended = recommended }, [], [], folder);
 
     [Fact]
     public void A_download_from_the_mod_site_links_its_page() => With("https://example.test/game/mods/{id}", model =>
@@ -59,6 +59,89 @@ public class ModPageLinkTests : IDisposable
         Assert.False(Row(model, SiteDownload, recommended: true).ShowsNoModPage);
         Assert.False(Row(model, "PBZModLoader-2.1.0-win64.zip", recommended: true).ShowsNoModPage);
         Assert.Null(Details(model, SiteDownload, recommended: true).ModPageUrl);
+    });
+
+    [Fact]
+    public void The_update_box_shows_what_the_check_found() => With("https://example.test/game/mods/{id}", model =>
+    {
+        model.ShowModUpdates(new Dictionary<string, string> { ["61"] = "1.0.2" });
+        var row = Row(model, SiteDownload);
+        model.Mods.Add(row);
+
+        Assert.True(row.IsUpdateAvailable);
+        Assert.False(row.IsUpToDate);
+        Assert.Contains("1.0.2", row.UpdateHint);
+        Assert.True(model.HasModUpdates);
+        Assert.True(model.IsAnyUpdateAvailable);
+        Assert.True(Details(model, SiteDownload).IsUpdateAvailable);
+
+        model.ShowModUpdates(new Dictionary<string, string> { ["61"] = "1.0.1" });
+        var again = Row(model, SiteDownload);
+
+        Assert.False(again.IsUpdateAvailable);
+        Assert.True(again.IsUpToDate);
+    });
+
+    [Fact]
+    public void Without_a_result_or_a_mod_page_the_box_stays_empty() => With("https://example.test/game/mods/{id}", model =>
+    {
+        Assert.False(Row(model, SiteDownload).IsUpdateAvailable);
+        Assert.False(Row(model, SiteDownload).IsUpToDate);
+
+        model.ShowModUpdates(new Dictionary<string, string> { ["61"] = "1.0.2" });
+
+        Assert.False(Row(model, "Travel Anywhere.zip").IsUpdateAvailable);
+        Assert.False(Row(model, SiteDownload, recommended: true).IsUpdateAvailable);
+        Assert.False(Row(model, SiteDownload, recommended: true).HasModPageLine);
+        Assert.True(Row(model, "Travel Anywhere.zip").HasModPageLine);
+    });
+
+    [Fact]
+    public void A_mod_update_shows_at_once_from_the_page_version_already_known() => With("https://example.test/game/mods/{id}", model =>
+    {
+        model.ShowModUpdates(new Dictionary<string, string> { ["61"] = "1.0.2" });
+        Assert.True(Row(model, SiteDownload).IsUpdateAvailable);
+
+        // The updated mod's new download has the same number on the site and the page's version.
+        var updated = new ModItemViewModel(model, new ModRecord { Id = "b", Name = "Travel Anywhere", Version = "1.0.2",
+            SourceFileName = "Travel Anywhere 61 1.0.2 2026-11-10T10-00Z AbCdEf123.zip" }, Path.Combine(folder, "library"));
+
+        Assert.True(updated.IsUpToDate);
+    });
+
+    [Fact]
+    public void A_mod_without_a_version_in_the_list_uses_the_one_in_its_download_name() => With("https://example.test/game/mods/{id}", model =>
+    {
+        // Installed on 2026-10-31, before the app read a name that ends in "(1)": no version in the list.
+        const string source = "Cutscene Skip 1.0.0 32 1.0.0 2026-10-29T07-06Z Q3IfNbyi9(1).zip";
+        model.ShowModUpdates(new Dictionary<string, string> { ["32"] = "1.0.0" });
+
+        var row = new ModItemViewModel(model, new ModRecord { Id = "c", Name = "Cutscene Skip", SourceFileName = source }, Path.Combine(folder, "library"));
+
+        Assert.True(row.IsUpToDate);
+
+        model.ShowModUpdates(new Dictionary<string, string> { ["32"] = "1.1.0" });
+        var newer = new ModItemViewModel(model, new ModRecord { Id = "c", Name = "Cutscene Skip", SourceFileName = source }, Path.Combine(folder, "library"));
+
+        Assert.True(newer.IsUpdateAvailable);
+        Assert.Contains("you have 1.0.0", newer.UpdateHint);
+    });
+
+    [Fact]
+    public void The_check_at_start_is_on_until_the_player_turns_it_off() => With("https://example.test/game/mods/{id}", model =>
+    {
+        Assert.True(model.CheckModUpdatesAtStart);
+
+        model.CheckModUpdatesAtStart = false;
+
+        Assert.False(AppSettings.Load(new AppPaths(Path.Combine(folder, "Data"))).CheckModUpdatesAtStart);
+    });
+
+    [Fact]
+    public void A_game_without_the_mod_sites_api_has_no_check() => With("https://example.test/game/mods/{id}", model =>
+    {
+        Assert.False(model.CanCheckModUpdates);
+        Assert.False(model.CheckModUpdatesCommand.CanExecute(null));
     });
 
     [Fact]

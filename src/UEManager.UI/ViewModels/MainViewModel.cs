@@ -38,8 +38,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private bool watching;
 
     /// <summary>
-    /// The connection for the UE4SS manifest and app update check at start, the openmods
-    /// lists and covers, and downloads. Mod page update checks use a separate, non-redirecting client.
+    /// The app's only connection: the UE4SS manifest and the update check at start, the openmods
+    /// lists and covers when the openmods page opens, and the downloads the user starts.
     /// </summary>
     private static readonly HttpClient Http = CreateHttpClient();
     private ModManager? manager;
@@ -62,9 +62,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <param name="catalogUrl">Another openmods games list, such as a test copy; used only while the catalog is switched on.</param>
     /// <param name="updateUrl">Another release list for the update check, such as a test copy.</param>
     /// <param name="ue4ssManifestUrl">Another UE4SS manifest, such as a test copy.</param>
-    /// <param name="nexusHttp">A non-redirecting client for Nexus checks, such as a fake HTTP handler in tests.</param>
     public MainViewModel(GameProfile profile, AppPaths paths, ArtSet art, string? catalogUrl = null, string? updateUrl = null,
-        string? ue4ssManifestUrl = null, HttpClient? nexusHttp = null)
+        string? ue4ssManifestUrl = null)
     {
         Profile = profile;
         this.paths = paths;
@@ -89,7 +88,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         ApplySort();
         toastTimer.Tick += (_, _) => DismissToast();
         gameWatch.Tick += async (_, _) => await WatchGameAsync();
-        InitializeNexusApiKey(nexusHttp);
     }
 
     /// <summary>
@@ -692,6 +690,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         gameWatch.Start();
         _ = CheckUe4ssManifestAsync();
         _ = Update.CheckAsync();
+        if (settings.CheckModUpdatesAtStart)
+            _ = CheckModUpdatesAsync();
         if (downloads.Count > 0)
             await InstallAsync(downloads);
     }
@@ -1171,8 +1171,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         try
         {
-            // Clear live credentials before deleting settings or restarting: either later step may fail.
-            ClearStoredNexusApiKey();
             File.Delete(paths.SettingsFile);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -1275,10 +1273,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (newValue == "Ue4ss")
             _ = RefreshUe4ssLogAsync();
-        if (newValue == "Mods")
-            _ = CheckModUpdatesAsync();
-        else
-            CancelModUpdateChecks();
     }
 
     [RelayCommand]
@@ -1803,7 +1797,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         OnModsChanged();
         // Every summary on every page derives from the game and the mod list.
         OnPropertyChanged(string.Empty);
-        _ = CheckModUpdatesAsync();
     }
 
     internal bool EnsureGame()
@@ -1857,7 +1850,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
-        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen || UnmanagedRows is not null;
+        || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen || UnmanagedRows is not null
+        || IsUpdateNotesOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate

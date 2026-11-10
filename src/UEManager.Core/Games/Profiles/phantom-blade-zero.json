@@ -47,6 +47,10 @@
 
   // "Open mod page" for a mod whose download kept the mod site's file name: {id} is the mod's number in that name.
   "modPageUrl": "https://www.nexusmods.com/phantombladezero/mods/{id}",
+  // The update check: one request to the site's public API at each start (and on the Mods page's button) for the
+  // page version of those mods. It sends only the game's number there and the mods' numbers.
+  "modSiteApiUrl": "https://api.nexusmods.com/v2/graphql",
+  "modSiteGameId": "10614",
 
   // Started by "Launch game" only when the game was not found through Steam or Epic.
   // Steam starts this small exe, and it starts platform/steam/PBZ.exe.

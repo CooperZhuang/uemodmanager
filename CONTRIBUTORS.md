@@ -7,6 +7,7 @@ every contributor is named in every release.
 - Null993: Simplified Chinese translation and the live language switch
 - CooperZhuang: game files in the game's own folders and next to the exe (ReShade and other loader mods), Traditional Chinese translation and Simplified Chinese polish
 - High-cla: the report of a false "game is running" alarm, which led to a better check of the running game
+- msylgj: the first update check for mods with a mod page, which led to the app's own
 
 Your name goes here with your first merged contribution: code, a game profile, a
 translation, or a bug report that led to a fix. See CONTRIBUTING.md.

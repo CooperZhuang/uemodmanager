@@ -18,6 +18,9 @@ public sealed class AppSettings
     /// <summary>"Launch game" zips the save folder first. Off until the player turns it on.</summary>
     public bool BackUpSavesOnLaunch { get; set; }
 
+    /// <summary>At each start, the app asks the mod site for the page version of the mods with a mod page. On until the player turns it off; the Mods page's button works either way.</summary>
+    public bool CheckModUpdatesAtStart { get; set; } = true;
+
     /// <summary>The newest app version the banner at start announced; each new version is announced once.</summary>
     public string? AnnouncedUpdate { get; set; }
 

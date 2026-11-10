@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 1.7.0 (2026-11-10)
+- Update check for mods with a mod page: one request to the mod site's public API asks for the page version of all of them, at each start and with the new button in the mod list's header, which then waits 30 seconds
+- Each of these rows and the mod details show Update available, which opens the page's files, or Up to date; the Mods entry shows UPDATE when a mod has a newer version
+- UPDATE CHECK NOTES next to the button explains what is compared and where the check cannot tell, such as a page version the author did not update
+- The app sends only the mod numbers and downloads nothing; Settings ▸ Mod updates turns off the check at start
+
 ## 1.6.4 (2026-11-10)
 - A program with the game's exe name in another folder, such as one started as administrator, no longer counts as the running game (thanks, High-cla)
 - The log names the process that counted as the running game, with its path, or why its path could not be read

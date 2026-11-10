@@ -59,6 +59,27 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     /// <summary>The mod's page on the mod site, from the number in its download's file name; null without one and for the card's mods.</summary>
     public string? ModPageUrl { get; } = mod.Recommended ? null : owner.Profile.ModPage(mod.SourceFileName);
 
+    private ModUpdateStatus? Update => ModPageUrl is null ? null : owner.ModUpdateOf(mod);
+
+    /// <summary>The mod page has a newer version; see <see cref="ModItemViewModel.IsUpdateAvailable"/>.</summary>
+    public bool IsUpdateAvailable => Update?.IsAvailable == true;
+
+    public bool IsUpToDate => Update is { IsAvailable: false };
+
+    public string? UpdateHint => Update switch
+    {
+        { IsAvailable: true } update => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),
+        { } update => L.F($"The mod page has version {update.Latest}, the one you have."),
+        _ => null,
+    };
+
+    [RelayCommand]
+    private void OpenModFiles()
+    {
+        if (ModPageUrl is not null)
+            owner.OpenPath(ModPageUrl + "?tab=files");
+    }
+
     [RelayCommand]
     private void OpenModPage()
     {

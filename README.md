@@ -244,16 +244,6 @@ as for a UE4SS installed by hand), Home and the UE4SS page offer **Update to
 v…**. A new UE4SS build therefore ships by editing the manifest, without a new
 app build. Offline or failing, the check stays silent.
 
-This is a maintainer-selected build for the game, not a search for the newest
-upstream UE4SS release; there is no stable/nightly channel selector. The app
-checks at startup but installs only after a user action. Close the game and
-choose **Update to v…** on Home or the UE4SS page (or install a downloaded
-archive). The existing update condition is a version-string difference, not
-an ordering comparison: a manually installed or numerically newer build can
-also be offered the manifest's version, potentially a downgrade. Review the
-target version first. The download verifies SHA-256 only when the manifest
-supplies it. This mod-page feature does not change that UE4SS behavior.
-
 The optional `files` lists the DLLs of the official builds (`UE4SS.dll` and the
 proxy, such as `dwmapi.dll`), by their place next to the game's exe, with the
 SHA-256s each has in any official release. The DLLs make the build; scripts and
@@ -398,9 +388,11 @@ are used.
 `--catalog <url>` reads another games list, such as a test copy; the page then
 says that it is not the real one.
 
-Network accesses: the UE4SS manifest and the update check at start, the
-openmods lists and cover pictures when the openmods page opens (only while the
-catalog is switched on), and the downloads the user starts. Pictures are kept in memory only.
+Network accesses: the UE4SS manifest and the update check at start, the mod
+update check at start (unless turned off) and on its button (see
+[Mod pages and updates](#mod-pages-and-updates)), the openmods lists and cover
+pictures when the openmods page opens (only while the catalog is switched on),
+and the downloads the user starts. Pictures are kept in memory only.
 
 ### Removing UE4SS
 
@@ -476,6 +468,33 @@ review sets them (Enter saves, Esc cancels). Only the mod list changes: the
 library keeps each mod under its id, and the game's files keep their names, so
 it also works while the game runs.
 
+## Mod pages and updates
+
+A mod whose download kept the mod site's file name, such as
+`Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip`, has the mod's number
+in it, so its row and its details offer **Open mod page**. Any other mod shows
+*No mod page*; the recommended mods on the card show neither.
+
+For those mods the app checks for updates: at each start (Settings → Mod updates
+turns this off) and with the button in the mod list's header, which then waits
+30 seconds. One request to the mod site's public API asks for the version on the
+page of all of them at once. It sends only the game's number on the site and the
+mods' numbers, needs no account, and downloads nothing. The page's version is
+compared with the mod's version in the list, which comes from the download's
+name:
+
+- **Update available** (blue): the page has a newer version. A click opens the
+  page's files, where the player downloads it.
+- **Up to date** (green): the page has the same version, or an older one.
+- Nothing: not checked yet, the check failed (the log says why), or the versions
+  cannot be compared, such as `1.2-beta` against `1.3`.
+
+The page's version is the mod's main version. A page with several files, such
+as styles or optional files, has one version for all of them, so only the mod's
+author keeps it right. After an update in the manager, the box follows at once
+from the version already known, without asking the site again. A newer version
+also shows **UPDATE** on the Mods entry.
+
 ## Test without mods
 
 **Test without mods** on the Mods page turns every enabled mod off, all or none,
@@ -508,56 +527,6 @@ Once a mod has a tag, buttons above the list show **All tags** and each tag with
 its count, and a click shows only the mods with that tag, one tag at a time. A row shows
 its tags, and the search finds them. An update keeps a mod's tags. They change no
 file of the mod. The mods on the card stand apart from the list and have no tags.
-
-## Installed mod update checks
-
-Opening **Mods**, installing/updating a mod while on that page, or pressing
-**Refresh / F5** checks Nexus Mods versions for rows with an **Open mod page**
-link. Checks run in the background (at most three at once; authenticated API
-requests are serialized to respect failures and rate limits). Each mod's
-result, including an unavailable mod, is cached in memory for 10 minutes.
-Checks work even when the openmods catalog is switched off.
-
-A newer, comparable page version shows **Update available: &lt;version&gt;** below
-the mod name. Use **Open mod page** to review the release, download the right
-file/variant, and install it through the existing review dialog. Nothing is
-downloaded or replaced automatically. This compares the mod page's version,
-not each optional file or variant; it cannot guarantee that your chosen file
-has an update. Equal or older page versions show **No newer page version**.
-
-### Nexus Mods API key
-
-In **Settings → Nexus Mods API key**, use **Get an API key** to open your
-[Nexus API Access page](https://www.nexusmods.com/users/myaccount?tab=api%20access).
-Paste your own personal key into the masked **New API key** field, then choose
-**Save and test API key**. **Test saved API key** validates the existing key;
-**Clear saved API key** removes it and restores public-page checks. Changing
-or clearing the key resets the version cache and suppresses old results.
-
-With a saved key, checks use the [official Nexus API](https://api.swaggerhub.com/apis/NexusMods/nexus-mods_public_api_params_in_form_data/1.0):
-GET /v1/games/{game}/mods/{id}.json for the version and
-GET /v1/users/validate.json for validation. The key is sent only in the apikey
-header to https://api.nexusmods.com, never to public pages, download servers,
-URLs or redirect targets. Authenticated failures never fall back to scraping.
-Invalid/expired keys, access denied and rate limits have distinct messages.
-HTTP 429 pauses API requests for Retry-After (60 seconds when unavailable).
-Account permissions and request limits still apply: the API avoids reliance
-on protected HTML pages, but does not grant access your account does not have.
-
-The key is encrypted with Windows CurrentUser DPAPI in
-Data/nexus-api-key.dat, not stored as plaintext in settings, logs or help
-reports. The password box is cleared after submission and never redisplays a
-saved key. When moving Data to another Windows account or PC, re-enter it.
-**Clear** and a full app-settings reset delete the stored credential. Never
-commit or share your key; revoke it on Nexus if exposed.
-
-Without a key, checks read public pages without browser cookies. Login-only
-pages, Cloudflare challenges and changed markup can prevent checking. Network
-failures, missing versions, non-numeric versions and unsupported sites remain
-unknown, never proof that a mod is up to date. Only dotted numeric versions
-(with an optional v prefix) are compared. Requests reveal game/mod IDs to
-Nexus, but upload no local files or paths. Redirects are not followed. Rows
-without a link and the recommended mods on their separate card are excluded.
 
 ## Sorting and showing the list
 
