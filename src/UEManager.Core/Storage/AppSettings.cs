@@ -39,6 +39,15 @@ public sealed class AppSettings
     /// <summary>"Launch game" zips the save folder first. Off until the player turns it on.</summary>
     public bool BackUpSavesOnLaunch { get; set; }
 
+    private int saveBackupKeep = Games.SaveBackups.DefaultKeep;
+
+    /// <summary>How many save backups to keep per game. Old settings, and invalid values, keep the default of five.</summary>
+    public int SaveBackupKeep
+    {
+        get => saveBackupKeep;
+        set => saveBackupKeep = value >= 1 ? value : Games.SaveBackups.DefaultKeep;
+    }
+
     /// <summary>At each start, the app asks the mod site for the page version of the mods with a mod page. On until the player turns it off; the Mods page's button works either way.</summary>
     public bool CheckModUpdatesAtStart { get; set; } = true;
 

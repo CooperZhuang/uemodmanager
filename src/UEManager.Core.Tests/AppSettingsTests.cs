@@ -4,6 +4,30 @@ namespace UEManager.Core.Tests;
 
 public class AppSettingsTests
 {
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"saveBackupKeep\":0}")]
+    [InlineData("{\"saveBackupKeep\":-1}")]
+    public void Old_or_invalid_retention_settings_keep_five(string json)
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        Directory.CreateDirectory(paths.Root);
+        File.WriteAllText(paths.SettingsFile, json);
+
+        Assert.Equal(5, AppSettings.Load(paths).SaveBackupKeep);
+    }
+
+    [Fact]
+    public void The_save_backup_retention_count_survives_a_restart()
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        new AppSettings { SaveBackupKeep = 20 }.Save(paths);
+
+        Assert.Equal(20, AppSettings.Load(paths).SaveBackupKeep);
+    }
+
     [Fact]
     public void The_language_choice_survives_a_restart_and_old_settings_still_load()
     {

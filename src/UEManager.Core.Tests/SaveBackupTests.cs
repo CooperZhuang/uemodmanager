@@ -34,7 +34,7 @@ public class SaveBackupTests : IDisposable
         folder.File(@"Saves\Slot1.sav", "slot one");
         var start = new DateTime(2026, 10, 27, 21, 0, 0);
         var made = new List<string>();
-        for (var i = 0; i < SaveBackups.Keep + 2; i++)
+        for (var i = 0; i < SaveBackups.DefaultKeep + 2; i++)
         {
             made.Add(SaveBackups.Create(Saves, Backups, start.AddMinutes(i)));
             File.SetLastWriteTimeUtc(made[^1], start.AddMinutes(i).ToUniversalTime());
@@ -42,10 +42,64 @@ public class SaveBackupTests : IDisposable
 
         var kept = SaveBackups.List(Backups);
 
-        Assert.Equal(SaveBackups.Keep, kept.Count);
+        Assert.Equal(SaveBackups.DefaultKeep, kept.Count);
         Assert.Equal(made[^1], kept[0]);
         Assert.DoesNotContain(made[0], kept);
         Assert.DoesNotContain(made[1], kept);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(10)]
+    public void Keeps_the_chosen_number_and_removes_the_oldest(int keep)
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        var start = new DateTime(2026, 10, 27, 21, 0, 0);
+        var made = new List<string>();
+        for (var i = 0; i < keep + 2; i++)
+        {
+            made.Add(SaveBackups.Create(Saves, Backups, start.AddMinutes(i), keep));
+            File.SetLastWriteTimeUtc(made[^1], start.AddMinutes(i).ToUniversalTime());
+        }
+
+        Assert.Equal(made.Skip(2).Reverse(), SaveBackups.List(Backups));
+        Assert.False(File.Exists(made[0]));
+        Assert.False(File.Exists(made[1]));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void An_invalid_retention_count_never_changes_saves_or_backups(int keep)
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        var now = new DateTime(2026, 10, 27, 21, 0, 0);
+        var backup = SaveBackups.Create(Saves, Backups, now);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => SaveBackups.Create(Saves, Backups, now, keep));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SaveBackups.Restore(backup, Saves, Backups, now, keep));
+        Assert.Equal([backup], SaveBackups.List(Backups));
+        Assert.Equal("slot one", File.ReadAllText(Path.Combine(Saves, "Slot1.sav")));
+    }
+
+    [Fact]
+    public void A_failed_backup_does_not_prune_even_after_lowering_the_count()
+    {
+        var save = folder.File(@"Saves\Slot1.sav", "slot one");
+        var start = new DateTime(2026, 10, 27, 21, 0, 0);
+        for (var i = 0; i < 8; i++)
+            File.SetLastWriteTimeUtc(SaveBackups.Create(Saves, Backups, start.AddMinutes(i), 10), start.AddMinutes(i).ToUniversalTime());
+        var before = SaveBackups.List(Backups);
+
+        using (File.Open(save, FileMode.Open, FileAccess.Read, FileShare.None))
+            Assert.Throws<IOException>(() => SaveBackups.Create(Saves, Backups, start.AddHours(1), 1));
+
+        Assert.Equal(before, SaveBackups.List(Backups));
+        Assert.Empty(Directory.GetFiles(Backups, "*.tmp"));
+
+        var newest = SaveBackups.Create(Saves, Backups, start.AddHours(2), 1);
+        Assert.Equal([newest], SaveBackups.List(Backups));
     }
 
     [Fact]
@@ -79,22 +133,28 @@ public class SaveBackupTests : IDisposable
         Assert.Equal([Saves], Directory.GetDirectories(folder.Combine()).Where(d => d.StartsWith(Saves)));
     }
 
-    [Fact]
-    public void The_oldest_of_five_backups_can_be_restored()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(10)]
+    public void The_oldest_backup_can_be_restored_with_the_chosen_retention_count(int keep)
     {
         folder.File(@"Saves\Slot1.sav", "oldest");
         var start = new DateTime(2026, 10, 27, 21, 0, 0);
         var oldest = SaveBackups.Create(Saves, Backups, start);
         File.SetLastWriteTimeUtc(oldest, start.ToUniversalTime());
-        for (var i = 1; i < SaveBackups.Keep; i++)
+        for (var i = 1; i < keep; i++)
         {
             folder.File(@"Saves\Slot1.sav", $"newer {i}");
-            File.SetLastWriteTimeUtc(SaveBackups.Create(Saves, Backups, start.AddMinutes(i)), start.AddMinutes(i).ToUniversalTime());
+            File.SetLastWriteTimeUtc(SaveBackups.Create(Saves, Backups, start.AddMinutes(i), keep), start.AddMinutes(i).ToUniversalTime());
         }
 
-        SaveBackups.Restore(oldest, Saves, Backups, start.AddHours(1));
+        var before = SaveBackups.Restore(oldest, Saves, Backups, start.AddHours(1), keep);
 
         Assert.Equal("oldest", File.ReadAllText(Path.Combine(Saves, "Slot1.sav")));
+        Assert.Equal(keep, SaveBackups.List(Backups).Count);
+        Assert.True(File.Exists(before));
+        Assert.False(File.Exists(oldest));
     }
 
     [Fact]

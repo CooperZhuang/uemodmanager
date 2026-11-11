@@ -451,11 +451,18 @@ backup at launch is off by default.
 
 A broken mod can break a save. When the player turns it on, **Launch game**
 first zips the save folder into `Data/games/<id>/save-backups/` and keeps the
-newest 5. Without saves yet (the folder is empty or not made yet) the game
+newest backups, up to the number chosen in **Settings → Save backups** (5 by
+default, with a minimum of 1). The choice is saved across restarts and applies
+to automatic backups, manual backups and the backup before a restore. Lowering
+the number removes older backups only after the next successful backup.
+Without saves yet (the folder is empty or not made yet) the game
 starts with a note; when the backup fails, the app asks whether to start the
 game anyway. Starting the game from Steam, Epic or a shortcut makes no backup.
 **Settings → Save backups** shows the folder and the backups, turns the backup
-at launch on or off, and offers **Back up now**.
+at launch on or off, and offers **Back up now**. Settings shows the newest 5;
+when more exist, **Manage all backups…** opens a separate window with the full,
+scrollable list, Restore and Delete. Deleting a backup asks first and leaves
+the current saves alone.
 
 **Restore…** next to a backup puts it back, after a question and with the game
 closed: the save folder then holds exactly the backup's files. The saves of now

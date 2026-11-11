@@ -1,0 +1,163 @@
+<Window x:Class="UEManager.UI.Views.SaveBackupsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:UEManager.UI"
+        Title="{ui:Loc 'Save backups'}" Width="820" Height="640" MinWidth="680" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource Brush.Ink}" Foreground="{StaticResource Brush.Text}"
+        BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+        FontFamily="{DynamicResource Font.Body}" FontSize="13" UseLayoutRounding="True"
+        PreviewKeyDown="OnPreviewKeyDown">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="34" ResizeBorderThickness="6" GlassFrameThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="34" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Background="{StaticResource Brush.TitleBar}">
+            <Rectangle Height="1" VerticalAlignment="Bottom" Fill="{StaticResource Brush.Line}" />
+            <StackPanel Orientation="Horizontal">
+                <ContentControl Margin="13,0,0,0" Width="16" Height="16" VerticalAlignment="Center" Style="{StaticResource BrandMark}" />
+                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{ui:Loc 'Save backups'}" />
+            </StackPanel>
+            <Button HorizontalAlignment="Right" Style="{StaticResource Button.ChromeClose}" Content="&#xE8BB;"
+                    WindowChrome.IsHitTestVisibleInChrome="True" Click="OnClose" ToolTip="{ui:Loc 'Close'}" />
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="24">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="IsEnabled" Value="False" />
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Confirm}" Value="{x:Null}" />
+                                <Condition Binding="{Binding IsBusy}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="IsEnabled" Value="True" />
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Save backups', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding GameDisplayName}" />
+                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}" Text="{Binding SaveBackupsText}" />
+            </StackPanel>
+
+            <DockPanel Grid.Row="1" Margin="0,18,0,14" LastChildFill="False">
+                <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{ui:Loc 'Backups to keep'}" />
+                <TextBox Width="100" MaxLength="10" Text="{Binding SaveBackupKeepText, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="{ui:Loc 'Backups to keep'}" />
+                <Button Margin="8,0,0,0" Content="{ui:Loc 'Save'}" Command="{Binding SaveBackupRetentionCommand}" />
+            </DockPanel>
+
+            <Border Grid.Row="2" Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}" BorderThickness="1" CornerRadius="2">
+                <ListBox ItemsSource="{Binding SaveBackupList}" Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                         AutomationProperties.Name="{ui:Loc 'Save backups'}">
+                    <ListBox.Template>
+                        <ControlTemplate TargetType="ListBox">
+                            <ScrollViewer Focusable="False" CanContentScroll="True" Background="{TemplateBinding Background}"
+                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ListBox.Template>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="14,10" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Row" Padding="{TemplateBinding Padding}" Background="Transparent"
+                                                BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.Hover}" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.AccentWash}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                                    <Button Content="{ui:Loc 'Restore…'}" ui:Icon.Glyph="&#xE777;"
+                                            Command="{Binding DataContext.RestoreSaveBackupCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding Path}" />
+                                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Delete'}" ui:Icon.Glyph="&#xE74D;"
+                                            Command="{Binding DataContext.DeleteSaveBackupCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding Path}" />
+                                </StackPanel>
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
+                                           Text="{Binding Text}" ToolTip="{Binding Path}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding SaveBackupKeepHint}" />
+                <Border Margin="0,10,0,0" Padding="12,10" Background="{StaticResource Brush.PanelSolid}"
+                        BorderThickness="1" BorderBrush="{Binding Toast.Tone, Converter={StaticResource Tone}}"
+                        Visibility="{Binding Toast, Converter={StaticResource VisibleIfSet}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Button.Icon}"
+                                Content="&#xE711;" FontFamily="{StaticResource Font.Icons}" ToolTip="{ui:Loc 'Dismiss'}"
+                                Command="{Binding DismissToastCommand}" />
+                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding Toast.Text}" />
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+
+            <WrapPanel Grid.Row="4" Margin="0,18,0,0" HorizontalAlignment="Right">
+                <Button Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding ReloadSaveBackupsCommand}" />
+                <Button Margin="8,0,0,0" Content="{ui:Loc 'Back up now'}" ui:Icon.Glyph="&#xE896;" Command="{Binding BackUpSavesNowCommand}" />
+                <Button Margin="8,0,0,0" Content="{ui:Loc 'Open save backups'}" ui:Icon.Glyph="&#xE81C;" Command="{Binding OpenSaveBackupsCommand}" />
+                <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}" Click="OnClose" />
+            </WrapPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding Confirm, Converter={StaticResource VisibleIfSet}}">
+            <Border Style="{StaticResource Dialog}" Width="{Binding Width}" DataContext="{Binding Confirm}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Title}" Text="{Binding Title}" />
+                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding Message}" />
+                    <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="ConfirmCancel" Content="{Binding CancelText}" Command="{Binding CancelCommand}" />
+                        <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}"
+                                Content="{Binding ConfirmText}" Command="{Binding AcceptCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.RowSpan="2" Background="{StaticResource Brush.Busy}" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding BusyText}" />
+        </Grid>
+    </Grid>
+</Window>

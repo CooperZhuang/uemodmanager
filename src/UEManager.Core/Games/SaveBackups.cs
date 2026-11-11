@@ -5,11 +5,11 @@ namespace UEManager.Core.Games;
 
 /// <summary>
 /// Zips of the game's save folder, made before the game starts, because a broken mod can break a save.
-/// Only the newest few are kept, and the player can put one back.
+/// The player chooses how many of the newest backups to keep, and can put one back.
 /// </summary>
 public static class SaveBackups
 {
-    public const int Keep = 5;
+    public const int DefaultKeep = 5;
 
     private const string Extension = ".zip";
 
@@ -40,10 +40,11 @@ public static class SaveBackups
     public static bool HasSaves(string saveFolder) =>
         Directory.Exists(saveFolder) && Directory.EnumerateFiles(saveFolder, "*", SearchOption.AllDirectories).Any();
 
-    /// <summary>Zips the save folder into a new backup, then deletes all but the newest <see cref="Keep"/>.</summary>
+    /// <summary>Zips the save folder into a new backup, then deletes all but the newest <paramref name="keep"/>.</summary>
     /// <returns>The new backup.</returns>
-    public static string Create(string saveFolder, string backupDir, DateTime now)
+    public static string Create(string saveFolder, string backupDir, DateTime now, int keep = DefaultKeep)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(keep, 1);
         if (!Directory.Exists(saveFolder))
             throw new DirectoryNotFoundException($"The save folder was not found: {saveFolder}");
         if (!HasSaves(saveFolder))
@@ -65,7 +66,7 @@ public static class SaveBackups
             FileSystem.TryDeleteFile(temp);
             throw;
         }
-        foreach (var old in List(backupDir).Skip(Keep))
+        foreach (var old in List(backupDir).Skip(keep))
             FileSystem.TryDeleteFile(old);
         Log.Info($"Backed up the saves in '{saveFolder}' to '{backup}'.");
         return backup;
@@ -77,8 +78,9 @@ public static class SaveBackups
     /// and the old save folder moves aside until the new one is in place; when a step fails, it moves back.
     /// </summary>
     /// <returns>The backup of the saves before the restore, or null when there were none.</returns>
-    public static string? Restore(string backup, string saveFolder, string backupDir, DateTime now)
+    public static string? Restore(string backup, string saveFolder, string backupDir, DateTime now, int keep = DefaultKeep)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(keep, 1);
         if (!File.Exists(backup))
             throw new ModException($"The save backup is gone: {backup}");
         var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(saveFolder));
@@ -89,7 +91,7 @@ public static class SaveBackups
         try
         {
             ZipFile.ExtractToDirectory(backup, staging);
-            var before = HasSaves(folder) ? Create(folder, backupDir, now) : null;
+            var before = HasSaves(folder) ? Create(folder, backupDir, now, keep) : null;
             if (Directory.Exists(folder))
                 Directory.Move(folder, aside);
             try

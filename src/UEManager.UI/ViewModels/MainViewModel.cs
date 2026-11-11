@@ -22,7 +22,7 @@ public sealed record ToastMessage(string Text, bool IsError, string? ActionText 
     public string Tone => IsError ? "bad" : "good";
 }
 
-/// <summary>A save backup in Settings: its file, and when it was made and how big it is.</summary>
+/// <summary>A save backup: its file, and when it was made and how big it is.</summary>
 public sealed record SaveBackupItem(string Path, string Text);
 
 public sealed partial class MainViewModel : LocalizedObservableObject
@@ -70,6 +70,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         ue4ssManifestUrls = ue4ssManifestUrl is null ? profile.Ue4ssManifestUrls : [ue4ssManifestUrl];
         Art = art;
         settings = AppSettings.Load(paths);
+        saveBackupKeepText = settings.SaveBackupKeep.ToString();
         CreateCatalog(catalogUrl);
         Update = new AppUpdateViewModel(this, Http, paths, updateUrl is null ? AppInfo.LatestReleaseUrls : [updateUrl],
             AppInfo.ReleaseFileName);
@@ -536,7 +537,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
-    /// <summary>The save backups, newest first, for Restore in Settings.</summary>
+    /// <summary>All save backups, newest first, for the management window.</summary>
     public IReadOnlyList<SaveBackupItem> SaveBackupList => SaveBackups.List(paths.SaveBackupDir(Profile.Id))
         .Select(path => new SaveBackupItem(path, $"{File.GetLastWriteTime(path):G}  ·  {Format.Size(new FileInfo(path).Length)}"))
         .ToList();
@@ -548,7 +549,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             var backups = SaveBackups.List(paths.SaveBackupDir(Profile.Id));
             return backups.Count == 0
                 ? L.T("None yet")
-                : L.F($"{backups.Count} of {SaveBackups.Keep} kept  ·  newest {File.GetLastWriteTime(backups[0]):g}");
+                : L.F($"{backups.Count} of {SaveBackupKeep} kept  ·  newest {File.GetLastWriteTime(backups[0]):g}");
         }
     }
 
@@ -1437,7 +1438,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 IsBusy = true;
                 BusyText = L.T("Backing up your saves…");
                 var backup = await Task.Run(() => SaveBackups.HasSaves(saves)
-                    ? SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now)
+                    ? SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep)
                     : null);
                 if (backup is null)
                     note = L.T("There are no saves to back up yet.");
@@ -1451,7 +1452,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             {
                 IsBusy = false;
             }
-            OnPropertyChanged(nameof(SaveBackupsText));
+            RefreshSaveBackups();
             if (backupError is not null && !await AskAsync(L.T("Saves not backed up"),
                     L.F($"Your saves could not be backed up: {backupError}\n\nStart {GameDisplayName} anyway?"), L.T("Start anyway")))
                 return;
@@ -1509,10 +1510,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         string? backup = null;
         if (await RunAsync(L.T("Backing up your saves…"),
-                async () => backup = await Task.Run(() => SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now))))
+                async () => backup = await Task.Run(() => SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep))))
             ShowToast(L.F($"Saves backed up to {backup}."));
-        OnPropertyChanged(nameof(SaveBackupsText));
-        OnPropertyChanged(nameof(SaveBackupList));
+        RefreshSaveBackups();
     }
 
     /// <summary>Puts a save backup back, after a question; the saves of now are backed up first.</summary>
@@ -1532,10 +1532,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 L.T("Restore saves")))
             return;
         if (await RunAsync(L.T("Restoring your saves…"),
-                () => Task.Run(() => SaveBackups.Restore(backup, saves, paths.SaveBackupDir(Profile.Id), DateTime.Now))))
+                () => Task.Run(() => SaveBackups.Restore(backup, saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep))))
             ShowToast(L.F($"The saves of {made:G} are back."));
-        OnPropertyChanged(nameof(SaveBackupsText));
-        OnPropertyChanged(nameof(SaveBackupList));
+        RefreshSaveBackups();
     }
 
     [RelayCommand]

@@ -110,7 +110,7 @@
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Save backups'}" />
                 <TextBlock Margin="0,6,0,18" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'A broken mod can break a save. When you turn it on below, Launch game first zips your save folder, and the manager keeps the last 5 backups. To go back to one, close the game and click Restore next to it.'}" />
+                           Text="{ui:Loc 'A broken mod can break a save. When you turn it on below, Launch game first zips your save folder. Choose how many backups to keep below. To go back to one, close the game and click Restore next to it.'}" />
                 <DockPanel Style="{StaticResource Field}">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Save folder', Tracked=True}" />
                     <StackPanel>
@@ -120,11 +120,22 @@
                     </StackPanel>
                 </DockPanel>
                 <DockPanel Style="{StaticResource Field}">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Backups to keep', Tracked=True}" />
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="100" MaxLength="10" Text="{Binding SaveBackupKeepText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{ui:Loc 'Backups to keep'}" />
+                            <Button Margin="8,0,0,0" Content="{ui:Loc 'Save'}" Command="{Binding SaveBackupRetentionCommand}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding SaveBackupKeepHint}" />
+                    </StackPanel>
+                </DockPanel>
+                <DockPanel Style="{StaticResource Field}">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Backups', Tracked=True}" />
                     <StackPanel>
                         <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding SaveBackupsText}" />
-                        <!-- Each backup, newest first, with Restore. -->
-                        <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding SaveBackupList}" Focusable="False">
+                        <!-- At most five here; the separate window has the full list. -->
+                        <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding RecentSaveBackupList}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel Margin="0,4,0,0" LastChildFill="False">
@@ -137,6 +148,8 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <Button Margin="0,12,0,0" HorizontalAlignment="Left" Content="{ui:Loc 'Manage all backups…'}"
+                                Click="OnManageSaveBackups" Visibility="{Binding HasMoreSaveBackups, Converter={StaticResource Visible}}" />
                     </StackPanel>
                 </DockPanel>
                 <CheckBox Margin="0,6,0,14" Content="{ui:Loc 'Back up my saves each time I start the game here'}"
