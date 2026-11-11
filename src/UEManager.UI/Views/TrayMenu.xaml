@@ -1,0 +1,157 @@
+<Window x:Class="UEManager.UI.Views.TrayMenu"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="clr-namespace:UEManager.UI"
+        xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:TrayMenuViewModel}"
+        Title="UE MM"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        Foreground="{StaticResource Brush.Text}"
+        FontFamily="{DynamicResource Font.Body}"
+        FontSize="13"
+        UseLayoutRounding="True">
+    <Window.Resources>
+        <!-- A game's row: its picture, its name and its mods. The game of this run has the accent bar and a check; a game
+             that is not out yet is dimmed. -->
+        <Style x:Key="GameRow" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Rectangle x:Name="Bar" Width="3" HorizontalAlignment="Left" Fill="{StaticResource Brush.Accent}" Visibility="Collapsed" />
+                            <ContentPresenter Margin="14,6" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                <Setter TargetName="Bar" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsComingSoon}" Value="True">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- An action at the bottom: its icon and its text, quiet until the pointer is on it. -->
+        <Style x:Key="MenuAction" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="2" Padding="10,7">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="Glyph" Margin="0,0,8,0" Style="{StaticResource Text.Icon}" FontSize="12"
+                                           Foreground="{StaticResource Brush.AccentBright}"
+                                           Text="{Binding (ui:Icon.Glyph), RelativeSource={RelativeSource TemplatedParent}}" />
+                                <TextBlock VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"
+                                           Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- The margin leaves room for the shadow. -->
+    <Border Margin="16" Width="360" CornerRadius="2" BorderThickness="1"
+            Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.6" Color="Black" />
+        </Border.Effect>
+        <StackPanel>
+            <StackPanel Margin="14,11,14,10" Orientation="Horizontal">
+                <ContentControl Width="14" Height="14" VerticalAlignment="Center" Style="{StaticResource BrandMark}" />
+                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
+                           Foreground="{StaticResource Brush.TextMuted}" Text="{Binding Title}" />
+            </StackPanel>
+            <Rectangle Height="1" Fill="{StaticResource Brush.Line}" />
+
+            <!-- One click switches the game; the game of this run opens the window. -->
+            <ItemsControl Margin="0,6" Focusable="False" ItemsSource="{Binding Cards}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource GameRow}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}"
+                                Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Height="36" Background="{StaticResource Brush.Ink}" BorderBrush="{StaticResource Brush.Line}" BorderThickness="1">
+                                    <Image Source="{Binding Picture}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                </Border>
+                                <TextBlock Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Heading}"
+                                           FontSize="14" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding ModsText}" />
+                                    <Border Padding="6,2,6,3" CornerRadius="2" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                            Visibility="{Binding IsComingSoon, Converter={StaticResource Visible}}">
+                                        <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="9.5" FontWeight="SemiBold"
+                                                   Text="{ui:Loc 'Coming soon', Tracked=True}" />
+                                    </Border>
+                                    <TextBlock Margin="10,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Foreground="{StaticResource Brush.AccentBright}"
+                                               Text="&#xE73E;" Visibility="{Binding IsCurrent, Converter={StaticResource Visible}}" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- While a dialog or a step is open, as for the Switch game button. -->
+            <TextBlock Margin="14,0,14,10" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
+                       Text="{ui:Loc 'Finish the current step first, then try again.'}"
+                       Visibility="{Binding CanSwitch, Converter={StaticResource Hidden}}" />
+            <Rectangle Height="1" Fill="{StaticResource Brush.Line}" />
+
+            <DockPanel Margin="6" LastChildFill="False">
+                <Button DockPanel.Dock="Right" Style="{StaticResource MenuAction}" ui:Icon.Glyph="&#xE7E8;"
+                        Content="{ui:Loc 'Exit'}" Command="{Binding ExitCommand}" />
+                <Button Style="{StaticResource MenuAction}" ui:Icon.Glyph="&#xE768;"
+                        Content="{ui:Loc 'Launch game'}" Command="{Binding LaunchGameCommand}" />
+                <Button Style="{StaticResource MenuAction}" ui:Icon.Glyph="&#xE8A7;"
+                        Content="{Binding OpenText}" Command="{Binding OpenCommand}" />
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

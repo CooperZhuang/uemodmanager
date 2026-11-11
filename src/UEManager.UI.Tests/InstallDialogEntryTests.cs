@@ -7,7 +7,10 @@ using Xunit;
 
 namespace UEManager.UI.Tests;
 
-/// <summary>A loader's download with other entry DLLs: only one entry may be in the game, so the review ticks one.</summary>
+/// <summary>
+/// The install review: for a loader's download with other entry DLLs it ticks one, as only one entry may be in the game;
+/// and it names the game the mod goes into.
+/// </summary>
 public sealed class InstallDialogEntryTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "uemm-entries-" + Guid.NewGuid().ToString("N"));
@@ -59,6 +62,16 @@ public sealed class InstallDialogEntryTests : IDisposable
         var update = new InstallDialogViewModel(manager, next, () => { });
 
         Assert.Equal("Mods Menu", Assert.Single(update.Packages, p => p.IsSelected).Label);
+    }
+
+    [Fact]
+    public void The_review_names_the_game_the_mod_goes_into()
+    {
+        File(@"Blue\Blue_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Blue"));
+
+        Assert.Equal("Test Game", new InstallDialogViewModel(manager, preview, () => { }).GameName);
     }
 
     [Fact]

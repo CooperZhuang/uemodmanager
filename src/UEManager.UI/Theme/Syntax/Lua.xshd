@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<!-- Colours for a UE4SS mod's config.lua in the settings editor, from the app's palette. -->
+<!--
+  Colours for a UE4SS mod's config.lua in the settings editor. The app puts in the colours of the game's look
+  (Color.Syntax.* in Theme\Palette.xaml, see Services\Syntax.cs); the ones written here are only the fallback.
+-->
 <SyntaxDefinition name="Lua" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
   <Color name="Comment" foreground="#7C746A" fontStyle="italic" />
   <Color name="String" foreground="#D2B07A" />

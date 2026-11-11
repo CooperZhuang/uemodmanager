@@ -198,19 +198,20 @@
         <Setter Property="Background" Value="{StaticResource Brush.Line}" />
     </Style>
 
-    <!-- The open ink circle cut by a blade. Replaced by Theme\Art\logo.png when present. -->
+    <!-- The app's mark, the mod stack: three plates, the game below and mods laid over it, the top one in the game's
+         accent. The app's icon (app.ico) shows the same plates on an anthracite tile. On a 16 x 16 grid, so at 16 px
+         each plate's edges fall on whole pixels. In the sidebar, the game's logo (Theme\Art\<game id>\logo.png)
+         takes its place. -->
     <Style x:Key="BrandMark" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
                     <Viewbox>
-                        <Canvas Width="100" Height="100">
-                            <Path Stroke="{StaticResource Brush.Text}" StrokeThickness="8.5"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  Data="M 78.01,42.49 A 29,29 0 1 1 57.51,21.99" />
-                            <Polygon Fill="{StaticResource Brush.Accent}"
-                                     Points="13,87 58.19,48.59 89,11 51.41,41.81" />
+                        <Canvas Width="16" Height="16">
+                            <Polygon Fill="{StaticResource Brush.Accent}" Points="4,0 16,0 12,4 0,4" />
+                            <Polygon Fill="{StaticResource Brush.TextMuted}" Points="4,6 16,6 12,10 0,10" />
+                            <Polygon Fill="{StaticResource Brush.TextDim}" Points="4,12 16,12 12,16 0,16" />
                         </Canvas>
                     </Viewbox>
                 </ControlTemplate>
@@ -339,6 +340,78 @@
         </Style.Triggers>
     </Style>
 
+    <!-- A button with a word in the title bar, such as Switch game: as quiet as the window buttons beside it. -->
+    <Style x:Key="Button.TitleBar" TargetType="Button">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Label}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="Glyph" Style="{StaticResource Text.Icon}" FontSize="13" Margin="0,0,8,0"
+                                       Text="{Binding (ui:Icon.Glyph), RelativeSource={RelativeSource TemplatedParent}}" />
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- A button that brings its own icon in its content, such as Switch game. -->
+                        <Trigger Property="ui:Icon.Glyph" Value="{x:Null}">
+                            <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.PanelRaised}" />
+                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Two arrows that change places, the top one in the game's accent: the icon of Switch game in the title bar.
+         On a 16 x 16 grid, so at 16 px each shaft's edges fall on whole pixels. -->
+    <Style x:Key="SwapArrows" TargetType="ContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox>
+                        <Canvas Width="16" Height="16">
+                            <Path Fill="{StaticResource Brush.AccentBright}" Data="M 1.5,4 H 10 V 1.5 L 14.5,5 L 10,8.5 V 6 H 1.5 Z" />
+                            <Path Fill="{StaticResource Brush.Text}" Data="M 14.5,10 H 6 V 7.5 L 1.5,11 L 6,14.5 V 12 H 14.5 Z" />
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The app's view while the game picker is open over it. -->
+    <Style x:Key="BlurBehindPicker" TargetType="FrameworkElement">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsGamePickerOpen}" Value="True">
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <BlurEffect Radius="24" KernelType="Gaussian" />
+                    </Setter.Value>
+                </Setter>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="Button.ChromeClose" TargetType="Button" BasedOn="{StaticResource Button.Chrome}">
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
@@ -377,6 +450,39 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Logo" Property="Fill" Value="{StaticResource Brush.DiscordBright}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush.LineStrong}" />
+                            <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The GitHub mark, 24 x 24 (Simple Icons, CC0). -->
+    <Geometry x:Key="Geometry.GitHub">M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12</Geometry>
+
+    <!-- A link to the project on GitHub, with its mark: the same frame as Button.Discord, the mark in the text colours. -->
+    <Style x:Key="Button.GitHub" TargetType="Button" BasedOn="{StaticResource Button.Discord}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Padding="14,9" CornerRadius="2" BorderThickness="1"
+                            Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <Path x:Name="Logo" Width="17" Height="17" VerticalAlignment="Center" Stretch="Uniform"
+                                  Fill="{StaticResource Brush.TextMuted}" Data="{StaticResource Geometry.GitHub}" />
+                            <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Logo" Property="Fill" Value="{StaticResource Brush.Text}" />
                             <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
                             <Setter Property="BorderBrush" Value="{StaticResource Brush.LineStrong}" />
                             <Setter Property="Background" Value="{StaticResource Brush.Hover}" />

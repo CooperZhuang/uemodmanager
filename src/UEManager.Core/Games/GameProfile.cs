@@ -22,7 +22,28 @@ public sealed class GameProfile
 
     public string? Tagline { get; init; }
 
+    /// <summary>The short line above the game's name on the Home page, such as "Ready your blade"; null for a plain one.</summary>
+    public string? Motto { get; init; }
+
     public string? Developer { get; init; }
+
+    /// <summary>
+    /// The game is not out yet: its card in the game picker says "Coming soon", and only a build that allows it
+    /// (AppInfo.CanChooseComingGames in the app) lets the player choose it.
+    /// </summary>
+    public bool ComingSoon { get; init; }
+
+    /// <summary>
+    /// The game's support is new and not checked on a real install yet, such as its exe or save folder: its card in
+    /// the game picker and its Home page say Experimental.
+    /// </summary>
+    public bool Experimental { get; init; }
+
+    /// <summary>
+    /// The game is not offered yet: no card in the game picker or the tray menu, and a saved choice of it does not start
+    /// it. Its support stays in the app, and a test run starts it with --game (see <see cref="GameChoice.Playable"/>).
+    /// </summary>
+    public bool Hidden { get; init; }
 
     /// <summary>Steam application id, used to find the install through Steam's library manifests.</summary>
     public string? SteamAppId { get; init; }
@@ -85,6 +106,13 @@ public sealed class GameProfile
     public string? Executable { get; init; }
 
     /// <summary>
+    /// Arguments "Launch game" starts the game with, such as Black Myth: Wukong's -fileopenlog, which lets it load pak
+    /// mods. A store's launcher cannot pass them on without asking the player, so the game's own exe starts with them.
+    /// Null: the game starts through its store as usual.
+    /// </summary>
+    public string? LaunchArguments { get; init; }
+
+    /// <summary>
     /// The folder holding the game's save files, for save backups: relative to the install folder, or a
     /// full path in which environment variables such as %LOCALAPPDATA% are expanded. Set it only when the
     /// folder is known for sure: without it, save backups are not offered for the game.
@@ -127,6 +155,9 @@ public sealed class GameProfile
             .OrderBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
+
+    /// <summary>The built-in games the player can choose, by name: every one but the hidden ones.</summary>
+    public static IReadOnlyList<GameProfile> Offered() => BuiltIn().Where(p => !p.Hidden).ToList();
 
     /// <summary>Reads a profile from JSON. Comments and trailing commas are allowed.</summary>
     public static GameProfile Parse(string json, string source)

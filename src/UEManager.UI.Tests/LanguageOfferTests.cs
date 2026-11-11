@@ -40,6 +40,54 @@ public class LanguageOfferTests
         return Localizer.English;
     });
 
+    [Fact]
+    public void At_a_start_without_a_game_the_picker_asks_first_and_saves_either_answer() => UiThread.Run(() =>
+    {
+        var chosen = new List<string>();
+        var picker = new GamePickerViewModel([], null, _ => null, _ => { }, null, chosen.Add);
+
+        var answer = picker.OfferLanguageAsync(Chinese);
+        Assert.Equal("语言  ·  Language", picker.Question!.Title);
+        Assert.Equal("Yes", picker.Question.ConfirmText);
+        Assert.Equal("No", picker.Question.CancelText);
+        picker.Question.AcceptCommand.Execute(null);
+        Assert.True(answer.Wait(TimeSpan.FromSeconds(5)));
+        Assert.Null(picker.Question);
+        Assert.Equal(["zh-CN"], chosen);
+
+        answer = picker.OfferLanguageAsync(Chinese);
+        picker.Question!.CancelCommand.Execute(null);
+        Assert.True(answer.Wait(TimeSpan.FromSeconds(5)));
+        Assert.Equal(["zh-CN", Localizer.English], chosen);
+    });
+
+    [Fact]
+    public void Only_the_picker_at_a_start_without_a_game_offers_the_languages() => UiThread.Run(() =>
+    {
+        var original = Localizer.Current.Language;
+        try
+        {
+            Localizer.Current.SetLanguage(Localizer.English);
+            Assert.False(new GamePickerViewModel([], "phantom-blade-zero", _ => null, _ => { }, () => { }).CanChooseLanguage);
+
+            var chosen = new List<string>();
+            var picker = new GamePickerViewModel([], null, _ => null, _ => { }, null, chosen.Add);
+            Assert.True(picker.CanChooseLanguage);
+            Assert.Equal(Localizer.Current.Languages, picker.Languages);
+            Assert.Equal(Localizer.English, picker.SelectedLanguage);
+
+            // The language shown, and a code the app has no language for, change nothing.
+            picker.SelectedLanguage = Localizer.English;
+            picker.SelectedLanguage = "xx";
+            picker.SelectedLanguage = "vi";
+            Assert.Equal(["vi"], chosen);
+        }
+        finally
+        {
+            Localizer.Current.SetLanguage(original);
+        }
+    });
+
     private static LanguageOption Chinese => Localizer.Current.Languages.Single(language => language.Code == "zh-CN");
 
     /// <summary>Runs a check on a WPF thread with a fresh data folder; the check returns the language it expects saved.</summary>

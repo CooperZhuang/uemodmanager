@@ -84,15 +84,30 @@ public sealed record GameInstall(
             ?? FindShippingExecutable();
     }
 
-    /// <summary>Starts the game through its store when known, so DRM and overlays work as usual.</summary>
-    public void Launch()
+    /// <summary>
+    /// Starts the game through its store when known, so DRM and overlays work as usual. With start arguments (the player's
+    /// own or the game's recommended ones, see <see cref="LaunchOptions"/>), it starts from its own exe with them.
+    /// </summary>
+    public void Launch(string? arguments)
     {
-        var target = LaunchUri ?? FindExecutable()
-            ?? throw new InvalidOperationException("No game executable was found in the install folder.");
-        Process.Start(new ProcessStartInfo(target)
+        var (target, startArguments, folder) = LaunchCommand(arguments);
+        Process.Start(new ProcessStartInfo(target, startArguments ?? "")
         {
             UseShellExecute = true,
-            WorkingDirectory = LaunchUri is null ? Path.GetDirectoryName(target) : null,
+            WorkingDirectory = folder,
         });
+    }
+
+    /// <summary>What <see cref="Launch"/> starts with the profile's recommended arguments.</summary>
+    internal (string Target, string? Arguments, string? Folder) LaunchCommand() => LaunchCommand(Profile.LaunchArguments);
+
+    /// <summary>What <see cref="Launch"/> starts: a store's address, or an exe with its arguments and its folder.</summary>
+    internal (string Target, string? Arguments, string? Folder) LaunchCommand(string? arguments)
+    {
+        if (LaunchOptions.Clean(arguments) is { } startArguments && (FindShippingExecutable() ?? FindExecutable()) is { } exe)
+            return (exe, startArguments, Path.GetDirectoryName(exe));
+        var target = LaunchUri ?? FindExecutable()
+            ?? throw new InvalidOperationException("No game executable was found in the install folder.");
+        return (target, null, LaunchUri is null ? Path.GetDirectoryName(target) : null);
     }
 }

@@ -35,8 +35,20 @@
         <!-- ===== Title bar: drag to move, double-click to maximize ===== -->
         <Grid Background="{StaticResource Brush.TitleBar}">
             <Rectangle Height="1" VerticalAlignment="Bottom" Fill="{StaticResource Brush.Line}" />
-            <TextBlock Margin="16,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
-                       Foreground="{StaticResource Brush.TextMuted}" Text="{Binding AppName}" />
+            <StackPanel Orientation="Horizontal">
+                <!-- The app's mark, as most apps show their icon at the top left. -->
+                <ContentControl Margin="13,0,0,0" Width="16" Height="16" VerticalAlignment="Center" Style="{StaticResource BrandMark}" />
+                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
+                           Foreground="{StaticResource Brush.TextMuted}" Text="{Binding WindowTitle}" />
+                <!-- The game picker over the blurred app; a choice of another game starts the app again. -->
+                <Button Margin="14,0,0,0" Style="{StaticResource Button.TitleBar}" AutomationProperties.Name="{ui:Loc 'Switch game'}"
+                        Command="{Binding SwitchGameCommand}" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Width="16" Height="16" VerticalAlignment="Center" Style="{StaticResource SwapArrows}" />
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="{ui:Loc 'Switch game'}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                 <Button Style="{StaticResource Button.Chrome}" Content="&#xE921;" Click="OnMinimize" ToolTip="{ui:Loc 'Minimize'}" />
                 <Button x:Name="MaximizeButton" Style="{StaticResource Button.Chrome}" Content="&#xE922;" Click="OnMaximize" ToolTip="{ui:Loc 'Maximize'}" />
@@ -46,18 +58,18 @@
 
         <!-- Without cover art: a faint cinnabar bloom, like ink spreading on paper. -->
         <Ellipse Grid.Row="1" Width="1100" Height="820" HorizontalAlignment="Right" VerticalAlignment="Top"
-                 Margin="0,-420,-360,0" IsHitTestVisible="False"
+                 Margin="0,-420,-360,0" IsHitTestVisible="False" Style="{StaticResource BlurBehindPicker}"
                  Visibility="{Binding Art.HasBackground, Converter={StaticResource Hidden}}">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Color="#30C8102E" Offset="0" />
-                    <GradientStop Color="#0CC8102E" Offset="0.55" />
-                    <GradientStop Color="#00C8102E" Offset="1" />
+                    <GradientStop Color="{StaticResource Color.AccentBloom}" Offset="0" />
+                    <GradientStop Color="{StaticResource Color.AccentBloomSoft}" Offset="0.55" />
+                    <GradientStop Color="{StaticResource Color.AccentClear}" Offset="1" />
                 </RadialGradientBrush>
             </Ellipse.Fill>
         </Ellipse>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Style="{StaticResource BlurBehindPicker}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="248" />
                 <ColumnDefinition Width="*" />
@@ -97,12 +109,22 @@
                         </Border>
                         <Button Margin="0,0,0,10" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
                                 Command="{Binding OpenDiscordCommand}" ToolTip="{ui:Loc 'Questions, news and help: the community on Discord'}" />
-                        <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Launch game'}" ui:Icon.Glyph="&#xE768;"
-                                Command="{Binding LaunchGameCommand}" Padding="14,11" />
+                        <!-- Launch game; its right quarter opens the launch options, the start arguments it passes. -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="3*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Launch game'}" ui:Icon.Glyph="&#xE768;"
+                                    Command="{Binding LaunchGameCommand}" Padding="8,11" />
+                            <Button Grid.Column="1" Margin="2,0,0,0" Style="{StaticResource Button.Primary}" ui:Icon.Glyph="&#xE713;"
+                                    Command="{Binding OpenLaunchOptionsCommand}" Padding="0,11" ToolTip="{Binding LaunchOptionsHint}"
+                                    AutomationProperties.Name="{ui:Loc 'Launch options'}" />
+                        </Grid>
                         <Border Style="{StaticResource Divider}" Margin="0,20,0,14" />
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="7" Height="7" VerticalAlignment="Center"
-                                     Fill="{Binding IsGameFound, Converter={StaticResource Tone}}" />
+                                     Fill="{Binding GameStatusTone, Converter={StaticResource Tone}}" />
                             <TextBlock Margin="9,0,0,0" Style="{StaticResource Text.Small}" Text="{Binding GameStatusText}" />
                         </StackPanel>
                         <TextBlock Margin="16,4,0,0" FontSize="11" Foreground="{StaticResource Brush.TextDim}"
@@ -222,9 +244,9 @@
                     <Rectangle Visibility="{Binding Art.HasBackground, Converter={StaticResource Visible}}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="1,0" GradientOrigin="1,0" RadiusX="0.95" RadiusY="1.5">
-                                <GradientStop Color="#000B0A0A" Offset="0" />
-                                <GradientStop Color="#000B0A0A" Offset="0.4" />
-                                <GradientStop Color="#FF0B0A0A" Offset="1" />
+                                <GradientStop Color="{StaticResource Color.InkClear}" Offset="0" />
+                                <GradientStop Color="{StaticResource Color.InkClear}" Offset="0.4" />
+                                <GradientStop Color="{StaticResource Color.Ink}" Offset="1" />
                             </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
@@ -232,8 +254,8 @@
                     <Rectangle Visibility="{Binding Art.HasBackground, Converter={StaticResource Visible}}">
                         <Rectangle.Fill>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#000B0A0A" Offset="0.55" />
-                                <GradientStop Color="#FF0B0A0A" Offset="1" />
+                                <GradientStop Color="{StaticResource Color.InkClear}" Offset="0.55" />
+                                <GradientStop Color="{StaticResource Color.Ink}" Offset="1" />
                             </LinearGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
@@ -324,7 +346,7 @@
         </Border>
 
         <!-- ===== Drop target ===== -->
-        <Grid Grid.Row="1" Background="#E00B0A0A" IsHitTestVisible="False"
+        <Grid Grid.Row="1" Background="{StaticResource Brush.InkVeil}" IsHitTestVisible="False"
               Visibility="{Binding IsDragOver, Converter={StaticResource Visible}}">
             <Rectangle Margin="28" Stroke="{StaticResource Brush.Accent}" StrokeThickness="1.5"
                        StrokeDashArray="6 4" RadiusX="2" RadiusY="2" />
@@ -506,6 +528,38 @@
             </Border>
         </Grid>
 
+        <!-- ===== Launch options: the start arguments of "Launch game" ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
+              Visibility="{Binding IsLaunchOptionsOpen, Converter={StaticResource Visible}}">
+            <Border Style="{StaticResource Dialog}" Width="580">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Launch options', Tracked=True}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding GameDisplayName}" />
+                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding LaunchOptionsIntro}" />
+                    <TextBox x:Name="LaunchArgumentsBox" Margin="0,14,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                             Text="{Binding LaunchOptionsText, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="{ui:Loc 'Launch options'}" />
+                    <!-- The game's recommended arguments, when its profile names some. -->
+                    <Border Margin="0,12,0,0" Padding="14,10" CornerRadius="2" BorderThickness="1"
+                            Background="{StaticResource Brush.AccentWash}" BorderBrush="{StaticResource Brush.Line}"
+                            Visibility="{Binding HasRecommendedLaunchArguments, Converter={StaticResource Visible}}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Margin="14,0,0,0" VerticalAlignment="Center"
+                                    Content="{ui:Loc 'Use recommended'}" Command="{Binding UseRecommendedLaunchArgumentsCommand}" />
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding RecommendedLaunchText}" />
+                        </DockPanel>
+                    </Border>
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding LaunchOptionsStoreNote}"
+                               Visibility="{Binding LaunchOptionsStoreNote, Converter={StaticResource VisibleIfSet}}" />
+                    <StackPanel Margin="0,24,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{ui:Loc 'Cancel'}" Command="{Binding CloseLaunchOptionsCommand}" IsCancel="True" />
+                        <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Save'}"
+                                Command="{Binding SaveLaunchOptionsCommand}" IsDefault="True" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- ===== The files in ~mods that no mod placed ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsUnmanagedOpen, Converter={StaticResource Visible}}">
@@ -590,6 +644,12 @@
             </Border>
         </Grid>
 
+        <!-- ===== Game picker, after "Switch game": over the blurred app; the question before the restart opens over it ===== -->
+        <Grid Grid.Row="1" Background="{StaticResource Brush.BlurVeil}"
+              Visibility="{Binding GamePicker, Converter={StaticResource VisibleIfSet}}">
+            <views:GamePicker DataContext="{Binding GamePicker}" />
+        </Grid>
+
         <!-- ===== Confirmation ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding Confirm, Converter={StaticResource VisibleIfSet}}">
@@ -607,7 +667,7 @@
         </Grid>
 
         <!-- ===== Busy ===== -->
-        <Grid Grid.RowSpan="2" Background="#B0070606" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
+        <Grid Grid.RowSpan="2" Background="{StaticResource Brush.Busy}" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse Width="34" Height="34" Stroke="{StaticResource Brush.Accent}" StrokeThickness="2.5"
                          StrokeDashArray="14 30" RenderTransformOrigin="0.5,0.5">

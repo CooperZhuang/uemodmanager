@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+  Colours for the folder report in its view (see Core\Games\FolderReport.cs): its three headings, the names of the
+  summary's lines, folders, sizes, and in grey what the report hid or only counted. The app puts in the colours of the
+  game's look (Color.Syntax.* in Theme\Palette.xaml, see Services\Syntax.cs); the ones written here are only the fallback.
+-->
+<SyntaxDefinition name="Folder report" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="#7C746A" fontStyle="italic" />
+  <Color name="Section" foreground="#E5485F" fontWeight="bold" />
+  <Color name="Key" foreground="#E5485F" />
+  <Color name="String" foreground="#D2B07A" />
+  <Color name="Value" foreground="#86B793" />
+
+  <!-- The rules are read with spaces ignored, so a space is written \x20. -->
+  <RuleSet>
+    <!-- The title and the two parts. -->
+    <Rule color="Section">^(UE\x20MM\x20folder\x20report|Summary|Folders)$</Rule>
+    <!-- What the report hid, and the other files it only counted. -->
+    <Rule color="Comment">%USERPROFILE%|&lt;user&gt;|&lt;steam\x20id&gt;|&lt;number&gt;|&lt;id&gt;</Rule>
+    <Rule color="Comment">\(\+\d+\x20other\x20files\)</Rule>
+    <!-- The name of a line in the head or the summary, such as "Made" or "Unreal project folder". No file or folder
+         name has a colon in it, so the tree has none. -->
+    <Rule color="Key">(?&lt;=^\s{0,4})[A-Za-z~][^:\r\n]*?(?=:\x20)</Rule>
+    <!-- Folders end in a slash; the hidden ones above are no folders' names. -->
+    <Rule color="String">[^\s/&lt;][^/\r\n]*/(?=\s|$)</Rule>
+    <Rule color="Value">\b\d+(\.\d)?\x20(B|KB|MB|GB)\b</Rule>
+  </RuleSet>
+</SyntaxDefinition>

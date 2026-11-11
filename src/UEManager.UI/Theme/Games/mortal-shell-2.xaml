@@ -1,0 +1,60 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Mortal Shell II: a warm, faintly violet black, ash-grey text and a wine red.
+         This file holds every key of Theme\Palette.xaml that a game can change. A key that is left out keeps the
+         shared value. A brush here must name its colour again: the brushes of Palette.xaml keep that file's colours. -->
+    <Color x:Key="Color.Ink">#0B090B</Color>
+    <Color x:Key="Color.InkClear">#000B090B</Color>
+    <Color x:Key="Color.Accent">#A51D32</Color>
+    <Color x:Key="Color.AccentBright">#D63A4D</Color>
+    <Color x:Key="Color.AccentBloom">#30A51D32</Color>
+    <Color x:Key="Color.AccentBloomSoft">#0CA51D32</Color>
+    <Color x:Key="Color.AccentClear">#00A51D32</Color>
+
+    <!-- The window, the title bar and the sidebar. -->
+    <SolidColorBrush x:Key="Brush.Ink" Color="{StaticResource Color.Ink}" />
+    <SolidColorBrush x:Key="Brush.TitleBar" Color="#050405" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#E0090709" />
+
+    <!-- Boxes, dialogs, fields, buttons and lines. -->
+    <SolidColorBrush x:Key="Brush.Panel" Color="#E6171418" />
+    <SolidColorBrush x:Key="Brush.PanelSolid" Color="#171418" />
+    <SolidColorBrush x:Key="Brush.PanelRaised" Color="#231E25" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="#14E8E1D8" />
+    <SolidColorBrush x:Key="Brush.Field" Color="#0E0B0F" />
+    <SolidColorBrush x:Key="Brush.ButtonFill" Color="#D90E0B0F" />
+    <SolidColorBrush x:Key="Brush.Line" Color="#2D272F" />
+    <SolidColorBrush x:Key="Brush.LineStrong" Color="#473E4A" />
+
+    <!-- Veils over the window. -->
+    <SolidColorBrush x:Key="Brush.Overlay" Color="#D9070507" />
+    <SolidColorBrush x:Key="Brush.InkVeil" Color="#E00B090B" />
+    <SolidColorBrush x:Key="Brush.Busy" Color="#B0070507" />
+    <SolidColorBrush x:Key="Brush.BlurVeil" Color="#8C070507" />
+
+    <!-- Text. -->
+    <SolidColorBrush x:Key="Brush.Text" Color="#E8E1D8" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#A79B9F" />
+    <SolidColorBrush x:Key="Brush.TextDim" Color="#72686C" />
+    <SolidColorBrush x:Key="Brush.TextMutedWash" Color="#0FA79B9F" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="#FFF4F2" />
+
+    <!-- The accent. -->
+    <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.AccentBright" Color="{StaticResource Color.AccentBright}" />
+    <SolidColorBrush x:Key="Brush.AccentDeep" Color="#4E0E19" />
+    <SolidColorBrush x:Key="Brush.AccentWash" Color="#22A51D32" />
+    <LinearGradientBrush x:Key="Brush.Stroke" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#E0A51D32" Offset="0" />
+        <GradientStop Color="#00A51D32" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- The settings editor: wine keys, parchment text, sage values; each readable on Brush.Field. -->
+    <Color x:Key="Color.Syntax.Comment">#857A7F</Color>
+    <Color x:Key="Color.Syntax.Key">#DC4357</Color>
+    <Color x:Key="Color.Syntax.String">#CDB997</Color>
+    <Color x:Key="Color.Syntax.Value">#9DB59A</Color>
+    <SolidColorBrush x:Key="Brush.Selection" Color="#66A51D32" />
+
+</ResourceDictionary>

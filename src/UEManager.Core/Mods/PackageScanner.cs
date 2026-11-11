@@ -197,7 +197,7 @@ public sealed class PackageGroup
         return new PackageGroup(name, folderInDownload, placed.Select(f => f.File).ToList(),
             placed.Select(f => f.Place).ToList(), PackageKind.ExeFiles, DeployTarget.ExeFolder)
         {
-            IsUncertain = !placed.Any(f => IsKnownLoader(f.Place)),
+            IsUncertain = !placed.Any(f => IsKnownLoader(f.Place) || PackageScanner.IsCSharpModPlace(f.Place)),
         };
     }
 
@@ -399,10 +399,15 @@ public static class PackageScanner
         }
         foreach (var part in looseParts)
         {
-            var atTop = string.Equals(part.Folder, root, StringComparison.OrdinalIgnoreCase);
-            var name = atTop ? FileSystem.SafeName(fallbackName, "Mod") : Path.GetFileName(part.Folder);
-            packages.Add(PackageGroup.ExeFiles(name, atTop ? "" : RelativeFolder(root, Path.GetDirectoryName(part.Folder)!), part.Files,
-                part.Files.Select(f => Path.GetRelativePath(part.Folder, f).Replace('\\', '/')).ToList()));
+            // Inside the C# Loader's folder the files keep their place from there, CSharpLoader/Mods/<mod>/<mod>.dll, so a
+            // download laid out from the exe folder does not put them next to the exe.
+            var from = CSharpLoaderBase(part.Folder, root) ?? part.Folder;
+            var atTop = string.Equals(from, root, StringComparison.OrdinalIgnoreCase);
+            var name = string.Equals(part.Folder, root, StringComparison.OrdinalIgnoreCase)
+                ? FileSystem.SafeName(fallbackName, "Mod")
+                : Path.GetFileName(part.Folder);
+            packages.Add(PackageGroup.ExeFiles(name, atTop ? "" : RelativeFolder(root, Path.GetDirectoryName(from)!), part.Files,
+                part.Files.Select(f => Path.GetRelativePath(from, f).Replace('\\', '/')).ToList()));
         }
         packages = packages.OrderBy(p => p.Label, NaturalOrder.Instance).ToList();
 
@@ -575,6 +580,18 @@ public static class PackageScanner
 
     public const string ForModLoader = "PBZModLoader";
 
+    /// <summary>
+    /// Black Myth: Wukong's C# Loader (KintaroModding/b1csharploader): a version.dll next to the game's exe and the folder
+    /// CSharpLoader beside it. Its mods go into CSharpLoader/Mods, one folder each: CSharpLoader/Mods/&lt;mod&gt;/&lt;mod&gt;.dll.
+    /// </summary>
+    public const string ForCSharpLoader = "C# Loader";
+
+    /// <summary>The C# Loader's mods folder, relative to the game's exe folder.</summary>
+    internal const string CSharpModsFolder = "CSharpLoader/Mods";
+
+    /// <summary>The C# Loader's own file, relative to the game's exe folder: when it is there, so is the loader.</summary>
+    public const string CSharpLoaderFile = "CSharpLoader/CSharpManager.bin";
+
     /// <summary>Where a script mod goes for Mods Menu and for PBZModLoader, below the project folder.</summary>
     private const string ModsMenuFolder = "Content/JavaScript/PBZModsMenu";
 
@@ -729,6 +746,8 @@ public static class PackageScanner
         {
             if (IsBelowProject(package, ModLoaderFolder))
                 package.NeedsLoader = ForModLoader;
+            else if (IsCSharpMod(package))
+                package.NeedsLoader = ForCSharpLoader;
             else if (IsBelowProject(package, ModsMenuFolder)
                      && !package.RelativePaths.Any(path => path.EndsWith($"/{ModsMenuFolder}/bootstrap.js", StringComparison.OrdinalIgnoreCase)))
                 package.NeedsLoader = ForModsMenu;
@@ -746,6 +765,34 @@ public static class PackageScanner
 
     private static bool IsBelowProject(PackageGroup package, string folder) =>
         package.Kind == PackageKind.File && StartsAt(package.RelativePaths[0].Split('/'), 1, folder);
+
+    /// <summary>
+    /// A part for the C# Loader's mods folder: as game files, b1/Binaries/Win64/CSharpLoader/Mods/..., or as files for the
+    /// exe folder, CSharpLoader/Mods/....
+    /// </summary>
+    private static bool IsCSharpMod(PackageGroup package) =>
+        (package.Kind == PackageKind.File && StartsAt(package.RelativePaths[0].Split('/'), 1, "Binaries/Win64/" + CSharpModsFolder))
+        || (package.Kind == PackageKind.ExeFiles && IsCSharpModPlace(package.RelativePaths[0]));
+
+    /// <summary>
+    /// The folder that holds the CSharpLoader folder a folder of the download is in, such as the download's top for
+    /// CSharpLoader/Mods/faster; null when it is in none. Only folders inside the download count.
+    /// </summary>
+    private static string? CSharpLoaderBase(string folder, string root)
+    {
+        var top = Path.TrimEndingDirectorySeparator(root);
+        for (var dir = new DirectoryInfo(folder); dir is not null; dir = dir.Parent)
+        {
+            if (string.Equals(Path.TrimEndingDirectorySeparator(dir.FullName), top, StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (dir.Name.Equals("CSharpLoader", StringComparison.OrdinalIgnoreCase))
+                return dir.Parent?.FullName;
+        }
+        return null;
+    }
+
+    /// <summary>A place in the exe folder below the C# Loader's mods folder.</summary>
+    internal static bool IsCSharpModPlace(string place) => StartsAt(place.Split('/'), 0, CSharpModsFolder);
 
     /// <summary>
     /// A loader's entries are one choice, as only one may be in the game: the one next to the exe by its path, or one of

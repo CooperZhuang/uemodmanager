@@ -24,8 +24,9 @@ public sealed record AppRelease(string Version, string? PageUrl, DateTimeOffset?
 /// <summary>
 /// Reads the app's newest release from GitHub's API ("releases/latest"), or from a copy of that answer next to a
 /// copy of the zip, as on Cloudflare: there the zip's link is relative to the copy, and "github_download_url"
-/// names the same file on GitHub. Every release holds one zip per build and game, named
-/// "&lt;build&gt;_&lt;game id&gt;_&lt;version&gt;.zip"; the caller names the start of the one it needs.
+/// names the same file on GitHub. Since 2.0.0 a release holds one zip for every game, "uemm_&lt;version&gt;.zip",
+/// which the app asks for by its whole name; older apps look for "uemm_phantom-blade-zero_", which the release
+/// lists as a second name of the same zip. The recommended mods' releases are read here too, by a prefix and suffix.
 /// </summary>
 public static class AppReleases
 {
@@ -36,11 +37,18 @@ public static class AppReleases
     /// <exception cref="ModException">The answer names no version.</exception>
     /// <exception cref="JsonException">The text is not JSON.</exception>
     /// <param name="fileSuffix">The end of the zip's name, for a release whose zips differ there; empty for any.</param>
-    public static AppRelease Parse(string json, string filePrefix, bool allowHttp = false, Uri? listUrl = null, string fileSuffix = "")
+    /// <param name="fileName">
+    /// The zip's whole name for the release's version, such as "uemm_2.0.0.zip" for 2.0.0: only that file counts, and
+    /// <paramref name="filePrefix"/> and <paramref name="fileSuffix"/> are not used. Null: any name with them.
+    /// </param>
+    public static AppRelease Parse(string json, string filePrefix, bool allowHttp = false, Uri? listUrl = null, string fileSuffix = "",
+        Func<string, string>? fileName = null)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
         var tag = Text(root, "tag_name") ?? throw new ModException($"The newest release names no version.");
+        var version = ModVersion.FromTag(tag);
+        var wanted = fileName?.Invoke(version);
 
         AppReleaseFile? file = null;
         if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
@@ -49,10 +57,13 @@ public static class AppReleases
             {
                 var name = Text(asset, "name");
                 var url = Link(asset, "browser_download_url", allowHttp, listUrl);
-                if (name is null || url is null
-                    || !name.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase)
-                    || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
-                    || !name.EndsWith(fileSuffix, StringComparison.OrdinalIgnoreCase))
+                if (name is null || url is null)
+                    continue;
+                if (wanted is not null
+                        ? !name.Equals(wanted, StringComparison.OrdinalIgnoreCase)
+                        : !name.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase)
+                          || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                          || !name.EndsWith(fileSuffix, StringComparison.OrdinalIgnoreCase))
                     continue;
                 var size = asset.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number && s.TryGetInt64(out var bytes) ? bytes : 0;
                 // GitHub gives "sha256:<hex>".
@@ -70,7 +81,7 @@ public static class AppReleases
             && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var published)
                 ? published
                 : (DateTimeOffset?)null;
-        return new AppRelease(ModVersion.FromTag(tag), Link(root, "html_url", allowHttp), date, Text(root, "body"), file);
+        return new AppRelease(version, Link(root, "html_url", allowHttp), date, Text(root, "body"), file);
     }
 
     /// <summary>How long one address of the release list may take before the next one is tried.</summary>
@@ -82,15 +93,16 @@ public static class AppReleases
     /// address gets <paramref name="perAddress"/>, <see cref="PerAddress"/> by default.
     /// </summary>
     /// <exception cref="ModException">No address gave a usable answer: the last one's problem.</exception>
+    /// <param name="fileName">The zip's whole name for a version; see <see cref="Parse"/>.</param>
     public static async Task<AppRelease> FetchLatestAsync(HttpClient http, IReadOnlyList<string> urls, string filePrefix,
-        TimeSpan? perAddress = null, CancellationToken cancellation = default, string fileSuffix = "")
+        TimeSpan? perAddress = null, CancellationToken cancellation = default, string fileSuffix = "", Func<string, string>? fileName = null)
     {
         ModException? last = null;
         foreach (var url in urls)
         {
             try
             {
-                return await FetchLatestAsync(http, url, filePrefix, cancellation, perAddress ?? PerAddress, fileSuffix);
+                return await FetchLatestAsync(http, url, filePrefix, cancellation, perAddress ?? PerAddress, fileSuffix, fileName);
             }
             catch (ModException ex) when (!cancellation.IsCancellationRequested)
             {
@@ -105,7 +117,7 @@ public static class AppReleases
     /// <param name="timeLimit">How long the answer may take; 20 seconds when null.</param>
     /// <exception cref="ModException">The address could not be reached or gave no usable answer.</exception>
     public static async Task<AppRelease> FetchLatestAsync(HttpClient http, string url, string filePrefix, CancellationToken cancellation = default,
-        TimeSpan? timeLimit = null, string fileSuffix = "")
+        TimeSpan? timeLimit = null, string fileSuffix = "", Func<string, string>? fileName = null)
     {
         try
         {
@@ -120,7 +132,7 @@ public static class AppReleases
                 throw new ModException($"The release list answered {(int)response.StatusCode} {response.ReasonPhrase}. Try again later.");
             var listUrl = new Uri(url);
             var release = Parse(await response.Content.ReadAsStringAsync(timeout.Token), filePrefix,
-                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl, fileSuffix) with { ListUrl = url };
+                allowHttp: listUrl.Scheme == Uri.UriSchemeHttp, listUrl, fileSuffix, fileName) with { ListUrl = url };
             Log.Info($"Newest release from '{url}': {release.Version}; file for this build: {release.File?.Name ?? "none"}.");
             return release;
         }

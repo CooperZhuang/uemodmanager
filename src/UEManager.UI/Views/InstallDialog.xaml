@@ -24,6 +24,11 @@
                 <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Button.Primary}"
                         Content="{Binding ConfirmText}" ui:Icon.Glyph="&#xE896;" Command="{Binding InstallCommand}" IsDefault="True" />
                 <Button DockPanel.Dock="Right" Content="{ui:Loc 'Cancel'}" Command="{Binding CancelCommand}" IsCancel="True" />
+                <!-- The game the mod goes into, read as the player confirms: one app serves several games. -->
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Install into', Tracked=True}" />
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding GameName}" />
+                </StackPanel>
             </DockPanel>
 
             <!-- Problems stop the install: always in view, next to the button they turn off. -->

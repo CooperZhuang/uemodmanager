@@ -83,6 +83,23 @@ public sealed class ModManager
 
     private string StateFile => paths.StateFile(Game.Profile.Id);
 
+    /// <summary>
+    /// How many mods the app manages for a game, read from its mod list without a look at the game, as for the cards of
+    /// the game picker. 0 when the list is missing or cannot be read.
+    /// </summary>
+    public static int CountMods(AppPaths paths, string gameId)
+    {
+        try
+        {
+            return JsonFile.Read<ModState>(paths.StateFile(gameId))?.Mods.Count ?? 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            Log.Warn($"The mod list of '{gameId}' could not be read: {ex.Message}");
+            return 0;
+        }
+    }
+
     public string LibraryFolderOf(ModRecord mod) => Path.Combine(paths.LibraryDir(Game.Profile.Id), mod.Id);
 
     /// <summary>Removes downloads left in staging by an earlier session.</summary>
@@ -177,9 +194,13 @@ public sealed class ModManager
             && p.Files.Any(f => !SettingsFiles.IsPakSettings(f) && !SettingsFiles.IsDocument(f)));
         foreach (var needed in selected.Select(p => p.NeedsLoader).OfType<string>().Distinct())
         {
-            var missing = needed == PackageScanner.ForModsMenu
-                ? !IsModsMenuInstalled
-                : needed == PackageScanner.ForModLoader && !IsModLoaderInstalled && !IsModLoader(preview, catalogId);
+            var missing = needed switch
+            {
+                PackageScanner.ForModsMenu => !IsModsMenuInstalled,
+                PackageScanner.ForModLoader => !IsModLoaderInstalled && !IsModLoader(preview, catalogId),
+                PackageScanner.ForCSharpLoader => !IsCSharpLoaderInstalled && !BringsCSharpLoader(selected),
+                _ => false,
+            };
             if (!missing)
                 continue;
             if (runsWithout)
@@ -187,7 +208,7 @@ public sealed class ModManager
             else if (needed == PackageScanner.ForModsMenu)
                 problems.Add($"This mod runs in Mods Menu, which is not installed. Install Mods Menu first, then this mod.");
             else
-                problems.Add($"This mod runs in PBZModLoader, which is not installed. Install it first from the top of the Mods page, then this mod.");
+                problems.Add($"This mod runs in {needed}, which is not installed. Install it first from the top of the Mods page, then this mod.");
         }
 
         var sourceOnly = PackageScanner.SourceOnlyMods(selected);
@@ -222,6 +243,9 @@ public sealed class ModManager
             var owners = new List<ModRecord>();
             // UE4SS's own files are not a mod's to replace: overwriting them would break UE4SS and every mod on it.
             var ue4ss = ReadUe4ssRecord()?.Files;
+            var handPlaced = new Dictionary<DeployTarget, ILookup<string, string>>();
+            // Files of the download the player already put into the game by hand, each with the folder that holds it.
+            var byHand = new List<(string Name, string Folder)>();
             // Shared libraries say nothing about which mod this is: other mods may bring the same ones.
             foreach (var (target, path, _) in entries.Where(e => !SharedFiles.Is(e.Target, e.Path)).DistinctBy(e => (e.Target, e.Path.ToUpperInvariant())))
             {
@@ -244,7 +268,28 @@ public sealed class ModManager
                 }
                 else if (File.Exists(Path.Combine(TargetFolder(target), Local(path))))
                 {
-                    problems.Add($"{path} is already in {TargetName(target)}, but the manager did not install it. Move or delete it first.");
+                    var below = Path.GetDirectoryName(Local(path));
+                    byHand.Add((Path.GetFileName(path), string.IsNullOrEmpty(below) ? TargetName(target) : Path.Join(TargetName(target), below)));
+                }
+                else if ((target is DeployTarget.Mods or DeployTarget.LogicMods) && FileSystem.HasExtension(path, FileSystem.PackageExtensions))
+                {
+                    // The game mounts packages from every folder below, so a copy the player put elsewhere would be a second one.
+                    if (!handPlaced.TryGetValue(target, out var copies))
+                        handPlaced[target] = copies = HandPlacedPackages(target);
+                    byHand.AddRange(copies[Path.GetFileName(path)].Select(place => (Path.GetFileName(path), place)));
+                }
+            }
+            // One line per folder: a mod's files usually lie together, as the player extracted them.
+            foreach (var folder in byHand.GroupBy(h => h.Folder, StringComparer.OrdinalIgnoreCase))
+            {
+                var names = folder.Select(h => h.Name).ToList();
+                if (names.Count == 1)
+                    problems.Add($"{names[0]} is already in {folder.Key}, but the manager did not install it. Move or delete it first.");
+                else
+                {
+                    const int shown = 12;
+                    var list = string.Join(", ", names.Take(shown)) + (names.Count > shown ? ", …" : "");
+                    problems.Add($"{names.Count} files of this download are already in {folder.Key}, but the manager did not install them: {list}. Move or delete them first.");
                 }
             }
 
@@ -2011,6 +2056,17 @@ public sealed class ModManager
     }
 
     /// <summary>PBZModLoader is in the list, even when turned off, or its DLL is in the game by hand. A mod for it has no DLL.</summary>
+    /// <summary>
+    /// Black Myth: Wukong's C# Loader is in the game: its own file next to the exe, put there by the manager or by hand.
+    /// Its mods wait for it (see <see cref="PackageScanner.ForCSharpLoader"/>).
+    /// </summary>
+    public bool IsCSharpLoaderInstalled => File.Exists(Path.Combine(Game.BinariesPath, PackageScanner.CSharpLoaderFile));
+
+    /// <summary>The download brings the C# Loader along, so its mods may come with it.</summary>
+    private static bool BringsCSharpLoader(IEnumerable<PackageGroup> selected) =>
+        selected.Any(p => p.RelativePaths.Any(path => path.Equals(PackageScanner.CSharpLoaderFile, StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith("/" + PackageScanner.CSharpLoaderFile, StringComparison.OrdinalIgnoreCase)));
+
     public bool IsModLoaderInstalled
     {
         get
@@ -2283,6 +2339,36 @@ public sealed class ModManager
         file.Target == target && string.Equals(file.FileName, relativePath, StringComparison.OrdinalIgnoreCase);
 
     private static string Local(string relativePath) => relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+    /// <summary>
+    /// The package files below a packaged-mods folder that no mod placed, by file name, each with the folder that holds
+    /// it, such as "~mods\CSS_GenessaSkin_P": copies a player put there by hand, often into a folder of their own, as
+    /// many readmes say. Call it under the lock.
+    /// </summary>
+    private ILookup<string, string> HandPlacedPackages(DeployTarget target)
+    {
+        var root = TargetFolder(target);
+        string Holder(string file) => Path.GetRelativePath(root, Path.GetDirectoryName(file)!) is var relative && relative != "."
+            ? Path.Join(TargetName(target), relative)
+            : TargetName(target);
+        var owned = mods.SelectMany(m => m.Files)
+            .Where(f => f.DeployedPath is not null)
+            .Select(f => Path.GetFullPath(f.DeployedPath!))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            if (!Directory.Exists(root))
+                return Array.Empty<string>().ToLookup(f => f);
+            return Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Where(f => FileSystem.HasExtension(f, FileSystem.PackageExtensions) && !owned.Contains(Path.GetFullPath(f)))
+                .ToLookup(f => Path.GetFileName(f), Holder, StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"The files in {root} could not be read: {ex.Message}");
+            return Array.Empty<string>().ToLookup(f => f);
+        }
+    }
 
     /// <summary>The folder's name for a message, such as "~mods": the same in every language.</summary>
     private string TargetName(DeployTarget target) => target switch

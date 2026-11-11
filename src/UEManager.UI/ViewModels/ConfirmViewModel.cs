@@ -19,6 +19,15 @@ public sealed partial class ConfirmViewModel(string title, string message, strin
 
     public Task<bool> Result => result.Task;
 
+    /// <summary>
+    /// The question that offers a player who chose no language yet the language of Windows. It is in that language and
+    /// in English; Yes and No stay English, which everyone reads.
+    /// </summary>
+    public static ConfirmViewModel LanguageOffer(LanguageOption offered) => new(
+        L.Both(offered, "Language", "  ·  "),
+        L.Both(offered, "Switch the app to {0}?") + "\n\n" + L.Both(offered, "You can change this later in Settings ▸ Language."),
+        "Yes", "No");
+
     [RelayCommand]
     private void Accept() => result.TrySetResult(true);
 

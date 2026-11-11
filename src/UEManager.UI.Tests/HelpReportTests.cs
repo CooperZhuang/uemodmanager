@@ -10,7 +10,7 @@ public class HelpReportTests
     [Fact]
     public void The_report_names_where_the_remote_data_and_the_update_check_came_from_but_no_address()
     {
-        var facts = new HelpFacts(GameProfile.BuiltIn().First(), null, null, null, [], [], null,
+        var facts = new HelpFacts(GameProfile.BuiltIn().First(p => p.Id == "phantom-blade-zero"), null, null, null, [], [], null,
             Path.Combine(Path.GetTempPath(), "uemm-no-logs-" + Guid.NewGuid().ToString("N")),
             RemoteData: "Cloudflare", UpdateCheck: "Cloudflare, up to date (newest 1.5.2)");
 

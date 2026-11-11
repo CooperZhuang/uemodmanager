@@ -1,0 +1,299 @@
+<UserControl x:Class="UEManager.UI.Views.GamePicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
+             xmlns:views="clr-namespace:UEManager.UI.Views"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:GamePickerViewModel}"
+             Focusable="True" FocusVisualStyle="{x:Null}"
+             KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Cycle">
+    <UserControl.Resources>
+        <!-- A game's card: a frame around its picture and its name. The game of this run has the accent frame. -->
+        <Style x:Key="GameCard" TargetType="Button">
+            <Setter Property="Margin" Value="10,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Background" Value="{StaticResource Brush.Field}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Line}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="2">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                </DataTrigger>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.AccentBright}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Brush.PanelRaised}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.AccentBright}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                </Trigger>
+                <!-- A game that is not out yet, in a release: the card only says so. -->
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.55" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- The keyboard's focus on a quiet link: a dotted frame, shown only when the player moves with the keys, as Windows
+             does. -->
+        <Style x:Key="LinkFocus">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="-4,-2" Stroke="{StaticResource Brush.AccentBright}" StrokeThickness="1" StrokeDashArray="1 2" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The link to the developer's message: quiet, so only the curious open it. The chevron shows where it goes. The
+             link has the focus when the picker opens. -->
+        <Style x:Key="MessageLink" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource LinkFocus}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <StackPanel Background="Transparent" Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Text.Icon}" FontSize="13" Foreground="{StaticResource Brush.AccentBright}" Text="&#xE715;" />
+                            <TextBlock x:Name="Label" Margin="8,0,7,0" VerticalAlignment="Center" FontSize="12.5" Foreground="{TemplateBinding Foreground}"
+                                       Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <TextBlock x:Name="Chevron" Style="{StaticResource Text.Icon}" FontSize="9" Foreground="{TemplateBinding Foreground}" Text="&#xE70D;" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                                <Setter TargetName="Label" Property="TextDecorations" Value="Underline" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The link for a game the app does not know yet: as quiet as the message's link, with Discord's logo. It opens
+             the panel with the scan of a game folder. -->
+        <Style x:Key="DiscordLink" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource LinkFocus}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <StackPanel Background="Transparent" Orientation="Horizontal">
+                            <Path x:Name="Logo" Width="14" Height="14" VerticalAlignment="Center" Stretch="Uniform"
+                                  Fill="{StaticResource Brush.Discord}" Data="{StaticResource Geometry.Discord}" />
+                            <TextBlock x:Name="Label" Margin="8,0,7,0" VerticalAlignment="Center" FontSize="12.5" Foreground="{TemplateBinding Foreground}"
+                                       Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <TextBlock x:Name="Chevron" Style="{StaticResource Text.Icon}" FontSize="9" Foreground="{TemplateBinding Foreground}" Text="&#xE70D;" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                                <Setter TargetName="Label" Property="TextDecorations" Value="Underline" />
+                                <Setter TargetName="Logo" Property="Fill" Value="{StaticResource Brush.DiscordBright}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid>
+    <!-- Held at the top, not centred: when the developer's message opens, the link stays where it was clicked and the
+         message shows below it. On a screen too small for the open message, the picker scrolls. -->
+    <ScrollViewer Margin="40" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  Visibility="{Binding Scan.IsReportOpen, Converter={StaticResource Hidden}}">
+    <Border Style="{StaticResource Dialog}" Padding="18,22,18,20" VerticalAlignment="Top" Margin="0,16,0,0">
+        <StackPanel>
+            <Grid Margin="10,0">
+                <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
+                           Text="{ui:Loc 'Choose your game'}" />
+                <!-- Only after "Switch game": at a start without a game, the app cannot go on without a choice. -->
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Icon}" Content="&#xE711;"
+                        FontFamily="{StaticResource Font.Icons}" FontSize="10" Width="28" Height="28"
+                        Command="{Binding CloseCommand}" IsCancel="True" ToolTip="{ui:Loc 'Close'}"
+                        Visibility="{Binding CanClose, Converter={StaticResource Visible}}" />
+                <!-- Only at a start without a chosen game: the cards and the message follow the language at once. After
+                     "Switch game", Settings has it. -->
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal"
+                            Visibility="{Binding CanChooseLanguage, Converter={StaticResource Visible}}">
+                    <TextBlock Margin="0,0,10,0" Style="{StaticResource Text.Icon}" Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
+                    <ComboBox Width="180" MinHeight="34" FontSize="13" Style="{StaticResource LanguageSelector}"
+                              ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="Code"
+                              SelectedValue="{Binding SelectedLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              ToolTip="{ui:Loc 'Interface language'}" AutomationProperties.Name="{ui:Loc 'Interface language'}" />
+                </StackPanel>
+            </Grid>
+            <!-- A thank-you and an invitation from the developer. Only here, and closed: it never gets in anyone's way. -->
+            <!-- In one row with the link for a missing game, so the open message and the cards fit the start window. -->
+            <StackPanel Margin="0,10,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                <ToggleButton Style="{StaticResource MessageLink}"
+                              Content="{ui:Loc 'Message from the developer'}" IsChecked="{Binding IsMessageOpen}" />
+                <Rectangle Width="1" Height="12" Margin="20,0" VerticalAlignment="Center" Fill="{StaticResource Brush.Line}" />
+                <!-- A game the app does not know yet: players scan its folder and tell us on Discord. -->
+                <ToggleButton Style="{StaticResource DiscordLink}" Content="{ui:Loc 'Missing your game? Tell us on Discord'}"
+                              IsChecked="{Binding IsMissingGameOpen}" />
+            </StackPanel>
+            <!-- Open or closed at once as the picker shows (open at the very first start); a click on the link slides it
+                 open or shut (GamePicker.xaml.cs). -->
+            <Border x:Name="Message" Margin="10,14,10,0" MaxWidth="1006" Padding="24,18,24,18" CornerRadius="2" BorderThickness="3,0,0,0"
+                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Accent}" Visibility="Collapsed" Opacity="0">
+                <Border.LayoutTransform>
+                    <ScaleTransform ScaleY="0" />
+                </Border.LayoutTransform>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Title}" FontSize="17" Text="{ui:Loc 'Thank you for using UE MM'}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'UE MM started as a mod manager for a single game. This release brings support for multiple Unreal Engine games in one app. Whether you use it, report bugs or share ideas, you help shape its future. Thank you for being part of it.'}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'Help us bring UE MM to more games by joining our Discord. It is the best place to report problems, share ideas and troubleshoot together. Reports scattered across comment sections can be hard to follow; Discord helps us keep track of them and work on solutions.'}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'UE MM is open source and licensed under GPL-3.0. Contributions of all kinds are welcome, from code and translations to bug reports and ideas. You can find the people who have helped make it possible on the About page.'}" />
+                    <DockPanel Margin="0,16,0,0">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource Button.GitHub}" Content="{ui:Loc 'Contribute on GitHub'}"
+                                    Command="{Binding OpenGitHubCommand}" />
+                            <Button Margin="8,0,0,0" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
+                                    Command="{Binding OpenDiscordCommand}" />
+                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center" FontFamily="{DynamicResource Font.Heading}" FontSize="14" FontStyle="Italic"
+                                   Foreground="{StaticResource Brush.TextMuted}" Text="KintaroModding" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+            <!-- A game the app does not know yet: the player scans its folder and shares the report with us on Discord. It
+                 slides like the message; only one of the two is open. -->
+            <Border x:Name="MissingGame" Margin="10,14,10,0" MaxWidth="1006" Padding="24,18,24,18" CornerRadius="2" BorderThickness="3,0,0,0"
+                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Discord}" Visibility="Collapsed" Opacity="0">
+                <Border.LayoutTransform>
+                    <ScaleTransform ScaleY="0" />
+                </Border.LayoutTransform>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Title}" FontSize="17" Text="{ui:Loc 'Your game is not here yet?'}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                               Text="{ui:Loc 'UE MM can support more Unreal Engine games. Scan the folder your game is installed in and share the report with us on Discord: it shows how the game is laid out, so we can add it.'}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
+                               Text="{ui:Loc 'The report lists folder names and program files (.exe, .dll) with their sizes. It hides your Windows user name and account numbers. The app changes nothing and sends nothing.'}" />
+                    <DockPanel Margin="0,16,0,0">
+                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Top" Orientation="Horizontal">
+                            <Button Style="{StaticResource Button.Primary}" ui:Icon.Glyph="&#xE721;" Content="{ui:Loc 'Scan a game folder…'}"
+                                    Command="{Binding Scan.ScanCommand}" />
+                            <Button Margin="8,0,0,0" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
+                                    Command="{Binding OpenDiscordCommand}" />
+                        </StackPanel>
+                        <!-- While the scan works, or why it failed; the report itself opens in its own view. -->
+                        <TextBlock Margin="0,0,20,0" VerticalAlignment="Center" TextWrapping="Wrap" LineHeight="19"
+                                   Foreground="{StaticResource Brush.TextMuted}" Text="{Binding Scan.StatusText}" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+            <!-- The cards show at 320 x 180; the pictures are 480 x 270, so they stay sharp on a scaled screen.
+                 Three fit in a row; more wrap into the next row. -->
+            <ItemsControl Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding Cards}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel MaxWidth="1030" HorizontalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource GameCard}" CommandParameter="{Binding}"
+                                Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <StackPanel Width="320">
+                                <Grid Height="180" Background="{StaticResource Brush.Ink}">
+                                    <Image Source="{Binding Picture}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <!-- A game without a picture yet: the app's own mark. -->
+                                    <ContentControl Width="64" Height="64" Style="{StaticResource BrandMark}"
+                                                    Visibility="{Binding HasPicture, Converter={StaticResource Hidden}}" />
+                                    <StackPanel Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
+                                        <Border Padding="8,3,8,4" CornerRadius="2"
+                                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                                Visibility="{Binding IsComingSoon, Converter={StaticResource Visible}}">
+                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Coming soon', Tracked=True}" />
+                                        </Border>
+                                        <!-- Support for the game is new: in the warning colour, as on its Home page. -->
+                                        <Border Padding="8,3,8,4" CornerRadius="2"
+                                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Warning}" BorderThickness="1"
+                                                Visibility="{Binding IsExperimental, Converter={StaticResource Visible}}">
+                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Brush.Warning}" Text="{ui:Loc 'Experimental', Tracked=True}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <!-- Where the game is on this PC, and how many mods the app manages for it: on the picture,
+                                         so the card stays as tall as it was. -->
+                                    <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
+                                            Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                            Visibility="{Binding HasStatus, Converter={StaticResource Visible}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="6" Height="6" Margin="0,1,7,0" VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="{StaticResource Brush.TextDim}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFound}" Value="True">
+                                                                <Setter Property="Fill" Value="{StaticResource Brush.Success}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Brush.Text}" Text="{Binding StatusText}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- A game that is not out yet, in the same corner: an invitation to click and see the app in its
+                                         look. -->
+                                    <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
+                                            Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Accent}" BorderThickness="1"
+                                            Visibility="{Binding InvitesPeek, Converter={StaticResource Visible}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="11"
+                                                       Foreground="{StaticResource Brush.AccentBright}" Text="&#xE890;" />
+                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Peek'}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Margin="12,11,12,12" HorizontalAlignment="Center" FontFamily="{DynamicResource Font.Heading}"
+                                           FontSize="15" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+    </ScrollViewer>
+    <!-- After a scan: the report, over the whole area, in place of the picker. -->
+    <views:FolderReportView DataContext="{Binding Scan}" Visibility="{Binding IsReportOpen, Converter={StaticResource Visible}}" />
+    </Grid>
+</UserControl>

@@ -180,8 +180,9 @@ public class ModPageLinkTests : IDisposable
         model.EndModUpdateCheck();
         Assert.False(model.CanCheckModUpdates);
 
-        // A check 10 ms short of 30 seconds ago: the timer fired a little early.
-        model.lastModUpdateCheck = Environment.TickCount64 - 29_990;
+        // A check a second short of 30 seconds ago: the timer fired early. A second, not less: on a busy machine the
+        // test itself may take a few milliseconds to get to the tick.
+        model.lastModUpdateCheck = Environment.TickCount64 - 29_000;
         model.OnModUpdateWaitTick();
         Assert.False(model.CanCheckModUpdates);
         Assert.Equal("You can check again 30 seconds after the last check.", model.CheckModUpdatesHint);

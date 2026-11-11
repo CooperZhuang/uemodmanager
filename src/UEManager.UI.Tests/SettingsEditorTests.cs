@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Windows.Media;
 using UEManager.Core.Games;
 using UEManager.Core.Mods;
 using UEManager.Core.Storage;
@@ -54,6 +55,21 @@ public class SettingsEditorTests : IDisposable
     [InlineData("settings.ini", "Settings")]
     public void Every_file_type_gets_its_colours(string file, string colours) =>
         UiThread.Run(() => Assert.Equal(colours, Syntax.For(file).Name));
+
+    [Fact]
+    public void The_colours_come_from_the_games_look_and_the_syntax_files_own_are_the_fallback() => UiThread.Run(() =>
+    {
+        var amber = Color.FromRgb(0xE3, 0xCA, 0x9B);
+        Color? Look(string key) => key == "Color.Syntax.Key" ? amber : null;
+
+        var ini = Syntax.Build("Ini", Look);
+        Assert.Equal(amber, ini.GetNamedColor("Key").Foreground.GetColor(null));
+        Assert.Equal(amber, ini.GetNamedColor("Section").Foreground.GetColor(null));
+        // No colour in the look: the syntax file's own.
+        Assert.Equal(Color.FromRgb(0x86, 0xB7, 0x93), ini.GetNamedColor("Value").Foreground.GetColor(null));
+        Assert.Equal(amber, Syntax.Build("Lua", Look).GetNamedColor("Keyword").Foreground.GetColor(null));
+        Assert.Equal(amber, Syntax.Build("Json", Look).GetNamedColor("Key").Foreground.GetColor(null));
+    });
 
     [Fact]
     public void The_settings_button_opens_the_mods_file_in_the_game() => WithModel(model =>

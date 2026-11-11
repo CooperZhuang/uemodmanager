@@ -1,11 +1,14 @@
 # Builds one GitHub release:
-#   dist\uemm\UEModManager.exe   the app
-#   dist\release\*.zip          its zip, ready to upload
+#   dist\uemm\UEModManager.exe                          the app, for every game
+#   dist\release\uemm_<version>.zip                     its zip, ready to upload
+#   dist\release\uemm_phantom-blade-zero_<version>.zip  the same zip under the name apps up to 1.7.2 look for
 # The exe is a single file, framework dependent (needs the .NET 8 Desktop Runtime). The publish
 # checks it (CheckPublishedExe in UEManager.UI.csproj).
 param(
     [string]$Configuration = "Release",
-    [string]$GameProfile = "phantom-blade-zero"
+    # Leaves out the copy under the old name. Use it once GitHub's download count of that copy stays near zero:
+    # then no app up to 1.7.2 needs it any more. Cloudflare's copy keeps the old name either way (publish-app-copy.py).
+    [switch]$NoOldName
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,14 +24,17 @@ $release = Join-Path $dist "release"
 if (Test-Path $release) { Remove-Item $release -Recurse -Force }
 New-Item -ItemType Directory -Force $release | Out-Null
 
-# The zip name is part of the update check: the app finds its zip in a release by this name.
 $out = Join-Path $dist "uemm"
 # The app keeps its data in a Data folder next to the exe when it is run from here: never delete that.
 if (Test-Path $out) { Get-ChildItem $out -Exclude "Data" | Remove-Item -Recurse -Force }
-dotnet publish $project -c $Configuration -o $out "-p:GameProfile=$GameProfile" "-p:DebugType=none"
+dotnet publish $project -c $Configuration -o $out "-p:DebugType=none"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Compress-Archive -Path (Join-Path $out "UEModManager.exe") -DestinationPath (Join-Path $release "uemm_${GameProfile}_$version.zip")
+# The zip name is part of the update check: the app takes the zip of a release by this name (AppInfo.ReleaseFileName).
+$zip = Join-Path $release "uemm_$version.zip"
+Compress-Archive -Path (Join-Path $out "UEModManager.exe") -DestinationPath $zip
+# Apps up to 1.7.2 look for a name that starts with uemm_phantom-blade-zero_: the same bytes under that name.
+if (-not $NoOldName) { Copy-Item $zip (Join-Path $release "uemm_phantom-blade-zero_$version.zip") }
 
 Write-Host "Published to $dist; the exe passed its check."
 Get-ChildItem $release | ForEach-Object { Write-Host "  $($_.Name)" }

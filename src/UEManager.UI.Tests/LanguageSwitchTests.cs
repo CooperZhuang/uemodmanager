@@ -108,7 +108,7 @@ public class LanguageSwitchTests
             Assert.True(row.Matches("Blueprint"));
 
             using var http = new HttpClient(new MissingHandler());
-            var update = new AppUpdateViewModel(model, http, paths, ["https://example.invalid/latest"], "uemm_");
+            var update = new AppUpdateViewModel(model, http, paths, ["https://example.invalid/latest"], AppInfo.ReleaseFileName);
             stage("checking an unavailable release");
             WaitFor(update.CheckAsync());
             Assert.Equal("尚无发布版本。", update.StatusHint);

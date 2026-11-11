@@ -4,6 +4,20 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.0.0 (2026-11-11)
+- One app for several games: Black Myth: Wukong and Phantom Blade Zero, and Stellar Blade: Blood Rain to peek at its look before the game is out
+- Choose your game at the first start or with Switch game in the title bar; Settings can ask for the game at every start, and the picker has a message from the developer
+- Each game has its own look, art and card; the app's icon is now the mod stack, and Windows shows it right after an update
+- Black Myth: Wukong: pak, UE4SS and C# Loader mods, the C# Loader and UE4SS with one click, and save backups
+- Launch options on the right of Launch game: the arguments the game starts with, with the game's recommended ones, such as Wukong's -fileopenlog for pak mods
+- A tray icon next to the clock, with a menu to switch or launch the game; Settings can minimize and close the app to the tray
+- Missing your game? Scan a game folder in the game picker makes a report to share on Discord, with your user name and ids hidden
+- The game picker's cards show where each game is on this PC and how many mods it has
+- At the first start the language question comes before the game picker, which also has a language selector
+- The install review names the game the mods go into
+- A UE4SS put in by hand is no longer offered as an update when it is already the newest build
+- One download for every game, uemm_<version>.zip; older versions of the app still find their update
+
 ## 1.7.2 (2026-11-10)
 - A mod's details can turn off its update check, to keep that version: the box then says Not tracked, and the check leaves the mod out
 - The update check button comes back after its 30 second wait; before, it could stay grey for good

@@ -1,15 +1,17 @@
 # UE MM
 
-A mod manager for Unreal Engine games. The first and, for now, only supported
-game is **Phantom Blade Zero**; the interface is themed for it. The executable
-keeps the file name `UEModManager.exe`.
+A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom
+Blade Zero**, and **Stellar Blade: Blood Rain** as a preview of its look until
+the game is out. One app serves every game: the player picks the game, and the
+interface takes that game's look. The executable keeps the file name
+`UEModManager.exe`.
 
 It keeps its own copy of every mod and records a SHA-256 checksum for every
 file it places. A file it did not place is never overwritten or removed.
 
 ## Download
 
-Get `uemm_<game>_<version>.zip` from the latest
+Get `uemm_<version>.zip`, one zip for every game, from the latest
 [release](https://github.com/KintaroModding/uemodmanager/releases/latest). Unzip
 it into a folder you can write to and start `UEModManager.exe`; it needs the
 [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0).
@@ -59,6 +61,37 @@ and UE4SS notes from the game profiles. It fails when a language file lacks a
 text, holds one the app no longer uses, or loses a value in a translation. So
 after a change to an English text, update every language file too.
 
+## Games
+
+At the first start the app shows **Choose your game**: one card per game, with
+where the game is on this PC (Steam, Epic, a folder chosen by hand, or Game not
+found) and how many mods it has. A click saves the choice (`game` in
+`settings.json`) and starts the app again with that game. **Switch game** in the
+title bar opens the same picker at any time, and **Settings → Ask for the game
+at every start** shows it at each start. Each game keeps its own mods and
+backups in `Data/games/<id>/`, and has its own look: colours, art and card
+(see `src/UEManager.UI/Theme/README.md`).
+
+A game that is not out yet, such as Stellar Blade: Blood Rain, has a **Peek**
+label on its card: it can be chosen to see its look, and Home says that mod
+support comes with the game.
+
+**Missing your game? Tell us on Discord** opens **Scan a game folder…**. The app
+reads the folder's tree with file sizes and sums it up: the Unreal project
+folder, the paks, the likely game exe with its version, signs of Steam or Epic,
+UE4SS and anti-cheat. Nothing is sent: the report opens in its own view to copy,
+save as `.txt` or share on Discord, so the game can be added. It hides the
+Windows user name, Steam ids and other long ids in folder names.
+
+## Tray icon
+
+An icon next to the clock, in the game's colours (**Settings → Tray icon**, on
+until the player turns it off): a click shows or minimizes the window, a
+right-click opens a menu to switch the game, launch it, open the app or exit.
+**Minimize to tray** hides the window there instead of on the taskbar, and
+**Close button minimizes to the tray** does the same for the X; it needs both
+settings on.
+
 ## Supported mod types
 
 | Type | Recognised by | Deployed to |
@@ -68,6 +101,7 @@ after a change to an English text, update every language file too.
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
 | Game files | a file below the download's `<Project>` folder, except in `Content/Paks` and `Binaries`; `PBZModLoader/mods` and a top-level `Content` count without that folder too | the same path in the game |
 | Exe files | a `.dll`, `.addon64` or `.asi` file, with the files in its folder | the game's exe folder |
+| C# Loader (Black Myth: Wukong) | files in `CSharpLoader/Mods`, at the download's top or below `<Project>/Binaries/Win64` | `CSharpLoader/Mods` next to the game's exe |
 
 A mod of type Game files or Exe files has a blue shade in the list.
 
@@ -435,6 +469,19 @@ The save folder is the profile's `saveFolder` (relative to the install folder,
 or a full path in which environment variables such as `%LOCALAPPDATA%` are
 expanded), or the folder the player chose, which wins.
 
+## Launch options
+
+**Launch game** starts the game through Steam or Epic when the app found it
+there, so DRM and overlays work as usual, and otherwise its exe. The gear on the
+right of the button opens **Launch options**: the arguments the game starts
+with. A profile can recommend some (`launchArguments`): Black Myth: Wukong loads
+pak mods only with `-fileopenlog`, so it starts with it until the player changes
+it. With arguments, the app starts the game's own exe, so launch options set in
+Steam or Epic do not apply; without, it goes through the store. The window says
+so. The player's arguments are saved per game (`launchArguments` in
+`settings.json`); arguments equal to the recommendation are not saved, so a later
+change of the recommendation reaches the player.
+
 ## Game updates
 
 The app remembers the store's build of the game (Steam build id, Epic version)
@@ -600,12 +647,12 @@ into the game's `Paks` folder by hand are not found; the store's file check
 src/
   UEManager.Core/         Game discovery, archive staging, mod install/enable/disable/uninstall.
                           No UI code. Targets net8.0.
-    Games/Profiles/*.json Game profiles: store ids and folder layout. Built into the assembly.
+    Games/Profiles/*.json Game profiles: store ids and folder layout. All built into the assembly.
     Catalog/              Reading the openmods lists (see Catalog switch).
   UEManager.UI/           WPF application (net8.0-windows). Builds UEModManager.exe.
     Catalog/              The openmods page (see Catalog switch).
-    Theme/                Palette, control styles and optional art. Built into the exe
-                          (see Theme/README.md).
+    Theme/                Palette, control styles, and each game's colours (Games/) and art
+                          (Art/<game id>/). Built into the exe (see Theme/README.md).
   UEManager.Core.Tests/   xUnit tests for Core. Covers every operation that touches the game folder.
   UEManager.UI.Tests/     xUnit tests for the UI: the language files against the source, and a
                           change of language in the open window.
@@ -649,19 +696,23 @@ Publishes the app for one GitHub release, after running the tests:
 
 ```text
 dist/uemm/UEModManager.exe
-dist/release/uemm_<game>_<version>.zip
+dist/release/uemm_<version>.zip
+dist/release/uemm_phantom-blade-zero_<version>.zip
 ```
 
 The exe is a single file, framework dependent (needs the .NET 8 Desktop
-Runtime), and passed the publish check (see Catalog switch).
-`-GameProfile <id>` publishes for another game.
+Runtime), and passed the publish check (see Catalog switch). The same exe serves
+every game. The second zip is a byte copy of the first under the name that apps
+up to 1.7.2 look for on GitHub. Attach both to each release until GitHub's
+download count of the old-named copy stays near zero; then `-NoOldName` leaves
+it out.
 
 Game profiles and theme art are built in, and so are the license texts of the
 bundled libraries (`src/UEManager.UI/Licenses`), shown on the About page. Update
 those texts when a library is added or upgraded.
 
 To publish a release on GitHub: tag it `v<version>` (as in
-`src/Directory.Build.props`) and attach the zip from `dist/release`. The update
+`src/Directory.Build.props`) and attach the zips from `dist/release`. The update
 check reads that release.
 
 `PreRelease` in `src/Directory.Build.props` marks a pre-release: while it is
@@ -697,7 +748,10 @@ The update window shows the release notes as GitHub does, for what release
 notes use: lists, **bold**, `code` and links. A link opens in the browser only
 when it is an http or https address.
 
-The app takes `uemm_<game>_…zip` from the release. The update window offers:
+The app takes `uemm_<version>.zip` from the release, by its whole name. The
+copy on Cloudflare lists that file twice: by its own name, and as
+`uemm_phantom-blade-zero_<version>.zip`, the name apps up to 1.7.2 look for; both
+entries point to the same file, with the same SHA-256. The update window offers:
 
 1. **Update now**: downloads that zip, checks its size and SHA-256 (from
    GitHub's digest, which the copy keeps), checks that the exe inside carries the announced version,
@@ -709,9 +763,10 @@ The app takes `uemm_<game>_…zip` from the release. The update window offers:
 
 ## Game profiles
 
-`src/UEManager.Core/Games/Profiles/phantom-blade-zero.json` tells the manager where
-the game keeps its files. Paths are relative to the install folder, and
-`{Project}` stands for the Unreal project folder:
+A game profile, `src/UEManager.Core/Games/Profiles/<game id>.json`, tells the
+manager where a game keeps its files. Every profile is built into the exe. Paths
+are relative to the install folder, and `{Project}` stands for the Unreal project
+folder. Phantom Blade Zero's:
 
 ```json
 "projectFolder": "ProjectPBZ",
@@ -752,13 +807,14 @@ directly. An Epic install is matched by its folder here, so it works even when
 profile. `saveFolder` names the save folder for save backups. Set it only when
 the folder is known for sure: without it, the app offers no save backups.
 
-Each build contains exactly one profile, chosen with the `GameProfile` build
-property (default `phantom-blade-zero`). `mortal-shell-2` exists to test the
-manager against a released Unreal Engine 5 game:
-
-```powershell
-dotnet publish src/UEManager.UI/UEManager.UI.csproj -c Release -p:GameProfile=mortal-shell-2 -o dist-ms2
-```
+A profile also holds the game's name and `motto` (the line above it on Home,
+"Ready to mod" by default), `launchArguments` (see Launch options), the UE4SS
+download and manifest addresses, the mod site's addresses, and three flags:
+`comingSoon` (a game not out yet: a Peek card and a note on Home),
+`experimental` (a tag on its card and on Home while its layout is not confirmed)
+and `hidden` (no card in the picker or the tray menu, as Mortal Shell II for
+now). `--game <id>` starts the app with any profile, a hidden one too, for test
+runs; it does not change the saved choice.
 
 ## Data
 
@@ -768,8 +824,8 @@ The app is portable. Everything it owns lives in a `Data` folder next to
 ```text
 UEModManager.exe
 Data/
-  settings.json                    folders chosen by hand, last seen game build, last announced app version,
-                                   window place and size
+  settings.json                    the chosen game, folders chosen by hand, launch arguments, last seen game
+                                   build, last announced app version, tray settings, window place and size
   instance.lock                    held while the app runs
   logs/app-YYYYMMDD.log
   staging/                         unpacked downloads, emptied at every start
@@ -788,14 +844,17 @@ game's exe. If the app folder is not writable (for example under
 Command line:
 
 ```text
-UEModManager.exe [files...] [--data-dir <folder>] [--catalog <url>] [--update-url <url>]
+UEModManager.exe [files...] [--data-dir <folder>] [--game <id>] [--catalog <url>] [--update-url <url>]
+                 [--ue4ss-manifest-url <url>]
 ```
 
 Files given on the command line (as by "Open with") open the install review.
 `--data-dir` uses another data folder, which keeps test runs away from real data.
+`--game` starts with that game (see Game profiles).
 `--catalog` reads another openmods games list (see openmods page); only while
 the catalog is switched on. `--update-url` reads another release list for the update check,
-in GitHub's format; it may use http, for a test server. A restart (after a
+in GitHub's format; it may use http, for a test server. `--ue4ss-manifest-url`
+reads another UE4SS manifest, also over http, for a test server. A restart (after a
 self-update, or after Reset modding reset the settings) starts the app with
 `--after-update`, so it waits up to 30 seconds for the old one to end instead of
 handing over to it.

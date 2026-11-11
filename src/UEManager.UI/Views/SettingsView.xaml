@@ -40,6 +40,33 @@
             </StackPanel>
         </Border>
 
+        <!-- The game at start: the one chosen last, or the picker at every start. Switch game changes it at any time. -->
+        <Border Margin="0,20,0,0" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Game at start'}" />
+                <TextBlock Margin="0,6,0,14" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'The app starts with the game you chose last. Switch game in the title bar changes it at any time.'}" />
+                <CheckBox Content="{ui:Loc 'Ask for the game at every start'}" IsChecked="{Binding AskForGameAtStart}" />
+            </StackPanel>
+        </Border>
+
+        <!-- The tray icon: a click opens or minimizes the app, a right-click opens its menu. Minimize and the X hide the
+             window in the tray only as the player chooses, and the X only with both boxes above it ticked. -->
+        <Border Margin="0,20,0,0" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Tray icon'}" />
+                <TextBlock Margin="0,6,0,14" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'An icon next to the clock: a click opens or minimizes the app, a right-click opens a menu to switch or launch the game.'}" />
+                <CheckBox Content="{ui:Loc 'Show tray icon'}" IsChecked="{Binding ShowTrayIcon}" />
+                <CheckBox Margin="0,10,0,0" Content="{ui:Loc 'Minimize to tray'}" IsChecked="{Binding MinimizeToTray}"
+                          IsEnabled="{Binding ShowTrayIcon}" />
+                <CheckBox Margin="0,10,0,0" Content="{ui:Loc 'Close button minimizes to the tray'}" IsChecked="{Binding CloseToTray}"
+                          IsEnabled="{Binding CanCloseToTray}" />
+                <TextBlock Margin="0,14,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
+                           Text="{ui:Loc 'Windows may first put a new icon under the ^ arrow next to the clock. Drag it out to keep it in view.'}" />
+            </StackPanel>
+        </Border>
+
         <!-- Game installation -->
         <Border Margin="0,20,0,0" Style="{StaticResource Card}">
             <StackPanel>

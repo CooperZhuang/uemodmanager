@@ -112,6 +112,19 @@ public static class SelfUpdate
         return clean;
     }
 
+    /// <summary>
+    /// An update has just replaced <paramref name="currentExe"/>: the old version is still next to it, as
+    /// <see cref="Replace"/> leaves it until the next start cleans up. True also after an update by an older version.
+    /// </summary>
+    public static bool IsJustUpdated(string currentExe)
+    {
+        var folder = Path.GetDirectoryName(currentExe);
+        if (folder is null || !Directory.Exists(folder))
+            return false;
+        var name = Path.GetFileName(currentExe);
+        return Directory.EnumerateFiles(folder, name + "*" + OldSuffix).Any(file => IsOldVersion(Path.GetFileName(file), name));
+    }
+
     /// <summary>"&lt;exe&gt;.old", or "&lt;exe&gt;.&lt;32 hex digits&gt;.old" when that name was still taken.</summary>
     private static bool IsOldVersion(string fileName, string exeName)
     {

@@ -1,0 +1,24 @@
+// Game profile for Stellar Blade: Blood Rain. Built into the exe: change it here and rebuild.
+//
+// The game is not out yet: its card in the game picker says "Coming soon". Nothing of its
+// install is known, so this profile holds only Unreal's usual places: the manager then finds
+// the project folder as the one that holds Content/Paks, and starts the exe it finds there.
+// No store ids, no save folder, no mod site yet.
+{
+  "id": "stellar-blade-blood-rain",
+  "displayName": "Stellar Blade: Blood Rain",
+  "developer": "SHIFT UP",
+  "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
+  // Not "Ready to mod": the game is not out, and the app shows a placeholder for it.
+  "motto": "A first look",
+  "comingSoon": true,
+
+  "paksPath": "{Project}/Content/Paks",
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ]
+}

@@ -40,6 +40,8 @@ public sealed partial class MainViewModel
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
+        // A dialog opened or closed: "Switch game" in the title bar follows.
+        SwitchGameCommand.NotifyCanExecuteChanged();
         if (string.IsNullOrEmpty(e.PropertyName))
         {
             recommendedMain?.Refresh();

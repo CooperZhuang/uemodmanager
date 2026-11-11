@@ -4,7 +4,7 @@ using UEManager.Core.Storage;
 
 namespace UEManager.Core.Tests;
 
-/// <summary>A UE4SS mod's Scripts/config.lua belongs to the player once they change it.</summary>
+/// <summary>A UE4SS mod's settings, its Scripts/config.lua and the data files in its folder, belong to the player once they change them.</summary>
 public class SettingsFileTests : IDisposable
 {
     private readonly TestFolder folder = new();
@@ -62,12 +62,26 @@ public class SettingsFileTests : IDisposable
     [InlineData("Witch/Scripts/Config.ini", true)]
     [InlineData("Witch/Scripts/settings.json", true)]
     [InlineData("Witch/Scripts/settings.lua", true)]
+    [InlineData("Witch/Scripts/settings.txt", true)]
     [InlineData("Witch/Scripts/main.lua", false)]
     [InlineData("Witch/Scripts/config.dll", false)]
-    [InlineData("Witch/config.json", false)]
-    [InlineData("Witch/Scripts/lib/config.json", false)]
+    [InlineData("Witch/Scripts/lib/config.lua", false)]
+    [InlineData("Witch/config.txt", false)]
     [InlineData("Witch/enabled.txt", false)]
-    public void A_UE4SS_mods_settings_file_is_config_or_settings_in_its_Scripts_folder(string path, bool expected) =>
+    // Data files anywhere in the mod's folder: a C++ mod's .ini next to main.dll, the tables a mod reads.
+    [InlineData("MinimapNative/dlls/Minimap.ini", true)]
+    [InlineData("MoreItemDrop/dlls/MoreItemDrop.ini", true)]
+    [InlineData("CustomShellSystem/catalog/npc-appearances.css.json", true)]
+    [InlineData("Witch/config.json", true)]
+    [InlineData("Witch/Scripts/lib/config.json", true)]
+    [InlineData("Witch/data.yaml", true)]
+    [InlineData("Witch/dlls/main.dll", false)]
+    [InlineData("Witch/assets/logo.png", false)]
+    [InlineData("Witch/LICENSE.json", false)]
+    // UE4SS's own files: loose in its Mods folder, and the libraries every mod shares.
+    [InlineData("mods.json", false)]
+    [InlineData("shared/Types.json", false)]
+    public void A_UE4SS_mods_settings_are_its_data_files_and_config_or_settings_in_its_Scripts_folder(string path, bool expected) =>
         Assert.Equal(expected, SettingsFiles.Is(DeployTarget.Ue4ssMods, path));
 
     /// <summary>The layout of Better Guard And Dodge: a Lua mod that reads its settings from Scripts/config.json.</summary>
@@ -94,6 +108,43 @@ public class SettingsFileTests : IDisposable
 
         Install(Download("1.1"), replace: true);
         Assert.Equal("{ \"GuardDuringDodge\": false }", File.ReadAllText(config));
+    }
+
+    /// <summary>
+    /// The layout of Adaptive Minimap for Mortal Shell II: a C++ mod that reads dlls/Minimap.ini next to main.dll, which
+    /// its comments ask the player to edit.
+    /// </summary>
+    [Fact]
+    public void A_cpp_mods_ini_next_to_main_dll_can_be_edited_and_never_blocks_off_update_or_uninstall()
+    {
+        InstallUe4ss();
+        string Download(string version)
+        {
+            var root = $@"Downloads\Minimap_{version}";
+            folder.File($@"{root}\MinimapNative\enabled.txt", "");
+            folder.File($@"{root}\MinimapNative\dlls\main.dll", "dll " + version);
+            folder.File($@"{root}\MinimapNative\dlls\Minimap.ini", "Size=200");
+            return folder.Combine(root);
+        }
+        var mod = Install(Download("0.2.2"));
+        var dlls = Path.Combine(Win64, "ue4ss", "Mods", "MinimapNative", "dlls");
+        var ini = Path.Combine(dlls, "Minimap.ini");
+        Assert.True(Assert.Single(mod.Files, f => f.FileName.EndsWith("Minimap.ini")).IsSettingsFile);
+
+        File.WriteAllText(ini, "Size=320");
+        Assert.Equal(ModIntegrity.Intact, ModManager.Integrity(manager.Mods[0]));
+        manager.SetEnabled(mod.Id, false);
+        Assert.False(File.Exists(ini));
+        manager.SetEnabled(mod.Id, true);
+        Assert.Equal("Size=320", File.ReadAllText(ini));
+
+        mod = Install(Download("0.2.3"), replace: true);
+        Assert.Equal("Size=320", File.ReadAllText(ini));
+        Assert.Equal("dll 0.2.3", File.ReadAllText(Path.Combine(dlls, "main.dll")));
+
+        Assert.NotNull(manager.Uninstall(mod.Id));
+        Assert.False(File.Exists(ini));
+        Assert.Contains(Backups(), f => File.ReadAllText(f) == "Size=320");
     }
 
     [Fact]

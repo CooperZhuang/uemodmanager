@@ -1,0 +1,49 @@
+// Game profile for Black Myth: Wukong. Built into the exe: change it here and rebuild.
+//
+// Layout from a folder report of a real install (2026-11-11): the project folder b1, paks in
+// b1\Content\Paks (no IoStore), Unreal's usual exe b1\Binaries\Win64\b1-Win64-Shipping.exe,
+// the launcher b1.exe in the main folder, and the saves in the install. Mods go to
+// b1\Content\Paks\~mods, as the game's mod pages say. Real mods tested on 2026-11-11: pak, UE4SS and the C# Loader.
+// UE4SS: our fork's build with upstream UE4SS's own config for this game (UE4SS-settings.ini and
+// VTableLayout.ini from zCustomGameConfigs), published 2026-11-11; the manifest names it.
+{
+  "id": "black-myth-wukong",
+  "displayName": "Black Myth: Wukong",
+  "developer": "Game Science",
+  "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
+  // From the store page: store.steampowered.com/app/2358720. The game is not on Epic.
+  "steamAppId": "2358720",
+
+  "projectFolder": "b1",
+  "paksPath": "{Project}/Content/Paks",
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  // In the install folder, a folder per player inside (SaveGames/<steam id>); the game keeps its own copies in
+  // SaveGamesBackup beside it.
+  "saveFolder": "{Project}/Saved/SaveGames",
+
+  // Started by "Launch game" when the game was not found through Steam, as for a folder chosen by hand: the launcher in
+  // the main folder, which starts b1\Binaries\Win64\b1-Win64-Shipping.exe.
+  "executable": "b1.exe",
+
+  // The game loads pak mods only when started with -fileopenlog (the user's word, 2026-11-11: the simplest of the ways
+  // past its pak check). "Launch game" starts b1-Win64-Shipping.exe with it, also for a Steam copy.
+  "launchArguments": "-fileopenlog",
+
+  // Where "How to install UE4SS" sends the user: our UE4SS releases, with a build for this game.
+  "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ],
+  // Fallback when the manifest cannot be reached: the Wukong build and its SHA-256 from SHA256SUMS.txt.
+  "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v3.0.1-1195-g1ceefac8/blackmythwukong_ue4ss_v3.0.1-1195-g1ceefac8.zip",
+  "ue4ssPackageSha256": "68DA5D7FECF5ECEA34B645462B319070A38137A6095457077B7955FCC7664017",
+
+  // "Open mod page" and the update check: the game's pages and its number on the mod site, from the site's API
+  // (game(domainName: "blackmythwukong") { id }, asked 2026-11-11).
+  "modPageUrl": "https://www.nexusmods.com/blackmythwukong/mods/{id}",
+  "modSiteApiUrl": "https://api.nexusmods.com/v2/graphql",
+  "modSiteGameId": "6713"
+}

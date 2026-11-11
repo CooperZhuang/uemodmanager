@@ -5,14 +5,23 @@ using UEManager.Core;
 
 namespace UEManager.UI.Services;
 
-/// <summary>Optional artwork compiled into the exe from Theme\Art. Every image may be missing.</summary>
+/// <summary>
+/// A game's optional artwork, compiled into the exe from Theme\Art\&lt;game id&gt;. Every image may be missing.
+/// </summary>
 public sealed record ArtSet(ImageSource? Background, ImageSource? Logo)
 {
     public bool HasBackground => Background is not null;
 
     public bool HasLogo => Logo is not null;
 
-    public static ArtSet Load() => new(LoadImage("background"), LoadImage("logo"));
+    /// <summary>The cover art and the emblem of the game the app runs for.</summary>
+    public static ArtSet Load(string gameId) => new(LoadImage($"{gameId}/background"), LoadImage($"{gameId}/logo"));
+
+    /// <summary>The game's picture on its card in the game picker, 16:9.</summary>
+    public static ImageSource? Card(string gameId) => LoadImage($"{gameId}/card");
+
+    /// <summary>The picture behind the game picker at a start without a game: there is no game's view to show yet.</summary>
+    public static ImageSource? Backdrop() => LoadImage("backdrop");
 
     private static ImageSource? LoadImage(string name)
     {

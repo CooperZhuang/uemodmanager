@@ -1,19 +1,25 @@
 # UE MM
 
-A mod manager for Unreal Engine games. The first supported game is **Phantom Blade Zero**.
+A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom Blade Zero**, and **Stellar Blade: Blood
+Rain** as a preview of its look until the game is out. One app for every game: you pick the game, and the app takes its
+look.
 
 ## What it does
 
 - Installs mods from a `.zip`, `.7z` or `.rar` download, a `.pak` file or a mod folder: drop it on the window. Every
   download is unpacked and checked first, and nothing inside it is ever run.
-- Handles pak mods (`.pak`, `.utoc` + `.ucas`), Blueprint mods (`LogicMods`) and UE4SS Lua and DLL mods.
+- Handles pak mods (`.pak`, `.utoc` + `.ucas`), Blueprint mods (`LogicMods`), UE4SS Lua and DLL mods, and for Black
+  Myth: Wukong mods for the C# Loader.
 - Enables, disables, updates and uninstalls mods. It keeps its own copy of every mod and records a checksum for every
   file it places. Files it did not place are never overwritten or removed.
 - Installs and updates UE4SS for the game, and shows the UE4SS log with its errors and warnings.
 - Changes nothing while the game runs, and keeps the settings you changed in a mod's `config.lua` across updates.
 - Can back up your saves each time it starts the game.
 - **Reset modding** takes the game back to its original files in one step, so you can start clean.
-- Speaks English and Simplified Chinese (简体中文): choose in **Settings ▸ Language**.
+- Starts the game with the launch options you set; Black Myth: Wukong starts with `-fileopenlog`, which its pak mods
+  need.
+- Speaks English, Simplified Chinese (简体中文), Traditional Chinese (繁體中文) and Vietnamese (Tiếng Việt): choose in
+  **Settings ▸ Language**.
 
 ## Screenshots
 
@@ -22,11 +28,11 @@ A mod manager for Unreal Engine games. The first supported game is **Phantom Bla
 ## How to install
 
 1. Install the [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0) if you do not have it.
-2. Download `uemm_phantom-blade-zero_<version>.zip` from the latest
+2. Download `uemm_<version>.zip`, one zip for every game, from the latest
    [release](https://github.com/KintaroModding/uemodmanager/releases/latest).
 3. Unzip it into a folder you can write to, for example `Documents\UE MM`, not `C:\Program Files`.
-4. Start `UEModManager.exe`. It finds the game through Steam or the Epic Games Launcher; otherwise choose the game
-   folder in Settings.
+4. Start `UEModManager.exe` and choose your game. It finds the game through Steam or the Epic Games Launcher; otherwise
+   choose the game folder in Settings. **Switch game** in the title bar changes the game at any time.
 
 The app is portable: it keeps everything in a `Data` folder next to the exe.
 
@@ -47,7 +53,10 @@ folder.
 
 ## Compatibility
 
-- Phantom Blade Zero on Steam, on the Epic Games Store, or in a folder chosen by hand.
+- Black Myth: Wukong and Phantom Blade Zero, on Steam, on the Epic Games Store where the game is sold there, or in a
+  folder chosen by hand. Stellar Blade: Blood Rain shows its look only, until the game is out.
+- Your game is missing? In the game picker, **Missing your game? Tell us on Discord** scans its folder and makes a
+  report to share.
 - Windows 10 or 11, 64-bit.
 
 ## Known issues
@@ -63,8 +72,9 @@ feature band, pinned in `global.json`), from the repository root in PowerShell:
 ./publish.ps1
 ```
 
-It runs the tests and builds the release file `dist/release/uemm_phantom-blade-zero_<version>.zip`. The zip holds
-one `UEModManager.exe`, a single file that needs the .NET 8 Desktop Runtime. To build only the app:
+It runs the tests and builds the release file `dist/release/uemm_<version>.zip`, and the same zip under the name older
+versions of the app look for. The zip holds one `UEModManager.exe` for every game, a single file that needs the .NET 8
+Desktop Runtime. To build only the app:
 
 ```powershell
 dotnet publish src/UEManager.UI/UEManager.UI.csproj -c Release -o dist/app

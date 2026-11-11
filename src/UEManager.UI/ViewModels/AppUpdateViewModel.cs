@@ -20,13 +20,13 @@ public enum UpdateState
 }
 
 /// <summary>
-/// The version check at start and the update window. The newest GitHub release holds one zip per
-/// build and game; the app either updates itself from the zip of this build, or the user downloads
-/// it from the release page.
+/// The version check at start and the update window. The newest release holds one zip for every game; the app either
+/// updates itself from it, or the user downloads it from the release page.
 /// </summary>
 /// <param name="releaseUrls">Where the newest release is read, in order (see <see cref="AppInfo.LatestReleaseUrls"/>), or a test copy.</param>
-/// <param name="filePrefix">The start of the zip name of this build for this game, such as "uemm_phantom-blade-zero_".</param>
-public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient http, AppPaths paths, IReadOnlyList<string> releaseUrls, string filePrefix)
+/// <param name="releaseFileName">The zip's whole name for a version, such as "uemm_2.0.0.zip" (<see cref="AppInfo.ReleaseFileName"/>).</param>
+public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient http, AppPaths paths, IReadOnlyList<string> releaseUrls,
+    Func<string, string> releaseFileName)
     : LocalizedObservableObject
 {
     /// <summary>How long the banner for a new version stays in the middle of the window.</summary>
@@ -163,7 +163,7 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
         State = UpdateState.Checking;
         try
         {
-            release = await AppReleases.FetchLatestAsync(http, releaseUrls, filePrefix);
+            release = await AppReleases.FetchLatestAsync(http, releaseUrls, "", fileName: releaseFileName);
             State = ModVersion.IsUpdate(AppInfo.Version, release.Version) ? UpdateState.Available : UpdateState.UpToDate;
         }
         catch (ModException ex)

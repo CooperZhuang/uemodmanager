@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using UEManager.Core.Games;
 
@@ -77,4 +78,29 @@ public sealed partial record Ue4ssRuntime(bool Installed, string ModsPath, strin
 
     [GeneratedRegex(@"UE4SS - v(?<version>\d+(?:\.\d+)+)(?<stage> (?:Alpha|Beta|RC|Experimental))?", RegexOptions.IgnoreCase)]
     private static partial Regex LogBanner();
+
+    /// <summary>
+    /// The UE4SS.dll here is the build a release version names, such as v3.0.1-1195-g1ceefac8: every UE4SS build holds
+    /// the Git SHA it was built from as text, the one its log names ("Git SHA #1ceefac8"). For a UE4SS without the
+    /// manager's record of its release, as one put in by hand or by another copy of the app; its version resource and
+    /// its log name only "3.0.1 Beta".
+    /// </summary>
+    public bool IsBuild(string? releaseVersion)
+    {
+        if (!Installed || releaseVersion is null || ReleaseSha().Match(releaseVersion.Trim()) is not { Success: true } match)
+            return false;
+        var sha = Encoding.ASCII.GetBytes(match.Groups["sha"].Value.ToLowerInvariant());
+        try
+        {
+            return File.ReadAllBytes(Path.Combine(Folder, "UE4SS.dll")).AsSpan().IndexOf(sha) >= 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The Git SHA at the end of a release version, after "-g", as git describe writes it.</summary>
+    [GeneratedRegex(@"-g(?<sha>[0-9a-f]{7,40})$", RegexOptions.IgnoreCase)]
+    private static partial Regex ReleaseSha();
 }

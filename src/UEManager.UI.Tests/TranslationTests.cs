@@ -192,7 +192,7 @@ internal sealed class SourceTexts
         foreach (var file in Directory.EnumerateFiles(folder, "*.json"))
         {
             using var profile = JsonDocument.Parse(File.ReadAllText(file), options);
-            foreach (var key in new[] { "displayName", "tagline", "ue4ssNote" })
+            foreach (var key in new[] { "displayName", "tagline", "motto", "ue4ssNote" })
             {
                 if (profile.RootElement.TryGetProperty(key, out var value) && value.GetString() is { Length: > 0 } text)
                     Add(text);

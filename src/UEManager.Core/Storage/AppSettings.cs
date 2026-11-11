@@ -6,6 +6,21 @@ public sealed class AppSettings
     /// <summary>The chosen language's code, such as "zh-CN"; null follows the Windows display language.</summary>
     public string? Language { get; set; }
 
+    /// <summary>
+    /// The game the app starts with, as a game profile's id; null until the player chose one, so the app asks. See
+    /// <see cref="Games.GameChoice"/>.
+    /// </summary>
+    public string? Game { get; set; }
+
+    /// <summary>The player chooses the game at every start; off: the app starts with <see cref="Game"/>.</summary>
+    public bool AskForGameAtStart { get; set; }
+
+    /// <summary>
+    /// The developer's message in the game picker opened by itself once, at the very first start; from then on it stays
+    /// closed until the player opens it.
+    /// </summary>
+    public bool DeveloperMessageShown { get; set; }
+
     /// <summary>Install folder per game profile id, set when the user locates the game by hand.</summary>
     public Dictionary<string, string> GamePaths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -14,6 +29,12 @@ public sealed class AppSettings
 
     /// <summary>The save folder per game profile id, when the player chose it.</summary>
     public Dictionary<string, string> SaveFolders { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The start arguments "Launch game" passes, per game profile id, when the player changed them; an empty text means
+    /// none. A game without an entry starts with its profile's recommended arguments. See <see cref="Games.LaunchOptions"/>.
+    /// </summary>
+    public Dictionary<string, string> LaunchArguments { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>"Launch game" zips the save folder first. Off until the player turns it on.</summary>
     public bool BackUpSavesOnLaunch { get; set; }
@@ -39,6 +60,15 @@ public sealed class AppSettings
 
     /// <summary>The player removed the Donate button from the sidebar. The About page keeps it.</summary>
     public bool HideDonateButton { get; set; }
+
+    /// <summary>The icon next to the clock, with its menu to switch the game. On until the player turns it off.</summary>
+    public bool ShowTrayIcon { get; set; } = true;
+
+    /// <summary>Minimize hides the window in the tray. Off until the player turns it on; only with the tray icon.</summary>
+    public bool MinimizeToTray { get; set; }
+
+    /// <summary>The X hides the window in the tray instead of closing the app; only with both settings above on.</summary>
+    public bool CloseToTray { get; set; }
 
     /// <summary>Where the main window was when it last closed; null opens it centred at its default size.</summary>
     public WindowPlacement? Window { get; set; }

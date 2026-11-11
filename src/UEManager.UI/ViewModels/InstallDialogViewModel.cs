@@ -74,6 +74,12 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
 
     public string SourceFileName => preview.SourceFileName;
 
+    /// <summary>
+    /// The game the mod goes into, next to the Install button: the app serves several games, and a plain .pak does not
+    /// say which game it is for.
+    /// </summary>
+    public string GameName => L.T(manager.Game.Profile.DisplayName);
+
     /// <summary>The download's number on the mod site, from its file name; null when the name has none.</summary>
     private string? SiteId => ModNaming.SiteModId(preview.SourceFileName);
 

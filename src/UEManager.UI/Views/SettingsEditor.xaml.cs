@@ -12,9 +12,9 @@ public partial class SettingsEditor : UserControl
     public SettingsEditor()
     {
         InitializeComponent();
-        // The editor's own parts in the app's colours: a red-tinted selection, a light caret, no links.
+        // The editor's own parts in the game's colours: its selection colour, a light caret, no links.
         var area = Editor.TextArea;
-        area.SelectionBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xC8, 0x10, 0x2E));
+        area.SelectionBrush = (Brush)FindResource("Brush.Selection");
         area.SelectionBorder = null;
         area.SelectionForeground = null;
         area.Caret.CaretBrush = (Brush)FindResource("Brush.Text");

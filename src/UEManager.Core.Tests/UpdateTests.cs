@@ -40,6 +40,54 @@ public class UpdateTests
         Assert.Equal(new string('b', 64), release.File?.Sha256);
     }
 
+    /// <summary>
+    /// Cloudflare's copy of a release since 2.0.0: one zip for every game, listed twice: by its own name, and by the
+    /// name apps up to 1.7.2 look for, with the same link, size and digest. The alias comes first here on purpose.
+    /// </summary>
+    private const string Neutral = """
+        {
+          "tag_name": "v2.0.0",
+          "html_url": "https://github.com/KintaroModding/uemodmanager/releases/tag/v2.0.0",
+          "assets": [
+            { "name": "uemm_phantom-blade-zero_2.0.0.zip", "size": 300,
+              "browser_download_url": "uemm_2.0.0.zip",
+              "github_download_url": "https://github.com/KintaroModding/uemodmanager/releases/download/v2.0.0/uemm_phantom-blade-zero_2.0.0.zip",
+              "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" },
+            { "name": "uemm_2.0.0.zip", "size": 300,
+              "browser_download_url": "uemm_2.0.0.zip",
+              "github_download_url": "https://github.com/KintaroModding/uemodmanager/releases/download/v2.0.0/uemm_2.0.0.zip",
+              "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" }
+          ]
+        }
+        """;
+
+    private static readonly Uri CopyList = new("https://metadata.openmods.nexus/uemodmanager/app/latest.json");
+
+    [Fact]
+    public void The_app_takes_the_zip_for_every_game_by_its_whole_name()
+    {
+        var release = AppReleases.Parse(Neutral, "", listUrl: CopyList, fileName: v => $"uemm_{v}.zip");
+
+        Assert.Equal("2.0.0", release.Version);
+        Assert.Equal("uemm_2.0.0.zip", release.File?.Name);
+        Assert.Equal(["https://metadata.openmods.nexus/uemodmanager/app/uemm_2.0.0.zip",
+            "https://github.com/KintaroModding/uemodmanager/releases/download/v2.0.0/uemm_2.0.0.zip"], release.File?.Urls);
+        // A release with only the old names has no zip for this app; one for another version neither.
+        Assert.Null(AppReleases.Parse(Release, "", fileName: v => $"uemm_{v}.zip").File);
+        Assert.Null(AppReleases.Parse(Neutral, "", fileName: v => $"uemm_{v}.1.zip").File);
+    }
+
+    [Fact]
+    public void An_app_up_to_1_7_2_finds_the_same_zip_under_its_old_name()
+    {
+        // As those apps ask: by the start of the name, Phantom Blade Zero's.
+        var release = AppReleases.Parse(Neutral, "uemm_phantom-blade-zero_", listUrl: CopyList);
+
+        Assert.Equal("uemm_phantom-blade-zero_2.0.0.zip", release.File?.Name);
+        Assert.Equal("https://metadata.openmods.nexus/uemodmanager/app/uemm_2.0.0.zip", release.File?.Url);
+        Assert.Equal(new string('d', 64), release.File?.Sha256);
+    }
+
     /// <summary>A copy of GitHub's answer next to a copy of the zip, as on Cloudflare.</summary>
     private const string Copy = """
         {
@@ -194,12 +242,28 @@ public class UpdateTests
         var current = folder.File("App.exe", "old version");
         var update = folder.File(@"update\App.exe", "new version");
 
+        Assert.False(SelfUpdate.IsJustUpdated(current));
         SelfUpdate.Replace(current, update);
 
         Assert.Equal("new version", File.ReadAllText(current));
         Assert.Equal("old version", File.ReadAllText(current + ".old"));
+        Assert.True(SelfUpdate.IsJustUpdated(current));
         SelfUpdate.CleanUp(current);
         Assert.Equal(["App.exe"], Directory.GetFiles(folder.Path).Select(Path.GetFileName));
+        Assert.False(SelfUpdate.IsJustUpdated(current));
+    }
+
+    [Fact]
+    public void Only_an_old_version_an_update_left_counts_as_just_updated()
+    {
+        using var folder = new TestFolder();
+        var current = folder.File("App.exe", "app");
+        folder.File("App.exe.personal-backup.old", "the player's own copy");
+        folder.File("App.exe.new", "not used");
+        Assert.False(SelfUpdate.IsJustUpdated(current));
+
+        folder.File($"App.exe.{new string('b', 32)}.old", "old, name taken");
+        Assert.True(SelfUpdate.IsJustUpdated(current));
     }
 
     [Fact]

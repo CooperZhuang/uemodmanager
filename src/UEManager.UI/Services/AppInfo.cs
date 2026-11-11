@@ -6,8 +6,21 @@ internal static class AppInfo
 {
     public const string Name = "UE MM";
 
+    /// <summary>
+    /// The card of a game that is not out yet can be chosen, so players can try the app's look for it and say what
+    /// they think before the game is supported (the user's choice, 2026-11-11, also for releases). Off, such a card
+    /// only says "Coming soon".
+    /// </summary>
+    public static bool CanChooseComingGames => true;
+
     /// <summary>How the release zips start, as publish.ps1 names them.</summary>
     public const string ReleaseFilePrefix = "uemm";
+
+    /// <summary>
+    /// The release zip of a version, one for every game: "uemm_2.0.0.zip". Releases also list it as
+    /// "uemm_phantom-blade-zero_&lt;version&gt;.zip", the name apps up to 1.7.2 look for; this app takes only this name.
+    /// </summary>
+    public static string ReleaseFileName(string version) => $"{ReleaseFilePrefix}_{version}.zip";
 
     /// <summary>Where the original lives; works based on it keep linking here (NOTICE.md, term 1).</summary>
     public const string ProjectUrl = "https://github.com/KintaroModding/uemodmanager";

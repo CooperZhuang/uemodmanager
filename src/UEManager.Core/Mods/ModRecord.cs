@@ -181,9 +181,10 @@ public static class SharedFiles
 }
 
 /// <summary>
-/// Mod files the player is meant to edit: a UE4SS mod's Scripts/config.lua or Scripts/config.json (and the like),
-/// and the settings a pak mod keeps next to its pak, such as a .json in ~mods. A change to one never blocks a removal.
-/// Disabling keeps the player's version, an update asks whether to keep it, and uninstalling backs it up.
+/// Mod files the player is meant to edit: a UE4SS mod's Scripts/config.lua (and the like) and every data file in its
+/// folder, such as the dlls/Minimap.ini a C++ mod reads, and the settings a pak mod keeps next to its pak, such as a
+/// .json in ~mods. A change to one never blocks a removal. Disabling keeps the player's version, an update asks whether
+/// to keep it, and uninstalling backs it up.
 /// </summary>
 public static partial class SettingsFiles
 {
@@ -209,30 +210,66 @@ public static partial class SettingsFiles
     /// <summary>The names a UE4SS mod gives its settings file in its Scripts folder.</summary>
     private static readonly string[] Ue4ssSettingsNames = ["config", "settings"];
 
-    /// <summary>The formats of a UE4SS mod's settings file: Lua, as UE4SS's examples, or a data file the mod reads.</summary>
+    /// <summary>The formats of a UE4SS mod's settings file in its Scripts folder: Lua, as UE4SS's examples, or a data file the mod reads.</summary>
     private static readonly string[] Ue4ssSettingsExtensions = [".lua", ".json", ".ini", ".cfg", ".toml", ".yaml", ".yml", ".txt"];
+
+    /// <summary>
+    /// The formats of the data files a UE4SS mod reads, wherever they are in its folder: a C++ mod keeps its .ini next to
+    /// main.dll, others keep tables the player may change, such as the JSON lists of Custom Shell System's catalog folder.
+    /// No code and no text: a .lua is code unless it is the settings file in Scripts, and enabled.txt is UE4SS's switch.
+    /// </summary>
+    private static readonly string[] Ue4ssDataExtensions = [".ini", ".json", ".cfg", ".toml", ".yaml", ".yml"];
 
     /// <param name="relativePath">The path below the target folder, such as "ModName/Scripts/config.lua".</param>
     public static bool Is(DeployTarget target, string relativePath)
     {
         if (target is DeployTarget.Mods or DeployTarget.LogicMods)
             return IsPakSettings(relativePath);
-        if (target != DeployTarget.Ue4ssMods)
+        if (target is DeployTarget.InstallRoot or DeployTarget.ExeFolder)
+            return IsCSharpLoaderSettings(relativePath);
+        if (target != DeployTarget.Ue4ssMods || SharedFiles.Is(target, relativePath))
             return false;
-        // A UE4SS mod's settings: Scripts/config.lua, or Scripts/config.json and the like, which the mod reads itself.
+        // Only files in a mod's folder: one loose in UE4SS's Mods folder, such as mods.json, is UE4SS's own.
         var parts = relativePath.Split('/', '\\');
-        return parts.Length == 3
+        if (parts.Length < 2)
+            return false;
+        var name = parts[^1];
+        // Scripts/config.lua, or Scripts/config.json and the like, which the mod reads itself.
+        if (parts.Length == 3
             && parts[1].Equals("Scripts", StringComparison.OrdinalIgnoreCase)
-            && Ue4ssSettingsNames.Contains(Path.GetFileNameWithoutExtension(parts[2]), StringComparer.OrdinalIgnoreCase)
-            && FileSystem.HasExtension(parts[2], Ue4ssSettingsExtensions);
+            && Ue4ssSettingsNames.Contains(Path.GetFileNameWithoutExtension(name), StringComparer.OrdinalIgnoreCase)
+            && FileSystem.HasExtension(name, Ue4ssSettingsExtensions))
+            return true;
+        // A data file anywhere in the mod's folder, such as dlls/Minimap.ini; a license.json is no setting.
+        return FileSystem.HasExtension(name, Ue4ssDataExtensions) && !HasDocumentName(name);
+    }
+
+    /// <summary>
+    /// Black Myth: Wukong's C# Loader: its settings, CSharpLoader/b1cs.ini, and the data files of its mods, such as
+    /// CSharpLoader/Mods/&lt;mod&gt;/config.json, as game files or as files for the exe folder.
+    /// </summary>
+    private static bool IsCSharpLoaderSettings(string relativePath)
+    {
+        var parts = relativePath.Split('/', '\\');
+        var loader = Array.FindIndex(parts, part => part.Equals("CSharpLoader", StringComparison.OrdinalIgnoreCase));
+        if (loader < 0)
+            return false;
+        var rest = parts[(loader + 1)..];
+        if (rest.Length == 1)
+            return rest[0].Equals("b1cs.ini", StringComparison.OrdinalIgnoreCase);
+        return rest.Length >= 3 && rest[0].Equals("Mods", StringComparison.OrdinalIgnoreCase)
+            && FileSystem.HasExtension(rest[^1], Ue4ssDataExtensions) && !HasDocumentName(rest[^1]);
     }
 
     /// <summary>How the player knows the file: "Scripts/config.lua" for "ModName/Scripts/config.lua", else its name.</summary>
     public static string Name(string relativePath) =>
         relativePath.IndexOf('/') is var slash and >= 0 ? relativePath[(slash + 1)..] : relativePath;
 
-    /// <summary>Names that mark a document, not settings: readme, license, change log, credits, install notes.</summary>
-    [GeneratedRegex(@"^(read[ _-]?me|licen[cs]e|change[ _-]?log|changes|credits|install|notice|copying|authors)", RegexOptions.IgnoreCase)]
+    /// <summary>
+    /// Names that mark a document, not settings: readme, license, change log, credits, install notes, and the note
+    /// openmods.nexus puts into the mods it lists (openmods.nexus_opensourcemods.txt).
+    /// </summary>
+    [GeneratedRegex(@"^(read[ _-]?me|licen[cs]e|change[ _-]?log|changes|credits|install|notice|copying|authors|openmods)", RegexOptions.IgnoreCase)]
     private static partial Regex DocumentName();
 }
 

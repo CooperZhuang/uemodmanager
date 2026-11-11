@@ -1,0 +1,65 @@
+<UserControl x:Class="UEManager.UI.Views.FolderReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
+             xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:FolderScanViewModel}">
+    <!-- The report of a scanned game folder: over the whole window below the title bar, in place of the picker. Nothing
+         is copied or saved without a click; Close and Esc go back to the picker. -->
+    <Border Background="{StaticResource Brush.PanelSolid}">
+        <DockPanel Margin="32,26,32,24">
+            <DockPanel DockPanel.Dock="Top">
+                <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource Button.Icon}" Content="&#xE711;"
+                        FontFamily="{StaticResource Font.Icons}" FontSize="10" Width="28" Height="28"
+                        Command="{Binding CloseReportCommand}" ToolTip="{ui:Loc 'Close'}" />
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Folder report', Tracked=True}" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" FontSize="22" TextTrimming="CharacterEllipsis"
+                               Text="{Binding ReportTitle}" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- A folder without Content\Paks: the player may have chosen the wrong one. -->
+            <Border DockPanel.Dock="Top" Margin="0,16,0,0" Padding="14,10" CornerRadius="2" BorderThickness="1"
+                    Background="{StaticResource Brush.WarningWash}" BorderBrush="{StaticResource Brush.Warning}"
+                    Visibility="{Binding ReportWarning, Converter={StaticResource VisibleIfSet}}">
+                <TextBlock TextWrapping="Wrap" LineHeight="19" Foreground="{StaticResource Brush.Warning}" Text="{Binding ReportWarning}" />
+            </Border>
+
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,16,0,0" LastChildFill="False">
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="{ui:Loc 'Close'}" Command="{Binding CloseReportCommand}" IsCancel="True" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
+                        Command="{Binding OpenDiscordCommand}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" ui:Icon.Glyph="&#xE74E;" Content="{ui:Loc 'Save as .txt…'}"
+                        Command="{Binding SaveReportCommand}" />
+                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Primary}" ui:Icon.Glyph="&#xE8C8;" Content="{ui:Loc 'Copy'}"
+                        Command="{Binding CopyReportCommand}" />
+                <!-- What the last click did: copied, saved, or why not. -->
+                <TextBlock Margin="0,0,20,0" VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Feedback}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeedbackWarning}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.Warning}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </DockPanel>
+
+            <Border Margin="0,16,0,0" BorderThickness="1" CornerRadius="2"
+                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
+                <avalon:TextEditor x:Name="Viewer" Document="{Binding Document}" IsReadOnly="True" Padding="10,8"
+                                   FontFamily="Cascadia Mono, Consolas" FontSize="13" Background="Transparent"
+                                   Foreground="{StaticResource Brush.Text}"
+                                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+            </Border>
+        </DockPanel>
+    </Border>
+</UserControl>

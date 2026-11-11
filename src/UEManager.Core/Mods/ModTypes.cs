@@ -22,7 +22,7 @@ public static class ModTypes
             return ExeFiles;
         var ue4ss = list.Where(f => f.Target == DeployTarget.Ue4ssMods).Select(f => "/" + f.Path.Replace('\\', '/')).ToList();
         var lua = ue4ss.Any(p => p.Contains("/Scripts/", StringComparison.OrdinalIgnoreCase));
-        var native = ue4ss.Any(p => p.Contains("/dlls/", StringComparison.OrdinalIgnoreCase));
+        var native = HasUe4ssDll(list);
         if (lua || native)
             return (lua, native) switch
             {
@@ -37,4 +37,12 @@ public static class ModTypes
             return Ue4ssFiles;
         return list.Any(f => FileSystem.HasExtension(f.Path, FileSystem.IoStoreExtensions)) ? "IoStore" : "PAK";
     }
+
+    /// <summary>
+    /// A UE4SS C++ mod is among the files: a DLL in a dlls folder of UE4SS's Mods folder. Such a mod is built against
+    /// one UE4SS build, and may not load with another one.
+    /// </summary>
+    public static bool HasUe4ssDll(IEnumerable<(DeployTarget Target, string Path)> files) =>
+        files.Any(f => f.Target == DeployTarget.Ue4ssMods
+            && ("/" + f.Path.Replace('\\', '/')).Contains("/dlls/", StringComparison.OrdinalIgnoreCase));
 }

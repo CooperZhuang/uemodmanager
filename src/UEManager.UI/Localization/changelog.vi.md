@@ -2,6 +2,20 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.0.0 (2026-11-11)
+- Một ứng dụng cho nhiều game: Black Myth: Wukong và Phantom Blade Zero, cùng Stellar Blade: Blood Rain để xem thử giao diện trước khi game ra mắt
+- Chọn game khi khởi động lần đầu hoặc bằng Đổi game trên thanh tiêu đề; Cài đặt có thể luôn hỏi chọn game khi khởi động, và màn hình chọn game có lời nhắn từ nhà phát triển
+- Mỗi game có giao diện, hình ảnh và thẻ riêng; biểu tượng ứng dụng giờ là chồng mod, và Windows hiện biểu tượng mới ngay sau khi cập nhật
+- Black Myth: Wukong: mod pak, UE4SS và C# Loader, cài C# Loader và UE4SS chỉ với một cú bấm, và sao lưu bản lưu
+- Tùy chọn khởi động ở bên phải nút Khởi động game: các tham số game dùng khi khởi động, kèm tham số đề xuất của game, như -fileopenlog của Wukong cho mod pak
+- Biểu tượng khay hệ thống cạnh đồng hồ, với menu để đổi hoặc khởi động game; Cài đặt có thể thu nhỏ và đóng ứng dụng xuống khay
+- Chưa có game của bạn? Quét thư mục game trong màn hình chọn game để tạo báo cáo chia sẻ trên Discord, tên người dùng và các ID của bạn được ẩn
+- Thẻ trong màn hình chọn game cho biết game nằm ở đâu trên máy và có bao nhiêu mod
+- Lần khởi động đầu tiên, câu hỏi ngôn ngữ hiện trước màn hình chọn game, nơi cũng có ô chọn ngôn ngữ
+- Màn hình xem trước khi cài cho biết mod được cài vào game nào
+- UE4SS đặt vào bằng tay không còn bị báo có bản cập nhật khi nó đã là bản mới nhất
+- Một tệp tải về cho mọi game, uemm_<version>.zip; các phiên bản cũ của ứng dụng vẫn tìm được bản cập nhật
+
 ## 1.7.2 (2026-11-10)
 - Chi tiết mod có thể tắt việc kiểm tra cập nhật của mod đó để giữ phiên bản: ô sẽ hiện Not tracked, và việc kiểm tra bỏ qua mod đó
 - Nút kiểm tra cập nhật dùng lại được sau 30 giây chờ; trước đây nó có thể bị xám mãi

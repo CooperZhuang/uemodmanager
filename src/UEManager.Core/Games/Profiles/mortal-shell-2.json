@@ -1,19 +1,23 @@
-// Game profile for Mortal Shell II. Used for test builds only, to try the manager
-// against a released Unreal Engine 5 game:
-//   dotnet publish src/UEManager.UI/UEManager.UI.csproj -p:GameProfile=mortal-shell-2
+// Game profile for Mortal Shell II. Built into the exe: change it here and rebuild.
 //
 // Layout as documented by the game's mod pages: <install>\MortalShell2\Content\Paks\~mods.
-// "executable" is left out: without Steam, the manager starts the exe it finds in the
-// install folder.
+// The game's exe, the exe "Launch game" starts and the save folder are not verified on an
+// install yet, so they are left out: the manager then takes Unreal's usual places, starts
+// the exe it finds, and offers no save backups.
 {
   "id": "mortal-shell-2",
   "displayName": "Mortal Shell II",
   "developer": "Cold Symmetry",
-  "tagline": "Test build: the manager pointed at Mortal Shell II to check detection, install, enable, disable and uninstall.",
+  "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
+  // Experimental until the layout is checked on a real install: the game's exe, the exe Launch game starts, the save folder.
+  "experimental": true,
+  // Not offered for 2.0.0 (the user's word, 2026-11-11): no card in the game picker or the tray menu. The support stays;
+  // a test run starts it with --game mortal-shell-2. Remove this line to offer the game again.
+  "hidden": true,
 
   "steamAppId": "2584270",
 
-  // Same UE4SS download page as the Phantom Blade Zero build, so the guide can be tried here.
+  // Where "How to install UE4SS" sends the user: a UE4SS release that can read this game.
   "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
   "ue4ssManifestUrls": [
     "https://metadata.openmods.nexus/uemodmanager/manifest.json",
@@ -26,5 +30,10 @@
 
   "projectFolder": "MortalShell2",
   "paksPath": "{Project}/Content/Paks",
-  "modsPath": "{Project}/Content/Paks/~mods"
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  // "Open mod page" and the update check, as for Phantom Blade Zero: the game's pages and its number on the mod site.
+  "modPageUrl": "https://www.nexusmods.com/mortalshell2/mods/{id}",
+  "modSiteApiUrl": "https://api.nexusmods.com/v2/graphql",
+  "modSiteGameId": "9366"
 }

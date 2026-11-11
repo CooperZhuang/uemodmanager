@@ -37,6 +37,22 @@ public static class GameLocator
     }
 
     /// <summary>
+    /// Finds the game as the app does at start: in the folder the player chose before, while it still holds the game;
+    /// else with <see cref="Discover"/>.
+    /// </summary>
+    public static GameInstall? Find(GameProfile profile, string? savedFolder)
+    {
+        if (savedFolder is not null)
+        {
+            var install = FromFolder(profile, savedFolder);
+            if (install is not null)
+                return install;
+            Log.Warn($"The saved game folder '{savedFolder}' no longer matches the profile.");
+        }
+        return Discover(profile);
+    }
+
+    /// <summary>
     /// Resolves a folder the user picked. The pick may be the install folder or
     /// any folder inside it, such as Binaries\Win64. It must be this game's install
     /// folder, not that of another Unreal game: see <see cref="IsGameRoot"/>.

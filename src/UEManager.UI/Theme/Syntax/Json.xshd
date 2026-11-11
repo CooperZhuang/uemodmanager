@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <!--
-  Colours for a .json settings file in the settings editor, from the app's palette. Names and strings are
-  both rules, not spans: where both match, the first rule, the name before its colon, wins.
+  Colours for a .json settings file in the settings editor. Names and strings are both rules, not spans: where
+  both match, the first rule, the name before its colon, wins. The app puts in the colours of the game's look
+  (Color.Syntax.* in Theme\Palette.xaml, see Services\Syntax.cs); the ones written here are only the fallback.
 -->
 <SyntaxDefinition name="JSON" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
   <Color name="Key" foreground="#E5485F" />

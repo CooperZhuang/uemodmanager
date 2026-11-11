@@ -72,7 +72,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         settings = AppSettings.Load(paths);
         CreateCatalog(catalogUrl);
         Update = new AppUpdateViewModel(this, Http, paths, updateUrl is null ? AppInfo.LatestReleaseUrls : [updateUrl],
-            $"{AppInfo.ReleaseFilePrefix}_{profile.Id}_");
+            AppInfo.ReleaseFileName);
         Ue4ssLogPanel = new Ue4ssLogViewModel(this);
         ModsView = CollectionViewSource.GetDefaultView(Mods);
         ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText) && ModTags.Has(mod.Record, SelectedTag)
@@ -235,6 +235,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public string GameDisplayName => L.T(Profile.DisplayName);
 
     public string GameTagline => L.T(Profile.Tagline ?? "");
+
+    /// <summary>The line above the game's name on the Home page: the game's own, or a plain one.</summary>
+    public string GameMotto => Profile.Motto is { Length: > 0 } motto ? L.T(motto) : L.T("Ready to mod");
 
     public IReadOnlyList<LanguageOption> Languages => L.Current.Languages;
 
@@ -461,7 +464,22 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public bool IsGameFound => Game is not null;
 
-    public string GameStatusText => IsGameFound ? L.T("Game connected") : L.T("Game not found");
+    /// <summary>
+    /// The game is not out yet (<see cref="GameProfile.ComingSoon"/>): the app shows its look as a placeholder, to
+    /// gather what players think of it, and says so instead of looking for the game.
+    /// </summary>
+    public bool IsComingSoon => Profile.ComingSoon;
+
+    /// <summary>The Home page's box that asks to locate the game; a game that is not out yet has the placeholder note instead.</summary>
+    public bool ShowGameNotFound => !IsGameFound && !IsComingSoon;
+
+    public string ComingSoonNote =>
+        L.F($"{GameDisplayName} is not out yet, so the app shows a placeholder for it: its look is ready, its mod support is not. Look around and tell us on Discord what you think of the look. Mod support comes when the game is released.");
+
+    public string GameStatusText => IsGameFound ? L.T("Game connected") : IsComingSoon ? L.T("Coming soon") : L.T("Game not found");
+
+    /// <summary>The colour of the game's state: green when connected, orange for a placeholder, red when not found.</summary>
+    public string GameStatusTone => IsGameFound ? "good" : IsComingSoon ? "warn" : "bad";
 
     public string NotFoundHint =>
         L.F($"{GameDisplayName} was not found in Steam or the Epic Games Launcher. Choose its install folder, or search again.");
@@ -565,14 +583,43 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         null => "—",
         { Installed: false } => L.T("Not installed"),
-        _ when (installedUe4ssVersion ?? ue4ss.Version) is { } version => L.F($"Installed  ·  {version}"),
+        _ when (installedUe4ssVersion ?? unrecordedUe4ssVersion ?? ue4ss.Version) is { } version => L.F($"Installed  ·  {version}"),
         _ => L.T("Installed"),
     };
 
     public bool IsUe4ssInstalled => ue4ss is { Installed: true };
 
     /// <summary>The manifest names a UE4SS release other than the installed one (or the installed one is unknown).</summary>
-    public bool IsUe4ssUpdateAvailable => IsUe4ssInstalled && Ue4ssManifest.IsUpdate(installedUe4ssVersion, latestUe4ss);
+    public bool IsUe4ssUpdateAvailable => IsUe4ssInstalled && Ue4ssManifest.IsUpdate(installedUe4ssVersion ?? unrecordedUe4ssVersion, latestUe4ss);
+
+    /// <summary>
+    /// The release of a UE4SS the manager has no record of, as one put in by hand or by another copy of the app, when its
+    /// DLL is the build the manifest names now: then it is up to date. Null otherwise.
+    /// </summary>
+    private string? unrecordedUe4ssVersion;
+
+    /// <summary>The DLL that <see cref="unrecordedUe4ssVersion"/> was checked from, by path, size and time, so it is read once.</summary>
+    private (string Path, long Size, DateTime Written, string Release, bool Same)? unrecordedUe4ssChecked;
+
+    private void CheckUnrecordedUe4ss()
+    {
+        unrecordedUe4ssVersion = null;
+        if (installedUe4ssVersion is not null || ue4ss is not { Installed: true } runtime || latestUe4ss is not { } latest)
+            return;
+        var dll = new FileInfo(Path.Combine(runtime.Folder, "UE4SS.dll"));
+        if (!dll.Exists)
+            return;
+        if (unrecordedUe4ssChecked is not { } seen || seen.Path != dll.FullName || seen.Size != dll.Length
+            || seen.Written != dll.LastWriteTimeUtc || seen.Release != latest.Version)
+        {
+            seen = (dll.FullName, dll.Length, dll.LastWriteTimeUtc, latest.Version, runtime.IsBuild(latest.Version));
+            unrecordedUe4ssChecked = seen;
+            if (seen.Same)
+                Log.Info($"The UE4SS in the game has no record of the manager, but its DLL is {latest.Version}: no update offered.");
+        }
+        unrecordedUe4ssVersion = seen.Same ? latest.Version : null;
+    }
+
 
     public string Ue4ssUpdateText => latestUe4ss is null ? "" : L.F($"Update to {latestUe4ss.Version}");
 
@@ -697,16 +744,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>
-    /// Asks a player who chose no language yet whether to switch to the language of Windows. The question is in
-    /// that language and in English; Yes and No stay English, which everyone reads. Either answer is saved, so
-    /// the question comes once.
+    /// Asks a player who chose no language yet whether to switch to the language of Windows (see
+    /// <see cref="ConfirmViewModel.LanguageOffer"/>). Either answer is saved, so the question comes once. At a start
+    /// without a chosen game, the game picker asks it already, before its cards show.
     /// </summary>
     internal async Task OfferLanguageAsync(LanguageOption offered)
     {
-        var accepted = await AskAsync(L.Both(offered, "Language", "  ·  "),
-            L.Both(offered, "Switch the app to {0}?") + "\n\n" + L.Both(offered, "You can change this later in Settings ▸ Language."),
-            "Yes", "No");
-        if (accepted)
+        if (await AskAsync(ConfirmViewModel.LanguageOffer(offered)))
         {
             SelectedLanguage = offered.Code;
             return;
@@ -744,8 +788,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             {
                 preview.Dispose();
                 if (await AskAsync(L.T("Install UE4SS"),
-                        L.F($"\"{Path.GetFileName(source)}\" is UE4SS itself, not a mod. Install it into {GameDisplayName}? Your existing UE4SS settings are kept."), L.T("Install UE4SS")))
-                    await InstallUe4ssAsync(source);
+                        L.Join(L.F($"\"{Path.GetFileName(source)}\" is UE4SS itself, not a mod. Install it into {GameDisplayName}? Your existing UE4SS settings are kept."),
+                            Ue4ssChangeWarning(manager!.Mods)), L.T("Install UE4SS")))
+                    await InstallUe4ssAsync(source, warned: true);
                 continue;
             }
 
@@ -1004,7 +1049,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>Downloads the available UE4SS release (manifest first, game profile second), checks it, and installs it.</summary>
     internal async Task DownloadAndInstallUe4ssAsync()
     {
-        if (!EnsureGame() || AvailableUe4ss is not { } release)
+        if (!EnsureGame() || AvailableUe4ss is not { } release || !await ConfirmUe4ssChangeAsync())
             return;
         var folder = Path.Combine(paths.StagingDir, "download-" + Guid.NewGuid().ToString("N"));
         Ue4ssInstallResult? result = null;
@@ -1027,12 +1072,37 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             Ue4ssInstalled(result);
     }
 
-    private async Task InstallUe4ssAsync(string package)
+    /// <param name="warned">The question before it already named the installed C++ mods.</param>
+    private async Task InstallUe4ssAsync(string package, bool warned = false)
     {
+        if (!warned && !await ConfirmUe4ssChangeAsync())
+            return;
         Ue4ssInstallResult? result = null;
         await RunAsync(L.T("Installing UE4SS…"), async () => result = await Task.Run(() => manager!.InstallUe4ss(package)));
         if (result is not null)
             Ue4ssInstalled(result);
+    }
+
+    /// <summary>Before UE4SS is installed or replaced: the player confirms when C++ mods are installed. True: go on.</summary>
+    private async Task<bool> ConfirmUe4ssChangeAsync() =>
+        manager is null || Ue4ssChangeWarning(manager.Mods) is not { } warning
+        || await AskAsync(L.T("C++ mods and UE4SS"), warning, L.T("Install UE4SS"), width: 560);
+
+    /// <summary>
+    /// The note for a change of UE4SS when C++ mods are installed, on or off: each is built for one UE4SS build, so
+    /// another build may stop it from loading. Null without such mods. A Lua or Blueprint mod does not depend on the build.
+    /// </summary>
+    internal static string? Ue4ssChangeWarning(IReadOnlyList<ModRecord> mods)
+    {
+        var names = mods.Where(m => ModTypes.HasUe4ssDll(m.Files.Select(f => (f.Target, f.FileName))))
+            .Select(m => $"\"{m.Name}\"")
+            .ToList();
+        return names.Count == 0
+            ? null
+            : L.Plural(names.Count,
+                "{1} is a C++ mod. A C++ mod is made for one UE4SS build, and with another build it may not load until its author updates it. Its mod page names the UE4SS build it needs.",
+                "{1} are C++ mods. A C++ mod is made for one UE4SS build, and with another build it may not load until its author updates it. Each mod's page names the UE4SS build it needs.",
+                string.Join(", ", names));
     }
 
     /// <summary>Reads the online manifest once per start. Offline or failing, it stays quiet.</summary>
@@ -1050,6 +1120,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             _ = ReadRecommendedAsync(answer);
         if (latestUe4ss is null)
             return;
+        CheckUnrecordedUe4ss();
         OnModsChanged();
         OnPropertyChanged(string.Empty);
         await CheckUe4ssBuildAsync();
@@ -1387,7 +1458,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         try
         {
-            Game!.Launch();
+            Game!.Launch(LaunchArguments);
+            Log.Info(LaunchArguments is { } arguments ? $"Started the game with: {arguments}" : "Started the game without arguments.");
             ShowToast(L.Join(L.F($"Starting {GameDisplayName}…"), note));
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -1644,17 +1716,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         field != SortField ? "" : SortDescending ? "" : "";
 
     /// <summary>The saved folder first, then Steam and Epic.</summary>
-    private GameInstall? FindGame()
-    {
-        if (settings.GamePaths.TryGetValue(Profile.Id, out var saved))
-        {
-            var install = GameLocator.FromFolder(Profile, saved);
-            if (install is not null)
-                return install;
-            Log.Warn($"The saved game folder '{saved}' no longer matches the profile.");
-        }
-        return GameLocator.Discover(Profile);
-    }
+    private GameInstall? FindGame() => GameLocator.Find(Profile, settings.GamePaths.GetValueOrDefault(Profile.Id));
 
     /// <summary>
     /// Connects to an install. When enabled mods are still in another install of the game, the
@@ -1794,6 +1856,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         ue4ss = Game is null ? null : Ue4ssRuntime.Detect(Game);
         installedUe4ssVersion = manager?.InstalledUe4ssVersion;
+        CheckUnrecordedUe4ss();
         OnModsChanged();
         // Every summary on every page derives from the game and the mod list.
         OnPropertyChanged(string.Empty);
@@ -1839,10 +1902,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         return false;
     }
 
-    private async Task<bool> AskAsync(string title, string message, string confirmText, string? cancelText = null, double width = 480)
+    private Task<bool> AskAsync(string title, string message, string confirmText, string? cancelText = null, double width = 480) =>
+        AskAsync(new ConfirmViewModel(title, message, confirmText, cancelText ?? L.T("Cancel"), width));
+
+    private async Task<bool> AskAsync(ConfirmViewModel question)
     {
-        Confirm = new ConfirmViewModel(title, message, confirmText, cancelText ?? L.T("Cancel"), width);
-        var accepted = await Confirm.Result;
+        Confirm = question;
+        var accepted = await question.Result;
         Confirm = null;
         return accepted;
     }
@@ -1851,7 +1917,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     internal bool HasOverlay => IsBusy || IsDragOver || InstallDialog is not null || Ue4ssGuide is not null
         || Confirm is not null || HelpDialog is not null || ResetDialog is not null || SettingsEditor is not null || ModDetails is not null
         || ModSets is not null || Update.IsDialogOpen || Update.IsChangelogOpen || IsPreReleaseDialogOpen || IsRemoteInfoOpen || RecommendedNotes is not null || RecommendedThanks is not null || IsDonationOpen || UnmanagedRows is not null
-        || IsUpdateNotesOpen;
+        || IsUpdateNotesOpen || GamePicker is not null || IsLaunchOptionsOpen;
 
     /// <summary>The newest app version the banner at start announced; see <see cref="AppSettings.AnnouncedUpdate"/>.</summary>
     internal string? AnnouncedUpdate
