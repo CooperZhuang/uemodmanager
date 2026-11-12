@@ -8,14 +8,27 @@ public class AppSettingsTests
     [InlineData("{}")]
     [InlineData("{\"saveBackupKeep\":0}")]
     [InlineData("{\"saveBackupKeep\":-1}")]
-    public void Old_or_invalid_retention_settings_keep_five(string json)
+    public void Old_or_invalid_retention_settings_keep_six(string json)
     {
         using var folder = new TestFolder();
         var paths = new AppPaths(folder.Combine("Data"));
         Directory.CreateDirectory(paths.Root);
         File.WriteAllText(paths.SettingsFile, json);
 
-        Assert.Equal(5, AppSettings.Load(paths).SaveBackupKeep);
+        Assert.Equal(6, AppSettings.Load(paths).SaveBackupKeep);
+    }
+
+    /// <summary>The Settings slider has 2 to 20 in steps of 2: an odd number rounds up, so no backup is lost by it.</summary>
+    [Theory]
+    [InlineData(1, 2)]
+    [InlineData(5, 6)]
+    [InlineData(7, 8)]
+    [InlineData(20, 20)]
+    [InlineData(25, 20)]
+    [InlineData(1000, 20)]
+    public void A_retention_count_snaps_to_the_sliders_steps(int set, int kept)
+    {
+        Assert.Equal(kept, new AppSettings { SaveBackupKeep = set }.SaveBackupKeep);
     }
 
     [Fact]

@@ -14,7 +14,8 @@ look.
   file it places. Files it did not place are never overwritten or removed.
 - Installs and updates UE4SS for the game, and shows the UE4SS log with its errors and warnings.
 - Changes nothing while the game runs, and keeps the settings you changed in a mod's `config.lua` across updates.
-- Can back up your saves each time it starts the game.
+- Backs up your saves each time it starts the game, or at a click: keep the backups you want for good, and give each
+  a note, such as "Before the final boss".
 - **Reset modding** takes the game back to its original files in one step, so you can start clean.
 - Starts the game with the launch options you set; Black Myth: Wukong starts with `-fileopenlog`, which its pak mods
   need.
@@ -47,6 +48,7 @@ folder.
   before anything reaches the game.
 - **Mods:** turn mods on and off, update or uninstall them, and edit or reset a mod's settings.
 - **UE4SS:** install or update UE4SS, open its folder, and read its log.
+- **Backups:** back up your saves, choose how many the app keeps, keep some for good in **Personal**, and restore one.
 - **Settings:** the game folder, and the manager's data, logs and backups. **Reset modding…** removes every mod and
   UE4SS from the game; you choose whether the mods also leave the manager. **Report a problem…** makes a report for
   the help channel on Discord.

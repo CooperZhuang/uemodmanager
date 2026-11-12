@@ -29,7 +29,7 @@ public class SaveBackupTests : IDisposable
     }
 
     [Fact]
-    public void Keeps_only_the_newest_five()
+    public void Keeps_only_the_newest_six_by_default()
     {
         folder.File(@"Saves\Slot1.sav", "slot one");
         var start = new DateTime(2026, 10, 27, 21, 0, 0);
@@ -100,6 +100,76 @@ public class SaveBackupTests : IDisposable
 
         var newest = SaveBackups.Create(Saves, Backups, start.AddHours(2), 1);
         Assert.Equal([newest], SaveBackups.List(Backups));
+    }
+
+    [Fact]
+    public void A_personal_backup_is_never_removed_by_the_count_and_does_not_count()
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        var start = new DateTime(2026, 10, 27, 21, 0, 0);
+        var oldest = SaveBackups.Create(Saves, Backups, start, 10);
+        File.SetLastWriteTimeUtc(oldest, start.ToUniversalTime());
+
+        var kept = SaveBackups.SetPersonal(Backups, oldest, personal: true);
+        for (var i = 1; i <= 4; i++)
+            File.SetLastWriteTimeUtc(SaveBackups.Create(Saves, Backups, start.AddMinutes(i), 2), start.AddMinutes(i).ToUniversalTime());
+
+        Assert.Equal(2, SaveBackups.List(Backups).Count);
+        Assert.Equal([kept], SaveBackups.ListPersonal(Backups));
+        Assert.Equal(start.ToUniversalTime(), File.GetLastWriteTimeUtc(kept));
+
+        // Back among the normal ones, it is the oldest: the next backup removes it.
+        var released = SaveBackups.SetPersonal(Backups, kept, personal: false);
+        Assert.Empty(SaveBackups.ListPersonal(Backups));
+        SaveBackups.Create(Saves, Backups, start.AddMinutes(10), 2);
+        Assert.False(File.Exists(released));
+    }
+
+    [Fact]
+    public void A_note_goes_with_its_backup_when_it_moves_and_when_it_is_deleted()
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        var start = new DateTime(2026, 10, 27, 21, 0, 0);
+        var backup = SaveBackups.Create(Saves, Backups, start, 5, note: "  Before the final boss ");
+        Assert.Equal("Before the final boss", SaveBackups.Notes(Backups)[SaveBackups.Key(Backups, backup)]);
+
+        var kept = SaveBackups.SetPersonal(Backups, backup, personal: true);
+        Assert.Equal("personal/" + Path.GetFileName(kept), SaveBackups.Key(Backups, kept));
+        Assert.Equal("Before the final boss", SaveBackups.Notes(Backups)[SaveBackups.Key(Backups, kept)]);
+
+        SaveBackups.SetNote(Backups, kept, "Clean start");
+        Assert.Equal("Clean start", SaveBackups.Notes(Backups)[SaveBackups.Key(Backups, kept)]);
+
+        SaveBackups.Delete(Backups, kept);
+        Assert.False(File.Exists(kept));
+        Assert.Empty(SaveBackups.Notes(Backups));
+    }
+
+    [Fact]
+    public void The_count_removes_the_notes_of_the_backups_it_removes()
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        var start = new DateTime(2026, 10, 27, 21, 0, 0);
+        var first = SaveBackups.Create(Saves, Backups, start, 2, note: "first");
+        File.SetLastWriteTimeUtc(first, start.ToUniversalTime());
+        for (var i = 1; i <= 2; i++)
+            File.SetLastWriteTimeUtc(SaveBackups.Create(Saves, Backups, start.AddMinutes(i), 2), start.AddMinutes(i).ToUniversalTime());
+
+        Assert.False(File.Exists(first));
+        Assert.Empty(SaveBackups.Notes(Backups));
+    }
+
+    [Fact]
+    public void A_broken_notes_file_loses_the_notes_but_never_a_backup()
+    {
+        folder.File(@"Saves\Slot1.sav", "slot one");
+        Directory.CreateDirectory(Backups);
+        File.WriteAllText(Path.Combine(Backups, "notes.json"), "{ not json");
+
+        var backup = SaveBackups.Create(Saves, Backups, new DateTime(2026, 10, 27, 21, 0, 0), 5, note: "fresh");
+
+        Assert.True(File.Exists(backup));
+        Assert.Equal("fresh", SaveBackups.Notes(Backups)[SaveBackups.Key(Backups, backup)]);
     }
 
     [Fact]

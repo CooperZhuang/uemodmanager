@@ -8,6 +8,7 @@ using Xunit;
 
 namespace UEManager.UI.Tests;
 
+/// <summary>The Save backups page: how many normal backups a game keeps (a slider), Personal ones the count never removes, and notes.</summary>
 public class SaveBackupsTests : IDisposable
 {
     private readonly string folder = Path.Combine(Path.GetTempPath(), "uemm-save-backups-" + Guid.NewGuid().ToString("N"));
@@ -30,69 +31,89 @@ public class SaveBackupsTests : IDisposable
     });
 
     [Fact]
-    public void Saving_retention_persists_it_without_deleting_existing_backups() => WithApp((model, paths) =>
+    public void The_slider_saves_at_once_and_lowering_it_removes_nothing_yet() => WithApp((model, paths) =>
     {
         MakeBackups(paths, 8);
-        Assert.Equal("5", model.SaveBackupKeepText);
-        model.SaveBackupKeepText = "12";
-        Assert.True(model.SaveBackupRetentionCommand.CanExecute(null));
-        model.SaveBackupRetentionCommand.Execute(null);
+        Assert.Equal(6, model.SaveBackupKeep);
+
+        model.SaveBackupKeep = 12;
         Assert.Equal(12, AppSettings.Load(paths).SaveBackupKeep);
         Assert.Equal(12, new MainViewModel(model.Profile, paths, new ArtSet(null, null)).SaveBackupKeep);
-        Assert.False(model.SaveBackupRetentionCommand.CanExecute(null));
 
-        model.SaveBackupKeepText = "2";
-        model.SaveBackupRetentionCommand.Execute(null);
+        model.SaveBackupKeep = 2;
         Assert.Equal(8, model.SaveBackupList.Count);
-        Assert.Contains("8 of 2 kept", model.SaveBackupsText);
+        Assert.StartsWith("8 backups, 2 after the next backup", model.SaveBackupsText);
     });
 
     [Theory]
-    [InlineData("")]
-    [InlineData("0")]
-    [InlineData("-1")]
-    [InlineData("1.5")]
-    [InlineData("many")]
-    [InlineData("2147483648")]
-    public void Invalid_retention_cannot_be_saved(string value) => WithApp((model, _) =>
+    [InlineData(5, 6)]
+    [InlineData(1, 2)]
+    [InlineData(25, 20)]
+    [InlineData(0, 6)]
+    public void The_slider_takes_only_its_steps(int set, int kept) => WithApp((model, paths) =>
     {
-        model.SaveBackupKeepText = value;
-        Assert.False(model.SaveBackupRetentionCommand.CanExecute(null));
-        model.SaveBackupRetentionCommand.Execute(null);
-        Assert.Equal(5, model.SaveBackupKeep);
-        Assert.Equal("Enter a whole number of 1 or more.", model.SaveBackupKeepHint);
+        model.SaveBackupKeep = set;
+
+        Assert.Equal(kept, model.SaveBackupKeep);
+        Assert.Equal(kept, AppSettings.Load(paths).SaveBackupKeep);
     });
 
     [Fact]
-    public void Settings_shows_five_and_the_management_list_has_every_backup() => WithApp((model, paths) =>
+    public void Keep_moves_a_backup_to_Personal_where_the_count_never_removes_it() => WithApp((model, paths) =>
     {
         MakeBackups(paths, 8);
-        Assert.True(model.HasMoreSaveBackups);
-        Assert.Equal(8, model.SaveBackupList.Count);
-        Assert.Equal(model.SaveBackupList.Take(5), model.RecentSaveBackupList);
+        var oldest = model.SaveBackupList[^1].Path;
 
-        foreach (var backup in model.SaveBackupList.Skip(5))
-            File.Delete(backup.Path);
-        model.ReloadSaveBackupsCommand.Execute(null);
-        Assert.False(model.HasMoreSaveBackups);
-        Assert.Equal(5, model.SaveBackupList.Count);
+        model.KeepSaveBackupCommand.Execute(oldest);
+        Assert.Equal(7, model.SaveBackupList.Count);
+        var kept = Assert.Single(model.PersonalSaveBackupList);
+        Assert.True(kept.IsPersonal);
+        Assert.True(model.HasPersonalSaveBackups);
+
+        // Two normal ones stay; the personal one is not one of them and stays too.
+        model.SaveBackupKeep = 2;
+        Complete(model.BackUpSavesNowCommand.ExecuteAsync(null));
+        Assert.Equal(2, model.SaveBackupList.Count);
+        Assert.True(File.Exists(kept.Path));
+
+        model.ReleaseSaveBackupCommand.Execute(kept.Path);
+        Assert.Empty(model.PersonalSaveBackupList);
+        Assert.Equal(3, model.SaveBackupList.Count);
     });
 
     [Fact]
-    public void Manual_backup_uses_the_saved_retention_and_refreshes_the_preview() => WithApp((model, paths) =>
+    public void A_note_saves_at_once_follows_its_backup_and_survives_a_restart() => WithApp((model, paths) =>
+    {
+        MakeBackups(paths, 3);
+        model.SaveBackupList[0].Note = "  Before the final boss  ";
+        Assert.Equal("Before the final boss", Reopen(model, paths).SaveBackupList[0].Note);
+
+        model.KeepSaveBackupCommand.Execute(model.SaveBackupList[0].Path);
+        Assert.Equal("Before the final boss", Reopen(model, paths).PersonalSaveBackupList[0].Note);
+
+        // A new backup takes the note typed for it, and the field is empty again.
+        model.NewSaveBackupNote = "A clean start";
+        Complete(model.BackUpSavesNowCommand.ExecuteAsync(null));
+        Assert.Equal("A clean start", model.SaveBackupList[0].Note);
+        Assert.Equal("", model.NewSaveBackupNote);
+
+        model.PersonalSaveBackupList[0].Note = "";
+        Assert.Equal("", Reopen(model, paths).PersonalSaveBackupList[0].Note);
+    });
+
+    [Fact]
+    public void A_backup_keeps_the_chosen_number_and_refreshes_the_list() => WithApp((model, paths) =>
     {
         MakeBackups(paths, 8);
-        model.SaveBackupKeepText = "3";
-        model.SaveBackupRetentionCommand.Execute(null);
+        model.SaveBackupKeep = 4;
         var changed = new List<string?>();
         model.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
         Complete(model.BackUpSavesNowCommand.ExecuteAsync(null));
 
-        Assert.Equal(3, model.SaveBackupList.Count);
-        Assert.False(model.HasMoreSaveBackups);
-        Assert.Contains(nameof(model.RecentSaveBackupList), changed);
-        Assert.Contains(nameof(model.HasMoreSaveBackups), changed);
+        Assert.Equal(4, model.SaveBackupList.Count);
+        Assert.Contains(nameof(model.SaveBackupList), changed);
+        Assert.Contains(nameof(model.PersonalSaveBackupList), changed);
     });
 
     [Fact]
@@ -115,12 +136,23 @@ public class SaveBackupsTests : IDisposable
         Assert.Equal(7, model.SaveBackupList.Count);
         Assert.Equal("current saves", File.ReadAllText(Path.Combine(folder, "Saves", "Slot1.sav")));
 
+        // A personal backup asks too.
+        model.KeepSaveBackupCommand.Execute(model.SaveBackupList[^1].Path);
+        var personal = model.PersonalSaveBackupList[0].Path;
+        var asked = model.DeleteSaveBackupCommand.ExecuteAsync(personal);
+        model.Confirm!.AcceptCommand.Execute(null);
+        Complete(asked);
+        Assert.False(File.Exists(personal));
+        Assert.Empty(model.PersonalSaveBackupList);
+
         // A file outside this game's backup list cannot be deleted with the command.
         var save = Path.Combine(folder, "Saves", "Slot1.sav");
         Complete(model.DeleteSaveBackupCommand.ExecuteAsync(save));
         Assert.True(File.Exists(save));
         Assert.Null(model.Confirm);
     });
+
+    private static MainViewModel Reopen(MainViewModel model, AppPaths paths) => new(model.Profile, paths, new ArtSet(null, null));
 
     private void MakeBackups(AppPaths paths, int count)
     {

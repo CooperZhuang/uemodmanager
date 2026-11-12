@@ -78,7 +78,9 @@
             <!-- ===== Sidebar ===== -->
             <Border Background="{StaticResource Brush.Sidebar}" BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,1,0">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Margin="28,20,24,28">
+                    <!-- The emblem and the game's name; the space below them matches the space below the menu with
+                         openmods on, at the start size of the window. -->
+                    <StackPanel DockPanel.Dock="Top" Margin="28,20,24,14">
                         <!-- The emblem: Theme\Art\logo.png when built in, else the drawn mark. -->
                         <Grid Width="60" Height="60" HorizontalAlignment="Left">
                             <Image Source="{Binding Art.Logo}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
@@ -206,10 +208,12 @@
                                            FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Brush.Info}" IsHitTestVisible="False"
                                            Text="{ui:Loc 'UPDATE'}" Visibility="{Binding IsAnyUpdateAvailable, Converter={StaticResource Visible}}" />
                             </Grid>
+                            <!-- Filled by Catalog\CatalogResources.xaml while the catalog is switched on, below Mods. -->
+                            <ContentControl Focusable="False" Content="{DynamicResource CatalogNavItem}" />
                             <RadioButton Style="{StaticResource NavItem}" Content="UE4SS" ui:Icon.Glyph="&#xE943;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Ue4ss}" />
-                            <!-- Filled by Catalog\CatalogResources.xaml while the catalog is switched on. -->
-                            <ContentControl Focusable="False" Content="{DynamicResource CatalogNavItem}" />
+                            <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Backups'}" ui:Icon.Glyph="&#xE74E;"
+                                         IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=SaveBackups}" />
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Settings'}" ui:Icon.Glyph="&#xE713;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Settings}" />
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'About'}" ui:Icon.Glyph="&#xE946;"
@@ -265,6 +269,7 @@
                         <views:HomeView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
                         <views:ModsView x:Name="ModsPage" Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />
                         <views:Ue4ssView x:Name="Ue4ssPage" Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Ue4ss}" />
+                        <views:SaveBackupsView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=SaveBackups}" />
                         <ContentControl Focusable="False" Content="{DynamicResource CatalogPage}"
                                         Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Catalog}" />
                         <views:SettingsView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Settings}" />

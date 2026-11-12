@@ -443,26 +443,35 @@ stops the removal without leaving UE4SS or a mod half removed.
 Save backups are offered only when the game profile names the save folder
 (`saveFolder`). Games keep their saves in different places, such as
 `%LOCALAPPDATA%`, `Documents\My Games`, a folder with a name of their own or
-the install folder, so the folder is never guessed. Without it, **Settings →
-Save backups** is greyed out, and its tooltip says that it comes in the next
-update. Phantom Blade Zero keeps its saves in the install folder, in
-`ProjectPBZ/Saved/SaveGames`, with a folder per store and player inside. The
-backup at launch is off by default.
+the install folder, so the folder is never guessed. Without it, the **Backups**
+page is greyed out and says that it comes in the next update. Phantom Blade
+Zero keeps its saves in the install folder, in `ProjectPBZ/Saved/SaveGames`,
+with a folder per store and player inside. The backup at launch is off by
+default.
 
-A broken mod can break a save. When the player turns it on, **Launch game**
-first zips the save folder into `Data/games/<id>/save-backups/` and keeps the
-newest backups, up to the number chosen in **Settings → Save backups** (5 by
-default, with a minimum of 1). The choice is saved across restarts and applies
-to automatic backups, manual backups and the backup before a restore. Lowering
-the number removes older backups only after the next successful backup.
-Without saves yet (the folder is empty or not made yet) the game
-starts with a note; when the backup fails, the app asks whether to start the
-game anyway. Starting the game from Steam, Epic or a shortcut makes no backup.
-**Settings → Save backups** shows the folder and the backups, turns the backup
-at launch on or off, and offers **Back up now**. Settings shows the newest 5;
-when more exist, **Manage all backups…** opens a separate window with the full,
-scrollable list, Restore and Delete. Deleting a backup asks first and leaves
-the current saves alone.
+A broken mod can break a save. Save backups have a page of their own in the
+menu, **Backups**, below UE4SS. When the player turns it on there, **Launch game** first zips
+the save folder into `Data/games/<id>/save-backups/`; **Back up now** does the
+same at any time, with a note when one is typed next to it. Without saves yet
+(the folder is empty or not made yet) the game starts with a note; when the
+backup fails, the app asks whether to start the game anyway. Starting the game
+from Steam, Epic or a shortcut makes no backup.
+
+The page shows the backups in two columns:
+
+- **Normal** (left): the app keeps the newest, as many as the slider says: 2 to
+  20 in steps of 2, 6 by default (one step above the 5 of versions up to 2.0.0,
+  so an update removes none). A number in `settings.json` off the steps rounds
+  up to the next one. Lowering the number removes older backups only after the
+  next successful backup.
+- **Personal** (right): backups the player keeps for good. The pin on a normal
+  backup moves it here, into `save-backups/personal/`; the app never removes
+  these, and they do not count towards the number. The other pin moves one back.
+
+Each backup can carry a note of the player's, such as "Before the final boss",
+saved on Enter or when the field loses the focus, in `save-backups/notes.json`
+by the backup's path; it follows a backup that moves. **Delete** asks first and
+leaves the current saves alone.
 
 **Restore…** next to a backup puts it back, after a question and with the game
 closed: the save folder then holds exactly the backup's files. The saves of now
@@ -839,7 +848,8 @@ Data/
   games/<id>/mods.json             installed mods, files, checksums, mod sets
   games/<id>/library/<mod id>/     the manager's copy of each mod (.defaults: settings files as shipped)
   games/<id>/backups/              settings the player changed, saved before an update, uninstall or reset
-  games/<id>/save-backups/         zips of the save folder, the newest 5
+  games/<id>/save-backups/         zips of the save folder, the newest 6 (2 to 20, see Save backups),
+                                   personal/ with the ones the player keeps, notes.json with the notes
 ```
 
 Outside it, the app writes only into the game folder: the files of enabled

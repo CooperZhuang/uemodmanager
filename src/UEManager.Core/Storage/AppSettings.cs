@@ -41,11 +41,14 @@ public sealed class AppSettings
 
     private int saveBackupKeep = Games.SaveBackups.DefaultKeep;
 
-    /// <summary>How many save backups to keep per game. Old settings, and invalid values, keep the default of five.</summary>
+    /// <summary>
+    /// How many save backups to keep per game, as the Settings slider has it (see <see cref="Games.SaveBackups.Normalize"/>).
+    /// Old settings without it keep the default.
+    /// </summary>
     public int SaveBackupKeep
     {
         get => saveBackupKeep;
-        set => saveBackupKeep = value >= 1 ? value : Games.SaveBackups.DefaultKeep;
+        set => saveBackupKeep = Games.SaveBackups.Normalize(value);
     }
 
     /// <summary>At each start, the app asks the mod site for the page version of the mods with a mod page. On until the player turns it off; the Mods page's button works either way.</summary>

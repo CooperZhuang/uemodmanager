@@ -25,7 +25,7 @@
         </StackPanel>
 
         <!-- Language switches the existing views immediately and persists with the other settings. -->
-        <Border Margin="0,28,0,0" Style="{StaticResource Card}">
+        <Border Margin="0,20,0,0" Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Language'}" />
                 <TextBlock Margin="0,6,0,18" Style="{StaticResource Text.Body}"
@@ -101,66 +101,6 @@
                 <TextBlock Margin="0,6,0,14" Style="{StaticResource Text.Body}"
                            Text="{ui:Loc 'For the mods with a mod page, the app asks the mod site for the version on the page and shows when a newer one is there. It sends only the mod numbers and downloads nothing: you download the update on the mod page. The button in the mod list\'s header checks at any time.'}" />
                 <CheckBox Content="{ui:Loc 'Check for mod updates at each start'}" IsChecked="{Binding CheckModUpdatesAtStart}" />
-            </StackPanel>
-        </Border>
-
-        <!-- Save backups: off until the game profile names the save folder -->
-        <Border Margin="0,20,0,0" Style="{StaticResource Card}" IsEnabled="{Binding SaveBackupsAvailable}"
-                ToolTip="{Binding SaveBackupsHint}" ToolTipService.ShowOnDisabled="True">
-            <StackPanel>
-                <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Save backups'}" />
-                <TextBlock Margin="0,6,0,18" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'A broken mod can break a save. When you turn it on below, Launch game first zips your save folder. Choose how many backups to keep below. To go back to one, close the game and click Restore next to it.'}" />
-                <DockPanel Style="{StaticResource Field}">
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Save folder', Tracked=True}" />
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Text.Path}" Text="{Binding SaveFolderText}" />
-                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
-                                   Foreground="{Binding SaveFolderTone, Converter={StaticResource Tone}}" Text="{Binding SaveFolderDetail}" />
-                    </StackPanel>
-                </DockPanel>
-                <DockPanel Style="{StaticResource Field}">
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Backups to keep', Tracked=True}" />
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBox Width="100" MaxLength="10" Text="{Binding SaveBackupKeepText, UpdateSourceTrigger=PropertyChanged}"
-                                     AutomationProperties.Name="{ui:Loc 'Backups to keep'}" />
-                            <Button Margin="8,0,0,0" Content="{ui:Loc 'Save'}" Command="{Binding SaveBackupRetentionCommand}" />
-                        </StackPanel>
-                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding SaveBackupKeepHint}" />
-                    </StackPanel>
-                </DockPanel>
-                <DockPanel Style="{StaticResource Field}">
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Backups', Tracked=True}" />
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding SaveBackupsText}" />
-                        <!-- At most five here; the separate window has the full list. -->
-                        <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding RecentSaveBackupList}" Focusable="False">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <DockPanel Margin="0,4,0,0" LastChildFill="False">
-                                        <TextBlock DockPanel.Dock="Left" Width="260" VerticalAlignment="Center" Style="{StaticResource Text.Small}"
-                                                   Text="{Binding Text}" />
-                                        <Button DockPanel.Dock="Left" Content="{ui:Loc 'Restore…'}" ui:Icon.Glyph="&#xE777;"
-                                                Command="{Binding DataContext.RestoreSaveBackupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding Path}" />
-                                    </DockPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Button Margin="0,12,0,0" HorizontalAlignment="Left" Content="{ui:Loc 'Manage all backups…'}"
-                                Click="OnManageSaveBackups" Visibility="{Binding HasMoreSaveBackups, Converter={StaticResource Visible}}" />
-                    </StackPanel>
-                </DockPanel>
-                <CheckBox Margin="0,6,0,14" Content="{ui:Loc 'Back up my saves each time I start the game here'}"
-                          IsChecked="{Binding BackUpSavesOnLaunch}" />
-                <WrapPanel>
-                    <Button Margin="0,0,8,8" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Choose save folder…'}" ui:Icon.Glyph="&#xE838;"
-                            Command="{Binding ChooseSaveFolderCommand}" />
-                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Back up now'}" ui:Icon.Glyph="&#xE896;" Command="{Binding BackUpSavesNowCommand}" />
-                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Open save folder'}" Command="{Binding OpenSaveFolderCommand}" />
-                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Open save backups'}" ui:Icon.Glyph="&#xE81C;" Command="{Binding OpenSaveBackupsCommand}" />
-                </WrapPanel>
             </StackPanel>
         </Border>
 

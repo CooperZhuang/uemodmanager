@@ -4,6 +4,14 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.1.0 (2026-11-12)
+- Backups has a page of its own in the menu: the save folder, the backup at launch and Back up now, with the backups in two columns
+- Normal backups: a slider sets how many the app keeps, 2 to 20 (6 by default); the oldest go only after the next backup (thanks, EstusFlask)
+- Personal backups: the green arrow moves a backup there, where the app never removes it and it does not count; the red arrow moves it back
+- A note on every backup, such as "Before the final boss", and a note field next to Back up now
+- A backup you do not need can be deleted, after a question
+- A tighter menu, no subtexts under the page titles, and the version as About's title
+
 ## 2.0.0 (2026-11-11)
 - One app for several games: Black Myth: Wukong and Phantom Blade Zero, and Stellar Blade: Blood Rain to peek at its look before the game is out
 - Choose your game at the first start or with Switch game in the title bar; Settings can ask for the game at every start, and the picker has a message from the developer

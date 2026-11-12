@@ -2,6 +2,14 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.1.0 (2026-11-12)
+- Sao lưu có trang riêng trong menu: thư mục bản lưu, sao lưu khi khởi động game và Sao lưu ngay, các bản sao lưu hiển thị thành hai cột
+- Bản sao lưu thường: thanh trượt đặt số bản ứng dụng giữ lại, từ 2 đến 20 (mặc định 6); bản cũ nhất chỉ bị xóa sau lần sao lưu tiếp theo (cảm ơn EstusFlask)
+- Bản sao lưu cá nhân: mũi tên xanh chuyển một bản sao lưu sang đây, nơi ứng dụng không bao giờ xóa nó và nó không tính vào số lượng; mũi tên đỏ chuyển nó về
+- Ghi chú cho từng bản sao lưu, ví dụ "Trước trùm cuối", và ô ghi chú bên cạnh Sao lưu ngay
+- Có thể xóa bản sao lưu không cần nữa, sau khi xác nhận
+- Menu gọn hơn, các trang không còn dòng mô tả dưới tiêu đề, và trang Giới thiệu lấy phiên bản làm tiêu đề
+
 ## 2.0.0 (2026-11-11)
 - Một ứng dụng cho nhiều game: Black Myth: Wukong và Phantom Blade Zero, cùng Stellar Blade: Blood Rain để xem thử giao diện trước khi game ra mắt
 - Chọn game khi khởi động lần đầu hoặc bằng Đổi game trên thanh tiêu đề; Cài đặt có thể luôn hỏi chọn game khi khởi động, và màn hình chọn game có lời nhắn từ nhà phát triển

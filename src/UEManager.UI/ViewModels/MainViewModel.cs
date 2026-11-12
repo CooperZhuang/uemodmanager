@@ -22,9 +22,6 @@ public sealed record ToastMessage(string Text, bool IsError, string? ActionText 
     public string Tone => IsError ? "bad" : "good";
 }
 
-/// <summary>A save backup: its file, and when it was made and how big it is.</summary>
-public sealed record SaveBackupItem(string Path, string Text);
-
 public sealed partial class MainViewModel : LocalizedObservableObject
 {
     private readonly AppPaths paths;
@@ -70,7 +67,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         ue4ssManifestUrls = ue4ssManifestUrl is null ? profile.Ue4ssManifestUrls : [ue4ssManifestUrl];
         Art = art;
         settings = AppSettings.Load(paths);
-        saveBackupKeepText = settings.SaveBackupKeep.ToString();
         CreateCatalog(catalogUrl);
         Update = new AppUpdateViewModel(this, Http, paths, updateUrl is null ? AppInfo.LatestReleaseUrls : [updateUrl],
             AppInfo.ReleaseFileName);
@@ -235,7 +231,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     public string GameDisplayName => L.T(Profile.DisplayName);
 
-    public string GameTagline => L.T(Profile.Tagline ?? "");
 
     /// <summary>The line above the game's name on the Home page: the game's own, or a plain one.</summary>
     public string GameMotto => Profile.Motto is { Length: > 0 } motto ? L.T(motto) : L.T("Ready to mod");
@@ -372,8 +367,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public string TypeSortGlyph => SortGlyph(ModSortField.Type);
 
     public string IntegritySortGlyph => SortGlyph(ModSortField.Integrity);
-
-    public string AppName => AppInfo.Name;
 
     /// <summary>The taskbar title; the game tells builds for different games apart.</summary>
     public string WindowTitle => $"{AppInfo.Name} · {GameDisplayName}";
@@ -537,11 +530,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
-    /// <summary>All save backups, newest first, for the management window.</summary>
-    public IReadOnlyList<SaveBackupItem> SaveBackupList => SaveBackups.List(paths.SaveBackupDir(Profile.Id))
-        .Select(path => new SaveBackupItem(path, $"{File.GetLastWriteTime(path):G}  ·  {Format.Size(new FileInfo(path).Length)}"))
-        .ToList();
-
     public string SaveBackupsText
     {
         get
@@ -549,7 +537,10 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             var backups = SaveBackups.List(paths.SaveBackupDir(Profile.Id));
             return backups.Count == 0
                 ? L.T("None yet")
-                : L.F($"{backups.Count} of {SaveBackupKeep} kept  ·  newest {File.GetLastWriteTime(backups[0]):g}");
+                : backups.Count <= SaveBackupKeep
+                    ? L.F($"{backups.Count} of {SaveBackupKeep} kept  ·  newest {File.GetLastWriteTime(backups[0]):g}")
+                    // The number was lowered: the oldest go with the next backup.
+                    : L.F($"{backups.Count} backups, {SaveBackupKeep} after the next backup  ·  newest {File.GetLastWriteTime(backups[0]):g}");
         }
     }
 
@@ -1345,6 +1336,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (newValue == "Ue4ss")
             _ = RefreshUe4ssLogAsync();
+        // The backup folder may have changed outside the app, such as a backup deleted by hand.
+        if (newValue == "SaveBackups")
+            RefreshSaveBackups();
     }
 
     [RelayCommand]
@@ -1509,9 +1503,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             return;
         }
         string? backup = null;
+        var note = NewSaveBackupNote;
         if (await RunAsync(L.T("Backing up your saves…"),
-                async () => backup = await Task.Run(() => SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep))))
+                async () => backup = await Task.Run(() => SaveBackups.Create(saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep, note))))
+        {
             ShowToast(L.F($"Saves backed up to {backup}."));
+            NewSaveBackupNote = "";
+        }
         RefreshSaveBackups();
     }
 
