@@ -759,6 +759,10 @@ UEModManager.exe --cli install <archive|folder> --yes
 UEModManager.exe --cli enable <mod> | disable <mod>
 UEModManager.exe --cli uninstall <mod> --yes
 UEModManager.exe --cli backup list | create | restore | personal | note | delete
+UEModManager.exe --cli ue4ss status [--check]
+UEModManager.exe --cli ue4ss install [--package <file>] [--version <tag>]
+UEModManager.exe --cli ue4ss update
+UEModManager.exe --cli ue4ss remove --yes
 ```
 
 - `--json` gives one JSON object with stable fields; `--data-dir`, `--game` and
@@ -770,15 +774,17 @@ UEModManager.exe --cli backup list | create | restore | personal | note | delete
   for `create` only, as a restore empties the folder it fills. `--keep` takes
   the app's values, 2 to 20 in steps of 2. `restore` refuses while the game
   runs (`SaveBackups.CanRestoreNow`, which the app uses too).
-- `install` and `uninstall` without `--yes` only show what they would do, with
-  exit code 2; so do `backup restore` and `backup delete`. Exit code 1 is an
-  error, on stderr.
+- `install`, `uninstall` and `ue4ss remove` without `--yes` only show what they
+  would do, with exit code 2; so do `backup restore` and `backup delete`. Exit
+  code 1 is an error, on stderr.
 - The data folder is `--data-dir`, else `UEMM_DATA_DIR`, else the `Data` folder
   beside `UEModManager.exe`, where the app keeps it.
-- `plan`, `install`, `enable`, `disable` and `uninstall` refuse while the app is
-  open with the same data folder: both take the data folder's lock
-  (`DataFolderLock`), as two programs would overwrite each other's mod list. The
-  `backup` commands that change the data folder take that lock too.
+- `plan`, `install`, `enable`, `disable`, `uninstall`, `ue4ss install`,
+  `ue4ss update` and `ue4ss remove` refuse while the app is open with the same
+  data folder: both take the data folder's lock (`DataFolderLock`), as two
+  programs would overwrite each other's mod list. The `backup` commands that
+  change the data folder take that lock too. `ue4ss status` reads only, so it
+  works beside the open app.
 - Which parts of a download it takes is the install review's first selection
   (`ModManager.FirstSelection`), so the tool and the app agree.
 - `--part <index|name>` takes only the named parts of a download: by the plan's
@@ -798,6 +804,23 @@ UEModManager.exe --cli backup list | create | restore | personal | note | delete
 - `--staging <folder>` unpacks the download there instead of the data folder's
   `staging` folder, for example on a drive with more room. It must be outside
   the game folder.
+- `ue4ss status` reads the data folder's `ue4ss.json` record and UE4SS's own
+  files; `--check` also reads the manifest, online, to say whether a newer
+  release exists.
+- `ue4ss install` downloads the release the game profile's manifest names, from
+  the first address that answers, into the data folder's staging folder (or
+  `--staging <folder>`), checks its SHA-256, and installs it with the Core's
+  `ModManager.InstallUe4ss`; `--package` takes a local zip, 7z file or folder
+  instead, which also works offline, and `--version` names the version recorded
+  for it. Without `--package`, `--version` must be the release the manifest
+  names. An install over an installed UE4SS is an update.
+- `ue4ss update` installs the manifest's release only when it differs from the
+  installed one; when it does not, it says so and exits 0 without downloading.
+- `ue4ss remove` without `--yes` lists the folders and files it would remove and
+  the enabled mods that would be disabled; with `--yes` it removes UE4SS and
+  disables those mods, which stay in the library, as the app does. A failed
+  manifest read, download or checksum is an error with exit code 1, and no
+  temporary download is left behind.
 - `UEModManager.exe` is a window program, so a terminal does not wait for it.
   Pipe the output (`... --cli list | more`, in PowerShell `| Out-String`), use
   `start /wait` in cmd or `Start-Process -Wait` in PowerShell. Scripts that wait

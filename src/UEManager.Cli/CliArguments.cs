@@ -8,13 +8,16 @@ internal sealed class CliArguments
 {
     /// <summary>Options that take a value: "--data-dir C:\Games\UEMM\Data" or "--data-dir=C:\Games\UEMM\Data".</summary>
     private static readonly string[] ValueOptions =
-        ["--data-dir", "--game", "--game-root", "--staging", "--part", "--save-folder", "--note", "--keep"];
+    [
+        "--data-dir", "--game", "--game-root", "--staging", "--part", "--save-folder", "--note", "--keep", "--package",
+        "--manifest-url",
+    ];
 
     /// <summary>Value options that may be given more than once, such as "--part 1 --part Extras".</summary>
     private static readonly string[] RepeatableOptions = ["--part"];
 
     private static readonly string[] FlagOptions =
-        ["--json", "--yes", "--all-parts", "--keep-both", "--help", "--version", "--on", "--off", "--clear"];
+        ["--json", "--yes", "--all-parts", "--keep-both", "--check", "--help", "--version", "--on", "--off", "--clear"];
 
     public string Command { get; private set; } = "";
 
@@ -40,13 +43,18 @@ internal sealed class CliArguments
     /// <summary>Keep an installed mod that the download would replace, and install the download beside it.</summary>
     public bool KeepBoth => Flags.Contains("--keep-both");
 
+    public bool Check => Flags.Contains("--check");
+
     public string? DataDir => Values.GetValueOrDefault("--data-dir");
 
     public string? Game => Values.GetValueOrDefault("--game");
 
     public string? GameRoot => Values.GetValueOrDefault("--game-root");
 
-    /// <summary>Where to unpack the download instead of the data folder's staging folder; null for the default.</summary>
+    /// <summary>
+    /// Where to unpack the download (plan, install) or download UE4SS's release (ue4ss install, update) instead of the
+    /// data folder's staging folder; null for the default.
+    /// </summary>
     public string? Staging => Values.GetValueOrDefault("--staging");
 
     /// <summary>The parts named by --part, in the order given; empty for the plan's default selection.</summary>
@@ -70,6 +78,15 @@ internal sealed class CliArguments
     /// <summary>backup note: remove the note instead of setting one.</summary>
     public bool Clear => Flags.Contains("--clear");
 
+    /// <summary>The release package UE4SS is installed from, when it is a file on this PC instead of the manifest's.</summary>
+    public string? Package => Values.GetValueOrDefault("--package");
+
+    /// <summary>The release version to record: with --package it names a package whose file name does not, else the manifest's.</summary>
+    public string? VersionTag => Values.GetValueOrDefault("--version");
+
+    /// <summary>A test copy of the UE4SS manifest, read instead of the game profile's addresses.</summary>
+    public string? ManifestUrl => Values.GetValueOrDefault("--manifest-url");
+
     /// <exception cref="CliError">An option is unknown or lacks its value.</exception>
     public static CliArguments Parse(string[] args)
     {
@@ -82,7 +99,21 @@ internal sealed class CliArguments
                 var equals = arg.IndexOf('=');
                 var name = equals < 0 ? arg : arg[..equals];
                 var inline = equals < 0 ? null : arg[(equals + 1)..];
-                if (ValueOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
+                if (name.Equals("--version", StringComparison.OrdinalIgnoreCase) && (inline is not null || parsed.Command.Length > 0))
+                {
+                    // After a command "--version <tag>" is the command's release version; before one it stays the
+                    // CLI's own version, so "UEModManager.exe --cli --version" still prints that.
+                    var tag = inline;
+                    if (tag is null)
+                    {
+                        if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+                            throw new CliError("invalid-arguments", "Option '--version' needs a value.",
+                                details: [$"Example: {parsed.Command} --version v3.0.1-1181-g83330635"]);
+                        tag = args[++i];
+                    }
+                    parsed.Values[name] = tag;
+                }
+                else if (ValueOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
                 {
                     var value = inline;
                     if (value is null)

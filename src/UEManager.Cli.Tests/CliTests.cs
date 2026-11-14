@@ -133,6 +133,15 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void The_cli_version_is_still_printed_for_version_alone()
+    {
+        var (code, output, _) = Raw("--version");
+
+        Assert.Equal(0, code);
+        Assert.Contains("UEModManager --cli", output);
+    }
+
+    [Fact]
     public void A_mod_installs_after_its_plan_and_turns_off_on_and_goes()
     {
         var pak = Path.Combine(ModsFolder, "MyMod_P.pak");

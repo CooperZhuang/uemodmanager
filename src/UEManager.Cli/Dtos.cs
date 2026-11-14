@@ -88,3 +88,31 @@ internal sealed record BackupNotePayload(int SchemaVersion, string Command, stri
 
 internal sealed record BackupDeletePayload(int SchemaVersion, string Command, string DataDir, string GameId, bool Confirmed,
     SaveBackupDto Backup);
+
+/// <summary>The UE4SS release a command used, or the one the manifest names: where it came from and what it is.</summary>
+internal sealed record Ue4ssReleaseDto(string Version, string FileName, string Url, string? Sha256, string? ManifestUrl);
+
+/// <summary>
+/// The UE4SS in the game, as `ue4ss status` reports it. `version` is the recorded release, else the one UE4SS's own
+/// files name; `managed` says whether the manager's record, with its file list, is there. The manifest is read only
+/// with --check, so `updateChecked` is false and the update fields are null otherwise.
+/// </summary>
+internal sealed record Ue4ssStatusPayload(int SchemaVersion, string Command, string GameId, string DataDir,
+    string RecordFile, bool RecordExists, bool Installed, string? Version, string? VersionSource, bool Managed,
+    string? Source, DateTimeOffset? InstalledAt, int FilesRecorded, string? Folder, string? ModsPath,
+    bool UpdateChecked, string? LatestVersion, bool? UpdateAvailable, string? ManifestUrl, IReadOnlyList<string> Warnings);
+
+/// <summary>
+/// What `ue4ss install` or `ue4ss update` did: "installed", "updated", or "up-to-date" when the manifest names the
+/// installed release and nothing was downloaded.
+/// </summary>
+internal sealed record Ue4ssInstallPayload(int SchemaVersion, string Command, string GameId, string Action,
+    Ue4ssReleaseDto? Release, string? Package, string? Version, string? PreviousVersion, string TargetFolder,
+    int FilesWritten, bool Updated, IReadOnlyList<string> KeptFiles, IReadOnlyList<string> RemovedFiles);
+
+/// <summary>An installed mod the removal would turn off, or turned off: it stays in the library.</summary>
+internal sealed record Ue4ssModRefDto(string Id, string Name);
+
+/// <summary>What `ue4ss remove` did, or, with --json and without --yes, what it would remove.</summary>
+internal sealed record Ue4ssRemovePayload(int SchemaVersion, string Command, string GameId, bool Confirmed,
+    bool Installed, string? Version, string? Folder, IReadOnlyList<string> Paths, IReadOnlyList<Ue4ssModRefDto> DisabledMods);
