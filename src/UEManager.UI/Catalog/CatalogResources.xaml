@@ -9,7 +9,9 @@
          else it has none of them. -->
     <ui:PageConverter x:Key="CatalogPageConverter" />
 
+    <!-- The globe in the openmods teal, as on the site's link button, so the entry stands out a little (the user's choice). -->
     <RadioButton x:Key="CatalogNavItem" x:Shared="False" Style="{DynamicResource NavItem}" Content="openmods" ui:Icon.Glyph="&#xE774;"
+                 ui:Icon.Brush="{DynamicResource Brush.OpenMods}"
                  IsChecked="{Binding SelectedPage, Converter={StaticResource CatalogPageConverter}, ConverterParameter=Catalog}" />
 
     <catalog:CatalogView x:Key="CatalogPage" x:Shared="False" DataContext="{Binding Catalog}" />

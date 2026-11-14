@@ -19,6 +19,8 @@ public class LocalizerTests
         Assert.Equal(L.English, L.Current.Languages[0].Code);
         Assert.Contains(L.Current.Languages, language => language is { Code: "zh-CN", Name: "简体中文" });
         Assert.Contains(L.Current.Languages, language => language is { Code: "zh-TW", Name: "繁體中文" });
+        Assert.Contains(L.Current.Languages, language => language is { Code: "ja", Name: "日本語" });
+        Assert.Contains(L.Current.Languages, language => language is { Code: "ko", Name: "한국어" });
     }
 
     [Theory]
@@ -27,6 +29,8 @@ public class LocalizerTests
     [InlineData("zh-TW", "zh-TW")]
     [InlineData("zh-HK", "zh-TW")]
     [InlineData("zh-Hant", "zh-TW")]
+    [InlineData("ja-JP", "ja")]
+    [InlineData("ko-KR", "ko")]
     [InlineData("en-GB", "en")]
     [InlineData("de-DE", "en")]
     public void Windows_gets_the_closest_language_the_app_has(string windows, string expected) =>

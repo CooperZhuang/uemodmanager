@@ -11,7 +11,11 @@ public class LanguageFontsTests
     [InlineData("zh-CN", "Segoe UI, Microsoft YaHei UI")]
     [InlineData("vi", "Segoe UI, Microsoft YaHei UI")]
     [InlineData("en", "Segoe UI, Microsoft YaHei UI")]
-    public void Traditional_Chinese_gets_the_Taiwan_font(string language, string expected) =>
+    [InlineData("ja", "Segoe UI, Yu Gothic UI")]
+    [InlineData("ja-JP", "Segoe UI, Yu Gothic UI")]
+    [InlineData("ko", "Segoe UI, Malgun Gothic")]
+    [InlineData("ko-KR", "Segoe UI, Malgun Gothic")]
+    public void Each_language_gets_its_font(string language, string expected) =>
         Assert.Equal(expected, LanguageFonts.For(new FontFamily("Segoe UI, Microsoft YaHei UI"), language).Source);
 
     [Fact]

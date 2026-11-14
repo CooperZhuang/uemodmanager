@@ -795,12 +795,18 @@
                         <Rectangle x:Name="Bar" Width="2" Margin="12,9" HorizontalAlignment="Left"
                                    Fill="{StaticResource Brush.Accent}" Visibility="Hidden" />
                         <StackPanel Orientation="Horizontal" Margin="28,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource Text.Icon}" FontSize="15" Width="30"
+                            <!-- The icon takes its own color when the entry gives one (ui:Icon.Brush), else the text's. -->
+                            <TextBlock x:Name="Glyph" Style="{StaticResource Text.Icon}" FontSize="15" Width="30"
+                                       Foreground="{Binding (ui:Icon.Brush), RelativeSource={RelativeSource TemplatedParent}}"
                                        Text="{Binding (ui:Icon.Glyph), RelativeSource={RelativeSource TemplatedParent}}" />
                             <ContentPresenter VerticalAlignment="Center" />
                         </StackPanel>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="ui:Icon.Brush" Value="{x:Null}">
+                            <Setter TargetName="Glyph" Property="Foreground"
+                                    Value="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
                             <Setter TargetName="Fill" Property="Background" Value="{StaticResource Brush.Hover}" />

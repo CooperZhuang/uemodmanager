@@ -101,4 +101,15 @@ public static class Icon
     public static string? GetGlyph(DependencyObject element) => (string?)element.GetValue(GlyphProperty);
 
     public static void SetGlyph(DependencyObject element, string? value) => element.SetValue(GlyphProperty, value);
+
+    /// <summary>
+    /// A color of the icon's own, in every state of the control, where the navigation template supports it: the
+    /// openmods entry's globe in the openmods teal, so the entry stands out a little. Null: the icon takes the text's color.
+    /// </summary>
+    public static readonly DependencyProperty BrushProperty = DependencyProperty.RegisterAttached(
+        "Brush", typeof(Brush), typeof(Icon), new FrameworkPropertyMetadata(null));
+
+    public static Brush? GetBrush(DependencyObject element) => (Brush?)element.GetValue(BrushProperty);
+
+    public static void SetBrush(DependencyObject element, Brush? value) => element.SetValue(BrushProperty, value);
 }
