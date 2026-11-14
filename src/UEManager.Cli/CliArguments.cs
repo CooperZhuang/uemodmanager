@@ -7,15 +7,22 @@ namespace UEManager.Cli;
 internal sealed class CliArguments
 {
     /// <summary>Options that take a value: "--data-dir C:\Games\UEMM\Data" or "--data-dir=C:\Games\UEMM\Data".</summary>
-    private static readonly string[] ValueOptions = ["--data-dir", "--game", "--game-root"];
+    private static readonly string[] ValueOptions = ["--data-dir", "--game", "--game-root", "--staging", "--part"];
 
-    private static readonly string[] FlagOptions = ["--json", "--yes", "--all-parts", "--help", "--version"];
+    /// <summary>Value options that may be given more than once, such as "--part 1 --part Extras".</summary>
+    private static readonly string[] RepeatableOptions = ["--part"];
+
+    private static readonly string[] FlagOptions =
+        ["--json", "--yes", "--all-parts", "--keep-both", "--help", "--version"];
 
     public string Command { get; private set; } = "";
 
     public List<string> Positionals { get; } = [];
 
     public Dictionary<string, string> Values { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Values of a repeatable option, in the order they were given.</summary>
+    public Dictionary<string, List<string>> Lists { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> Flags { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -29,11 +36,20 @@ internal sealed class CliArguments
 
     public bool AllParts => Flags.Contains("--all-parts");
 
+    /// <summary>Keep an installed mod that the download would replace, and install the download beside it.</summary>
+    public bool KeepBoth => Flags.Contains("--keep-both");
+
     public string? DataDir => Values.GetValueOrDefault("--data-dir");
 
     public string? Game => Values.GetValueOrDefault("--game");
 
     public string? GameRoot => Values.GetValueOrDefault("--game-root");
+
+    /// <summary>Where to unpack the download instead of the data folder's staging folder; null for the default.</summary>
+    public string? Staging => Values.GetValueOrDefault("--staging");
+
+    /// <summary>The parts named by --part, in the order given; empty for the plan's default selection.</summary>
+    public IReadOnlyList<string> Parts => Lists.TryGetValue("--part", out var parts) ? parts : [];
 
     /// <exception cref="CliError">An option is unknown or lacks its value.</exception>
     public static CliArguments Parse(string[] args)
@@ -56,7 +72,16 @@ internal sealed class CliArguments
                             throw new CliError("invalid-arguments", $"Option '{name}' needs a value.", details: [$"Example: {name} <folder>"]);
                         value = args[++i];
                     }
-                    parsed.Values[name] = value;
+                    if (RepeatableOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (!parsed.Lists.TryGetValue(name, out var list))
+                            parsed.Lists[name] = list = [];
+                        list.Add(value);
+                    }
+                    else
+                    {
+                        parsed.Values[name] = value;
+                    }
                 }
                 else if (FlagOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
                 {
@@ -115,7 +140,8 @@ internal sealed class CliArguments
     {
         foreach (var flag in Flags.Where(f => !f.Equals("--help", StringComparison.OrdinalIgnoreCase) && !flags.Contains(f, StringComparer.OrdinalIgnoreCase)))
             throw new CliError("invalid-arguments", $"Option '{flag}' does not belong to '{Command}'.", details: ["Run --help for the usage."]);
-        foreach (var value in Values.Keys.Where(v => !values.Contains(v, StringComparer.OrdinalIgnoreCase)))
+        foreach (var value in Values.Keys.Concat(Lists.Keys)
+                     .Where(v => !values.Contains(v, StringComparer.OrdinalIgnoreCase)))
             throw new CliError("invalid-arguments", $"Option '{value}' does not belong to '{Command}'.", details: ["Run --help for the usage."]);
     }
 }
