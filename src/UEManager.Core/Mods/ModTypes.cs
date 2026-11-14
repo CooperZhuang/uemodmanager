@@ -1,6 +1,6 @@
 namespace UEManager.Core.Mods;
 
-/// <summary>Short type names for the interface: PAK, IoStore, Blueprint, UE4SS Lua, UE4SS DLL, UE4SS files, PBZModLoader, game files, exe files.</summary>
+/// <summary>Short type names for the interface: PAK (with or without IoStore files), Blueprint, UE4SS Lua, UE4SS DLL, UE4SS files, PBZModLoader, game files, exe files.</summary>
 public static class ModTypes
 {
     /// <summary>A folder for UE4SS's Mods folder without code (<see cref="PackageKind.Ue4ssFolder"/>), on its own.</summary>
@@ -51,7 +51,8 @@ public static class ModTypes
             return "Blueprint";
         if (list.All(f => f.Target == DeployTarget.Ue4ssMods) && list.Count > 0)
             return Ue4ssFiles;
-        return list.Any(f => FileSystem.HasExtension(f.Path, FileSystem.IoStoreExtensions)) ? "IoStore" : "PAK";
+        // A .pak alone, or with the .utoc and .ucas of Unreal Engine 5 (IoStore): players call both a pak mod.
+        return "PAK";
     }
 
     /// <summary>

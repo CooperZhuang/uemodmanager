@@ -70,6 +70,9 @@ public sealed class AppSettings
 
     public bool CatalogSortDescending { get; set; }
 
+    /// <summary>The openmods page hides the mods and tools the player installed from it. Off until the player turns it on.</summary>
+    public bool CatalogHideInstalled { get; set; }
+
     /// <summary>The player removed the Donate button from the sidebar. The About page keeps it.</summary>
     public bool HideDonateButton { get; set; }
 
@@ -81,6 +84,12 @@ public sealed class AppSettings
 
     /// <summary>The X hides the window in the tray instead of closing the app; only with both settings above on.</summary>
     public bool CloseToTray { get; set; }
+
+    /// <summary>
+    /// The app has no taskbar button, only the tray icon; minimize then always hides the window in the tray. Off until
+    /// the player turns it on; only with the tray icon, so the window can always come back.
+    /// </summary>
+    public bool TrayIconOnly { get; set; }
 
     /// <summary>Where the main window was when it last closed; null opens it centred at its default size.</summary>
     public WindowPlacement? Window { get; set; }

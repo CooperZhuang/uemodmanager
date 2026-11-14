@@ -4,6 +4,21 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.2.0 (2026-11-14)
+- The openmods page: the open-source mods listed for your game on openmods.nexus, with search, sort and a one-click install or update
+- openmods: a Mods | Tools switch, the type on every card with a type filter, and Hide installed to leave out what you already have
+- openmods: Full view shows the page over the whole window as a grid of cards, and MOD TYPE INFO explains each type
+- On the Mods page, a mod installed from openmods links to its page there, in orange, and its update installs with one click
+- Japanese and Korean
+- Pak mods with .utoc and .ucas files are PAK too, and mods in PBZModLoader's mods folder have their own type, PBZModLoader
+- A PBZModLoader mod's data files are its settings: you can edit them, an update keeps them, and an uninstall backs them up
+- Settings ▸ Tray icon: Tray icon only, without a taskbar button
+- No flash at start: the window shows once it is drawn
+- Window and popup shadows, and a dimmer border while the window is not in front (thanks, HumanMus1c)
+- Show files no longer lists a settings file that a mod writes beside its own (thanks, CooperZhuang)
+- UEModManager.exe --cli: list, install, enable, disable and uninstall mods, back up saves and manage UE4SS from scripts (thanks, CooperZhuang)
+- The update check of mods with a mod page reads versions such as 0.5.2.withHP and 1.2a correctly (thanks, HumanMus1c, for the report)
+
 ## 2.1.0 (2026-11-12)
 - Backups has a page of its own in the menu: the save folder, the backup at launch and Back up now, with the backups in two columns
 - Normal backups: a slider sets how many the app keeps, 2 to 20 (6 by default); the oldest go only after the next backup (thanks, EstusFlask)

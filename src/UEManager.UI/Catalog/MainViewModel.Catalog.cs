@@ -20,7 +20,7 @@ public sealed partial class MainViewModel
         if (AppInfo.IsCatalogOn)
             Catalog = new CatalogViewModel(this, Http, catalogUrl ?? OpenMods.GamesListUrl, Profile.SteamAppId, isTest: catalogUrl is not null,
                 Enum.TryParse<CatalogSortField>(settings.CatalogSort, out var sort) ? sort : CatalogSortField.Updated,
-                settings.CatalogSort is null || settings.CatalogSortDescending);
+                settings.CatalogSort is null || settings.CatalogSortDescending, settings.CatalogHideInstalled);
     }
 
     partial void OnModsChanged() => Catalog?.UpdateInstalled(manager?.Mods ?? []);
@@ -35,6 +35,12 @@ public sealed partial class MainViewModel
     {
         settings.CatalogSort = field.ToString();
         settings.CatalogSortDescending = descending;
+        SaveSettings();
+    }
+
+    internal void SaveCatalogHideInstalled(bool hide)
+    {
+        settings.CatalogHideInstalled = hide;
         SaveSettings();
     }
 

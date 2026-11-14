@@ -1043,6 +1043,49 @@
         </Setter>
     </Style>
 
+    <!-- The same on/off switch with its words beside it, such as "Hide installed"; a click on the words switches too. -->
+    <Style x:Key="Toggle.Labeled" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Background="Transparent" Orientation="Horizontal">
+                        <Border x:Name="Track" Width="36" Height="18" CornerRadius="9" VerticalAlignment="Center"
+                                Background="{StaticResource Brush.Field}"
+                                BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1">
+                            <Ellipse x:Name="Knob" Width="10" Height="10" Margin="3,0"
+                                     HorizontalAlignment="Left" Fill="{StaticResource Brush.TextDim}" />
+                        </Border>
+                        <ContentPresenter x:Name="Words" Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="False" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.TextMuted}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Brush.Accent}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                            <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Knob" Property="Fill" Value="{StaticResource Brush.OnAccent}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Square check box for package selection. -->
     <Style TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />

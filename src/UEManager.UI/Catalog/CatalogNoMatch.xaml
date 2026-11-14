@@ -13,6 +13,8 @@
         <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.Title}" Text="{Binding NoMatchTitle}" />
         <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding NoMatchText}"
                    Visibility="{Binding NoMatchText, Converter={StaticResource VisibleIfSet}}" />
+        <Button Margin="0,14,0,0" HorizontalAlignment="Center" Content="{ui:Loc 'Show installed'}" ui:Icon.Glyph="&#xE7B3;"
+                Command="{Binding ShowInstalledCommand}" Visibility="{Binding ShowInstalledHint, Converter={StaticResource Visible}}" />
         <Button Margin="0,14,0,0" HorizontalAlignment="Center" Content="{ui:Loc 'Show all types'}" ui:Icon.Glyph="&#xE71C;"
                 Command="{Binding ShowAllTypesCommand}" Visibility="{Binding ShowAllTypesHint, Converter={StaticResource Visible}}" />
         <Button Margin="0,14,0,0" HorizontalAlignment="Center" Content="{Binding SwitchText}" ui:Icon.Glyph="&#xE8AB;"

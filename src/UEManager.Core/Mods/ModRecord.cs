@@ -54,7 +54,7 @@ public sealed class ModRecord
 
     public List<ModFileRecord> Files { get; set; } = [];
 
-    /// <summary>Short type name for the interface, such as IoStore or UE4SS Lua. A settings file the mod made says nothing about it.</summary>
+    /// <summary>Short type name for the interface, such as PAK or UE4SS Lua. A settings file the mod made says nothing about it.</summary>
     [JsonIgnore]
     public string TypeLabel => ModTypes.Label(Files.Where(f => !f.Made).Select(f => (f.Target, f.FileName)));
 

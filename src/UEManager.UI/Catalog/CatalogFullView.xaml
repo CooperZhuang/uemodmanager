@@ -12,6 +12,11 @@
     <UserControl.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding ExitFullViewCommand}" />
     </UserControl.InputBindings>
+    <UserControl.Resources>
+        <!-- A card's Page and Source buttons: with their words when the action leaves room, else icons alone. -->
+        <ui:RoomConverter x:Key="RoomForWords" />
+        <ui:RoomConverter x:Key="NoRoomForWords" Invert="True" />
+    </UserControl.Resources>
 
     <!-- The openmods page over the whole window: the menu and the page stay below, out of sight. -->
     <Grid Background="{StaticResource Brush.Ink}">
@@ -134,26 +139,52 @@
                                                        Visibility="{Binding Summary, Converter={StaticResource VisibleIfSet}}" />
                                         </StackPanel>
 
-                                        <!-- The same actions as on the page, at the bottom of every card. -->
-                                        <DockPanel Grid.Row="2" Margin="18,14,18,16">
-                                            <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
-                                                <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
-                                                        Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
-                                                        ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
-                                                <Button Margin="4,0,0,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE943;" Command="{Binding OpenSourceCommand}"
-                                                        Visibility="{Binding HasSource, Converter={StaticResource Visible}}" ToolTip="{Binding Mod.Source}" />
-                                            </StackPanel>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <Button HorizontalAlignment="Left" Style="{StaticResource Button.Primary}" Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
-                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
-                                                <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding StatusText, Converter={StaticResource VisibleIfSet}}">
-                                                    <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
-                                                               Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />
-                                                    <TextBlock FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                               Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusText}" />
+                                        <!--
+                                            The same actions as on the page, at the bottom of every card: the action, and the page's Page
+                                            and Source buttons. A long action on a narrow card, such as "Update to v4.0.0", leaves no room
+                                            for their words: then they are icons alone. The status gets a line of its own below.
+                                        -->
+                                        <StackPanel Grid.Row="2" Margin="18,14,18,16">
+                                            <DockPanel x:Name="ActionRow">
+                                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                                                    <StackPanel.Visibility>
+                                                        <MultiBinding Converter="{StaticResource RoomForWords}" ConverterParameter="160">
+                                                            <Binding ElementName="ActionRow" Path="ActualWidth" />
+                                                            <Binding ElementName="Action" Path="ActualWidth" />
+                                                        </MultiBinding>
+                                                    </StackPanel.Visibility>
+                                                    <Button Padding="8,3" FontSize="12" Content="{ui:Loc 'Page'}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
+                                                            Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
+                                                            ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
+                                                    <Button Margin="6,0,0,0" Padding="8,3" FontSize="12" Content="{ui:Loc 'Source'}" ui:Icon.Glyph="&#xE943;"
+                                                            Command="{Binding OpenSourceCommand}" Visibility="{Binding HasSource, Converter={StaticResource Visible}}"
+                                                            ToolTip="{Binding Mod.Source}" />
                                                 </StackPanel>
-                                            </StackPanel>
-                                        </DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                                                    <StackPanel.Visibility>
+                                                        <MultiBinding Converter="{StaticResource NoRoomForWords}" ConverterParameter="160">
+                                                            <Binding ElementName="ActionRow" Path="ActualWidth" />
+                                                            <Binding ElementName="Action" Path="ActualWidth" />
+                                                        </MultiBinding>
+                                                    </StackPanel.Visibility>
+                                                    <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
+                                                            Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
+                                                            ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
+                                                    <Button Margin="4,0,0,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE943;" Command="{Binding OpenSourceCommand}"
+                                                            Visibility="{Binding HasSource, Converter={StaticResource Visible}}" ToolTip="{Binding Mod.Source}" />
+                                                </StackPanel>
+                                                <Button x:Name="Action" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                                                        Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
+                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
+                                            </DockPanel>
+                                            <DockPanel Margin="0,6,0,0" Visibility="{Binding StatusText, Converter={StaticResource VisibleIfSet}}">
+                                                <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
+                                                           Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />
+                                                <TextBlock FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusText}"
+                                                           ToolTip="{Binding StatusText}" />
+                                            </DockPanel>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

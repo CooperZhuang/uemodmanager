@@ -30,7 +30,7 @@ public sealed class ModListStateSortTests : IDisposable
         new(new GameProfile { Id = "test", DisplayName = "Phantom Blade Zero" }, paths, new ArtSet(null, null));
 
     /// <summary>
-    /// Alpha: on, a pak in place. Bravo: off, IoStore. Charlie: on, its pak is gone. Delta: off, a game file.
+    /// Alpha: on, a pak in place. Bravo: off, a pak with IoStore files. Charlie: on, its pak is gone. Delta: off, a game file.
     /// Alpha and Bravo have the tag Combat.
     /// </summary>
     private void Fill(MainViewModel model)
@@ -135,8 +135,9 @@ public sealed class ModListStateSortTests : IDisposable
     {
         model.SortByCommand.Execute(ModSortField.Type);
 
-        Assert.Equal(["Delta", "Bravo", "Alpha", "Charlie"], Shown(model));
-        Assert.Equal(["Game files", "IoStore", "PAK", "PAK"], model.ModsView.Cast<ModItemViewModel>().Select(mod => mod.KindText));
+        // A pak with IoStore files is PAK too, so the three paks go by their names.
+        Assert.Equal(["Delta", "Alpha", "Bravo", "Charlie"], Shown(model));
+        Assert.Equal(["Game files", "PAK", "PAK", "PAK"], model.ModsView.Cast<ModItemViewModel>().Select(mod => mod.KindText));
     });
 
     [Fact]

@@ -282,7 +282,7 @@
             <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;"
                     Command="{Binding RefreshCommand}" ToolTip="F5" />
             <TextBox x:Name="SearchBox" Style="{StaticResource TextBox.Search}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ctrl+F"
-                     Tag="{ui:Loc 'Filter: mod name, version, PAK / IoStore, file name or tag'}" />
+                     Tag="{ui:Loc 'Filter: mod name, version, type, file name or tag'}" />
         </DockPanel>
 
         <!-- Which mods the list shows: by their state, and by the player's tags once a mod has one. -->

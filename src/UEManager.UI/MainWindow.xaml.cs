@@ -38,11 +38,13 @@ public partial class MainWindow : Window
         // Ctrl+F and F5, the keys of these commands, while no dialog covers the window.
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Find, (_, _) => FocusSearch(), CanUseKeys));
         CommandBindings.Add(new CommandBinding(NavigationCommands.Refresh, async (_, _) => await ViewModel!.ReloadAsync(), CanUseKeys));
-        // The view model comes before the window shows, so it opens where it was last time.
+        // The view model comes before the window shows, so it opens where it was last time, and without a taskbar
+        // button from the start when the player chose tray icon only.
         DataContextChanged += (_, e) =>
         {
             if (!IsLoaded && e.NewValue is MainViewModel { WindowPlacement: { } placement })
                 PlaceAt(placement);
+            FollowTaskbarSetting();
         };
         // The maximize button's tooltip is set here, so it follows a change of language too, on the window's thread.
         PropertyChangedEventManager.AddHandler(L.Current, (_, _) =>
@@ -112,6 +114,8 @@ public partial class MainWindow : Window
         }
         if (e.PropertyName is null or "" or nameof(MainViewModel.ShowTrayIcon))
             FollowTraySetting();
+        if (e.PropertyName is null or "" or nameof(MainViewModel.HidesTaskbarButton))
+            FollowTaskbarSetting();
         if ((e.PropertyName is null or "" or nameof(MainViewModel.WindowTitle)) && ViewModel is { } model)
             tray?.SetTip(model.WindowTitle);
         // The launch options open with the cursor in the field, its text selected, so typing replaces it.
@@ -141,6 +145,13 @@ public partial class MainWindow : Window
             if (!IsVisible)
                 BringBack();
         }
+    }
+
+    /// <summary>The taskbar button, as tray icon only says: gone while the tray icon shows instead.</summary>
+    private void FollowTaskbarSetting()
+    {
+        if (ViewModel is { } model)
+            ShowInTaskbar = !model.HidesTaskbarButton;
     }
 
     private void RemoveTray()

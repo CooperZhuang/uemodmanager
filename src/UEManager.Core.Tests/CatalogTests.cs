@@ -220,7 +220,7 @@ public class CatalogTests
     // The zip layouts of KintaroModding's releases, as openmods lists them.
     [InlineData("UE4SS Lua", "ue4ss/Mods/witchtime/enabled.txt|ue4ss/Mods/witchtime/Scripts/config.lua|ue4ss/Mods/witchtime/Scripts/main.lua")]
     [InlineData("UE4SS DLL", "CONTRIBUTORS.md|LICENSE|README.md|ue4ss/Mods/cppbypass/dlls/main.dll|ue4ss/Mods/cppbypass/enabled.txt|UE4SS-SDK-LICENSE.txt")]
-    [InlineData("IoStore", "animationcancel_P.pak|animationcancel_P.utoc|animationcancel_P.ucas|animationcancel.txt")]
+    [InlineData("PAK", "animationcancel_P.pak|animationcancel_P.utoc|animationcancel_P.ucas|animationcancel.txt")]
     [InlineData("Other", "UEModManager.exe")]
     [InlineData("Other", "ProjectPBZ-5.7.4-302256-full.usmap")]
     // Other authors' layouts.
@@ -246,7 +246,7 @@ public class CatalogTests
     // A mod for PBZModLoader, as KintaroModding's Animation Cancel 2.0 zip: its type is the loader it runs in.
     [InlineData("PBZModLoader", "ProjectPBZ/PBZModLoader/mods/phantombladezero_animationcancel/main.js|ProjectPBZ/PBZModLoader/mods/phantombladezero_animationcancel/phantombladezero_animationcancel.txt")]
     [InlineData("Exe files", "dxgi.dll|ReShade.ini|reshade-shaders/Shaders/Glow.fx")]
-    [InlineData("IoStore", "ProjectPBZ/Content/Paks/~mods/a_P.pak|ProjectPBZ/Content/Paks/~mods/a_P.utoc|ProjectPBZ/Content/Paks/~mods/a_P.ucas")]
+    [InlineData("PAK", "ProjectPBZ/Content/Paks/~mods/a_P.pak|ProjectPBZ/Content/Paks/~mods/a_P.utoc|ProjectPBZ/Content/Paks/~mods/a_P.ucas")]
     [InlineData("Other", "ProjectPBZ-5.7.4-302256-full.usmap")]
     [InlineData("Other", "UEModManager.exe")]
     // Paths that would leave the download are left out, never followed.

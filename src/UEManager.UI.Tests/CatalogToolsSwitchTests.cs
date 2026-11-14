@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Windows.Threading;
 using UEManager.Core.Games;
+using UEManager.Core.Mods;
 using UEManager.Core.Storage;
 using UEManager.UI.Catalog;
 using UEManager.UI.Services;
@@ -264,6 +265,53 @@ public sealed class CatalogToolsSwitchTests : IDisposable
         Assert.Equal("1 tool matches it.", catalog.NoMatchText);
     });
 
+    /// <summary>A mod installed from openmods, as the Mods page has it.</summary>
+    private static ModRecord Installed(string catalogId, string version) =>
+        new() { Id = catalogId, Name = catalogId, CatalogId = catalogId, Version = version };
+
+    [Fact]
+    public void Hide_installed_leaves_out_what_the_player_has_and_is_kept() => UiThread.Run(() =>
+    {
+        var catalog = Load(Typed);
+        Assert.True(catalog.HasFilters);
+        Assert.False(catalog.HideInstalled);
+        // Pak One as it is listed, Witch Time with an update: both are installed, so both hide.
+        catalog.UpdateInstalled([Installed("a/pakone", "1"), Installed("a/witchtime", "0.9")]);
+
+        catalog.HideInstalled = true;
+
+        Assert.Equal(["Both Ways", "Bypass", "Pak Two", "Unread"], Shown(catalog));
+        Assert.Equal("4 of 6 shown", catalog.CountText);
+        // A mod installed from a card leaves the page at once.
+        catalog.UpdateInstalled([Installed("a/pakone", "1"), Installed("a/witchtime", "0.9"), Installed("a/paktwo", "1")]);
+        Assert.Equal(["Both Ways", "Bypass", "Unread"], Shown(catalog));
+        // The app keeps the choice for the next start.
+        Assert.True(AppSettings.Load(new AppPaths(Path.Combine(folder, "Data"))).CatalogHideInstalled);
+
+        catalog.HideInstalled = false;
+        Assert.Equal(6, Shown(catalog).Length);
+    });
+
+    [Fact]
+    public void When_only_installed_mods_are_left_the_page_offers_them() => UiThread.Run(() =>
+    {
+        var catalog = Load(Typed);
+        catalog.UpdateInstalled([Installed("a/pakone", "1"), Installed("a/paktwo", "1")]);
+        catalog.HideInstalled = true;
+
+        Choose(catalog, "PAK");
+
+        Assert.True(catalog.ShowNoMatch);
+        Assert.True(catalog.ShowInstalledHint);
+        Assert.False(catalog.ShowAllTypesHint);
+        Assert.Equal("Everything here is installed", catalog.NoMatchTitle);
+
+        catalog.ShowInstalledCommand.Execute(null);
+
+        Assert.False(catalog.HideInstalled);
+        Assert.Equal(["Pak One", "Pak Two"], Shown(catalog));
+    });
+
     [Fact]
     public void A_side_where_no_type_would_leave_out_a_card_has_no_type_filter() => UiThread.Run(() =>
     {
@@ -335,6 +383,26 @@ public sealed class CatalogToolsSwitchTests : IDisposable
     public void The_full_view_fits_as_many_columns_as_the_card_list_holds(double width, int columns)
     {
         Assert.Equal(columns, CatalogFullView.ColumnsFor(width));
+    }
+
+    /// <summary>
+    /// A card's Page and Source buttons keep their words beside Install, and are icons alone beside a long action on
+    /// the narrowest card, such as UE4SS's "Update to v4.0.0" (sizes from the screen at 1360 wide).
+    /// </summary>
+    [Theory]
+    [InlineData(266, 87, true)]
+    [InlineData(266, 150, false)]
+    [InlineData(266, 0, true)]
+    [InlineData(0, 150, true)]
+    public void A_cards_buttons_keep_their_words_while_the_action_leaves_room(double row, double action, bool words)
+    {
+        object[] values = [row, action];
+
+        var shown = new UEManager.UI.RoomConverter().Convert(values, typeof(System.Windows.Visibility), "160", null!);
+        var standIn = new UEManager.UI.RoomConverter { Invert = true }.Convert(values, typeof(System.Windows.Visibility), "160", null!);
+
+        Assert.Equal(words ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed, shown);
+        Assert.Equal(words ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible, standIn);
     }
 
     private static void WaitFor(Task task)

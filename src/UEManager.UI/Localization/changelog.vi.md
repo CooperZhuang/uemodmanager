@@ -2,6 +2,21 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.2.0 (2026-11-14)
+- Trang openmods: các mod mã nguồn mở được liệt kê cho game của bạn trên openmods.nexus, có tìm kiếm, sắp xếp và cài đặt hoặc cập nhật bằng một cú nhấp
+- openmods: nút chuyển Mod | Công cụ, loại trên mỗi thẻ cùng bộ lọc theo loại, và Ẩn mục đã cài để bỏ qua những gì bạn đã có
+- openmods: Toàn màn hình hiện trang trên cả cửa sổ dưới dạng lưới thẻ, và THÔNG TIN LOẠI MOD giải thích từng loại
+- Ở trang Mod, mod cài từ openmods có liên kết màu cam đến trang của nó ở đó, và bản cập nhật cài bằng một cú nhấp
+- Tiếng Nhật và tiếng Hàn
+- Mod pak có tệp .utoc và .ucas giờ cũng là PAK, và mod trong thư mục mods của PBZModLoader có loại riêng, PBZModLoader
+- Tệp dữ liệu của mod PBZModLoader là cài đặt của nó: bạn có thể sửa, bản cập nhật giữ lại, và khi gỡ cài đặt chúng được sao lưu
+- Cài đặt ▸ Biểu tượng khay hệ thống: Chỉ biểu tượng khay hệ thống, không có nút trên thanh tác vụ
+- Không còn nhấp nháy khi khởi động: cửa sổ chỉ hiện khi đã vẽ xong
+- Bóng đổ cho cửa sổ và cửa sổ bật lên, viền mờ hơn khi cửa sổ không ở phía trước (cảm ơn HumanMus1c)
+- Xem tệp không còn liệt kê tệp cài đặt mà mod ghi bên cạnh tệp cài đặt của nó (cảm ơn CooperZhuang)
+- UEModManager.exe --cli: liệt kê, cài đặt, bật, tắt và gỡ mod, sao lưu bản lưu và quản lý UE4SS từ script (cảm ơn CooperZhuang)
+- Kiểm tra cập nhật của mod có trang mod giờ đọc đúng các phiên bản như 0.5.2.withHP và 1.2a (cảm ơn HumanMus1c đã báo lỗi)
+
 ## 2.1.0 (2026-11-12)
 - Sao lưu có trang riêng trong menu: thư mục bản lưu, sao lưu khi khởi động game và Sao lưu ngay, các bản sao lưu hiển thị thành hai cột
 - Bản sao lưu thường: thanh trượt đặt số bản ứng dụng giữ lại, từ 2 đến 20 (mặc định 6); bản cũ nhất chỉ bị xóa sau lần sao lưu tiếp theo (cảm ơn EstusFlask)

@@ -82,15 +82,7 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="PAK" /></Border>
-                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A .pak file that the game loads from its mods folder. It needs no UE4SS.'}" />
-                    </Grid>
-                    <Grid Style="{StaticResource TypeRow}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="IoStore" /></Border>
-                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'An Unreal Engine 5 package: .utoc and .ucas files, usually with a .pak. The game loads it from its mods folder. It needs no UE4SS.'}" />
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A .pak file that the game loads from its mods folder, in Unreal Engine 5 games often with .utoc and .ucas files beside it. It needs no UE4SS.'}" />
                     </Grid>
                     <Grid Style="{StaticResource TypeRow}">
                         <Grid.ColumnDefinitions>

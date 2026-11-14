@@ -46,7 +46,7 @@ public class PakSettingsTests : IDisposable
         {
             var package = Assert.Single(preview.Packages);
             Assert.Equal(["zzz_Highlight_P.pak", "zzz_Highlight_P.utoc", "zzz_Highlight_P.ucas", "Highlight.json"], package.RelativePaths);
-            Assert.Equal("IoStore", package.TypeLabel);
+            Assert.Equal("PAK", package.TypeLabel);
             Assert.Equal(1, preview.IgnoredFileCount);
         }
 

@@ -41,8 +41,9 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
 
     /// <param name="gamesUrl">The openmods games list.</param>
     /// <param name="isTest">The list was given on the command line, so the page says that it is not the real one.</param>
+    /// <param name="hideInstalled">The player's choice from the last time: see <see cref="HideInstalled"/>.</param>
     public CatalogViewModel(MainViewModel owner, HttpClient http, string gamesUrl, string? steamAppId, bool isTest,
-        CatalogSortField sortField, bool sortDescending)
+        CatalogSortField sortField, bool sortDescending, bool hideInstalled = false)
     {
         this.owner = owner;
         this.http = http;
@@ -52,9 +53,10 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         this.isTest = isTest;
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = item => item is CatalogItemViewModel mod && mod.IsTool == ShowTools && mod.HasType(ShownType)
-            && mod.Matches(SearchText);
+            && !Hidden(mod) && mod.Matches(SearchText);
         this.sortField = sortField;
         this.sortDescending = sortDescending;
+        this.hideInstalled = hideInstalled;
         ApplySort();
     }
 
@@ -145,7 +147,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
 
     /// <summary>The type filter's order: as in the Mod type info view.</summary>
     private static readonly string[] TypeOrder =
-        ["UE4SS Lua", "UE4SS DLL", ModTypes.Ue4ssFiles, "PAK", "IoStore", "Blueprint", ModTypes.ModLoader, ModTypes.GameFiles, ModTypes.ExeFiles, ModTypes.Other];
+        ["UE4SS Lua", "UE4SS DLL", ModTypes.Ue4ssFiles, "PAK", "Blueprint", ModTypes.ModLoader, ModTypes.GameFiles, ModTypes.ExeFiles, ModTypes.Other];
 
     /// <summary>
     /// The type filter: All, then each type on the open side of the switch, with its number of cards. One type at a
@@ -162,27 +164,58 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
     [RelayCommand]
     private void ShowAllTypes() => ShowType(null);
 
+    /// <summary>
+    /// Hides the cards of the mods and tools installed from openmods (UE4SS: in the game), so the page shows what the
+    /// player does not have yet. Off until the player turns it on; the app keeps the choice. A mod with an update hides
+    /// too: the Mods page shows its update.
+    /// </summary>
+    [ObservableProperty]
+    private bool hideInstalled;
+
+    partial void OnHideInstalledChanged(bool value)
+    {
+        ItemsView.Refresh();
+        ShownChanged();
+        owner.SaveCatalogHideInstalled(value);
+    }
+
+    private bool Hidden(CatalogItemViewModel item) => HideInstalled && item.IsInstalled;
+
+    [RelayCommand]
+    private void ShowInstalled() => HideInstalled = false;
+
+    /// <summary>The row of filters shows with the list: the switch is always there, the types when they would leave out a card.</summary>
+    public bool HasFilters => HasTypeChoices || HasItems;
+
     /// <summary>Mods are listed, but none is shown: none matches the search here, or this part of the list is empty.</summary>
     public bool ShowNoMatch => Items.Count > 0 && ItemsView.IsEmpty;
 
-    /// <summary>The cards on the other side of the switch that the search matches; all of them while the search is empty.</summary>
-    private int OtherSideMatches => Items.Count(item => item.IsTool != ShowTools && item.Matches(SearchText));
+    /// <summary>The cards on the other side of the switch that the search matches and Hide installed leaves; all of them while the search is empty.</summary>
+    private int OtherSideMatches => Items.Count(item => item.IsTool != ShowTools && !Hidden(item) && item.Matches(SearchText));
+
+    /// <summary>The cards of this side and type that the search matches, but Hide installed leaves out.</summary>
+    private int HiddenMatches => Items.Count(item => item.IsTool == ShowTools && item.HasType(ShownType) && Hidden(item) && item.Matches(SearchText));
+
+    /// <summary>Only Hide installed leaves the page empty: the page says so and offers the installed ones.</summary>
+    public bool ShowInstalledHint => ShowNoMatch && HiddenMatches > 0;
 
     /// <summary>The cards of other types on this side that the search matches; none while all types are shown.</summary>
     private int OtherTypeMatches => ShownType is null
         ? 0
-        : Items.Count(item => item.IsTool == ShowTools && !item.HasType(ShownType) && item.Matches(SearchText));
+        : Items.Count(item => item.IsTool == ShowTools && !item.HasType(ShownType) && !Hidden(item) && item.Matches(SearchText));
 
     /// <summary>Nothing of this type matches the search, but cards of other types here do: the page offers all types.</summary>
-    public bool ShowAllTypesHint => ShowNoMatch && OtherTypeMatches > 0;
+    public bool ShowAllTypesHint => ShowNoMatch && !ShowInstalledHint && OtherTypeMatches > 0;
 
     /// <summary>Nothing is shown here, and something would be on the other side: the page offers to switch.</summary>
-    public bool ShowSwitchHint => ShowNoMatch && !ShowAllTypesHint && OtherSideMatches > 0;
+    public bool ShowSwitchHint => ShowNoMatch && !ShowInstalledHint && !ShowAllTypesHint && OtherSideMatches > 0;
 
     public string SwitchText => ShowTools ? L.T("Show mods") : L.T("Show tools");
 
     /// <summary>Without a search, the mods side is empty only when the game's list holds tools alone.</summary>
-    public string NoMatchTitle => string.IsNullOrWhiteSpace(SearchText)
+    public string NoMatchTitle => ShowInstalledHint
+        ? L.T("Everything here is installed")
+        : string.IsNullOrWhiteSpace(SearchText)
         ? L.T("Only tools are listed for this game")
         : ShowTools ? L.T("No tools match the search") : L.T("No mods match the search");
 
@@ -190,7 +223,9 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
     /// What the other types here hold for the search, else what the other side holds; nothing more to say when the
     /// search is empty.
     /// </summary>
-    public string? NoMatchText => OtherTypeMatches is var others and > 0
+    public string? NoMatchText => ShowInstalledHint
+        ? null
+        : OtherTypeMatches is var others and > 0
         ? ShowTools
             ? L.Plural(others, "{0} tool of another type matches it.", "{0} tools of other types match it.")
             : L.Plural(others, "{0} mod of another type matches it.", "{0} mods of other types match it.")
@@ -243,6 +278,9 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         installed = mods;
         foreach (var item in Items)
             item.UpdateState(mods);
+        // With Hide installed, a mod installed from a card leaves the page at once.
+        ItemsView.Refresh();
+        ShownChanged();
     }
 
     [RelayCommand]
@@ -354,6 +392,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         }
         MarkShownType();
         OnPropertyChanged(nameof(HasTypeChoices));
+        OnPropertyChanged(nameof(HasFilters));
     }
 
     private void MarkShownType()
@@ -378,6 +417,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         ItemsView.Refresh();
         OnPropertyChanged(nameof(ShowEmpty));
         OnPropertyChanged(nameof(HasItems));
+        OnPropertyChanged(nameof(HasFilters));
         OnPropertyChanged(nameof(ModCount));
         OnPropertyChanged(nameof(ToolCount));
         OnPropertyChanged(nameof(HasTools));
@@ -394,6 +434,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         OnPropertyChanged(nameof(ShowNoMatch));
         OnPropertyChanged(nameof(ShowSwitchHint));
         OnPropertyChanged(nameof(ShowAllTypesHint));
+        OnPropertyChanged(nameof(ShowInstalledHint));
         OnPropertyChanged(nameof(SwitchText));
         OnPropertyChanged(nameof(NoMatchTitle));
         OnPropertyChanged(nameof(NoMatchText));
@@ -451,6 +492,9 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
     /// <param name="type">A type from <see cref="FilterTypes"/>; null for all types.</param>
     internal bool HasType(string? type) => type is null || FilterTypes.Contains(type);
 
+    /// <summary>Installed from openmods (UE4SS: in the game), for the page's Hide installed.</summary>
+    public bool IsInstalled { get; private set; }
+
     public string AuthorText => L.F($"by {mod.Author ?? L.T("an unknown author")}");
 
     /// <summary>Set when openmods lists another author's project.</summary>
@@ -501,6 +545,8 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
     internal void UpdateState(IReadOnlyList<ModRecord> installed)
     {
         Status(null, "muted", "");
+        var record = installed.FirstOrDefault(m => string.Equals(m.CatalogId, mod.Id, StringComparison.OrdinalIgnoreCase));
+        IsInstalled = mod.IsUe4ss ? owner.IsUe4ssInstalled : record is not null;
         if (mod.IsUe4ss)
         {
             // UE4SS has its own install: the manifest names the release made for this game.
@@ -521,7 +567,6 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
             return;
         }
 
-        var record = installed.FirstOrDefault(m => string.Equals(m.CatalogId, mod.Id, StringComparison.OrdinalIgnoreCase));
         if (record is null)
         {
             Set(CardAction.Install, L.T("Install"));

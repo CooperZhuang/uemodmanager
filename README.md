@@ -96,7 +96,7 @@ settings on.
 
 | Type | Recognised by | Deployed to |
 | --- | --- | --- |
-| PAK / IoStore | `.pak`, `.utoc` + `.ucas` | `<Project>/Content/Paks/~mods` |
+| PAK | `.pak`, with `.utoc` + `.ucas` (IoStore) | `<Project>/Content/Paks/~mods` |
 | Blueprint | package files below a `LogicMods` folder | `<Project>/Content/Paks/LogicMods` |
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
 | PBZModLoader (Phantom Blade Zero) | files below `<Project>/PBZModLoader/mods`; a top-level `PBZModLoader/mods` counts without that folder too | the same path in the game |
@@ -455,7 +455,7 @@ are used.
   but cards of other types, the page says so and offers **Show all types**
   before the other side. Plain buttons, as in the switch.
 - Each card shows the mod's type in the words of the Mods page (UE4SS Lua,
-  UE4SS DLL, PAK, IoStore, Blueprint, UE4SS files, PBZModLoader, Game files,
+  UE4SS DLL, PAK, Blueprint, UE4SS files, PBZModLoader, Game files,
   Exe files) or
   Other. The app's own scanner reads the paths in the release zip that openmods
   lists (`files[].entries`) as an install would, with the game's project and exe

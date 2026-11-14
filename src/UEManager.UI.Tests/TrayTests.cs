@@ -41,7 +41,38 @@ public sealed class TrayTests : IDisposable
         Assert.True(settings.ShowTrayIcon);
         Assert.False(settings.MinimizeToTray);
         Assert.False(settings.CloseToTray);
+        Assert.False(settings.TrayIconOnly);
     }
+
+    [Fact]
+    public void Tray_icon_only_takes_the_taskbar_button_away_while_the_icon_shows() => WithApp((model, paths) =>
+    {
+        Assert.False(model.HidesTaskbarButton);
+
+        model.TrayIconOnly = true;
+        // Minimize must hide the window then: without a taskbar button, a minimized window waits in a screen corner.
+        Assert.True(model.HidesTaskbarButton);
+        Assert.True(model.MinimizesToTray);
+        Assert.True(model.MinimizeToTray);
+        Assert.False(model.CanChooseMinimizeToTray);
+        Assert.True(model.CanCloseToTray);
+        // The X still closes the app until the player chooses otherwise.
+        Assert.False(model.ClosesToTray);
+
+        // Without the icon the taskbar button comes back, so the window can always be found.
+        model.ShowTrayIcon = false;
+        Assert.False(model.HidesTaskbarButton);
+        Assert.False(model.MinimizesToTray);
+
+        model.ShowTrayIcon = true;
+        model.TrayIconOnly = false;
+        // The player's own choice for minimize is back, untouched.
+        Assert.False(model.MinimizeToTray);
+        Assert.True(model.CanChooseMinimizeToTray);
+
+        model.TrayIconOnly = true;
+        Assert.True(AppSettings.Load(paths).TrayIconOnly);
+    });
 
     [Fact]
     public void The_X_hides_the_app_only_with_the_icon_and_minimize_to_tray_on() => WithApp((model, paths) =>

@@ -3,7 +3,7 @@ using UEManager.Core.Games;
 
 namespace UEManager.UI.ViewModels;
 
-/// <summary>The tray icon: its three settings, and its menu.</summary>
+/// <summary>The tray icon: its four settings, and its menu.</summary>
 public sealed partial class MainViewModel
 {
     /// <summary>The icon next to the clock. On until the player turns it off; without it, the app works as before.</summary>
@@ -15,14 +15,42 @@ public sealed partial class MainViewModel
             settings.ShowTrayIcon = value;
             SaveSettings();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanChooseMinimizeToTray));
             OnPropertyChanged(nameof(CanCloseToTray));
+            OnPropertyChanged(nameof(HidesTaskbarButton));
         }
     }
 
-    /// <summary>Minimize hides the window in the tray, without a taskbar button. Off until the player turns it on.</summary>
+    /// <summary>
+    /// No taskbar button, only the tray icon. Off until the player turns it on; only with the icon (see
+    /// <see cref="HidesTaskbarButton"/>). Minimize then always hides the window in the tray: without a taskbar button, a
+    /// minimized window would wait in a corner of the screen.
+    /// </summary>
+    public bool TrayIconOnly
+    {
+        get => settings.TrayIconOnly;
+        set
+        {
+            settings.TrayIconOnly = value;
+            SaveSettings();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(MinimizeToTray));
+            OnPropertyChanged(nameof(CanChooseMinimizeToTray));
+            OnPropertyChanged(nameof(CanCloseToTray));
+            OnPropertyChanged(nameof(HidesTaskbarButton));
+        }
+    }
+
+    /// <summary>The window has no taskbar button: tray icon only, while the icon shows, so the window can always come back.</summary>
+    public bool HidesTaskbarButton => settings.ShowTrayIcon && settings.TrayIconOnly;
+
+    /// <summary>
+    /// Minimize hides the window in the tray, without a taskbar button. Off until the player turns it on; with tray icon
+    /// only it is on, and its box shows it ticked.
+    /// </summary>
     public bool MinimizeToTray
     {
-        get => settings.MinimizeToTray;
+        get => settings.MinimizeToTray || settings.TrayIconOnly;
         set
         {
             settings.MinimizeToTray = value;
@@ -44,11 +72,14 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>Minimize to tray is the player's choice while the icon shows, and settled by tray icon only.</summary>
+    public bool CanChooseMinimizeToTray => settings.ShowTrayIcon && !settings.TrayIconOnly;
+
     /// <summary>The X can hide the app only when the icon shows and minimize hides it: its box waits for both.</summary>
-    public bool CanCloseToTray => settings.ShowTrayIcon && settings.MinimizeToTray;
+    public bool CanCloseToTray => MinimizesToTray;
 
     /// <summary>Minimize hides the window in the tray.</summary>
-    internal bool MinimizesToTray => settings.ShowTrayIcon && settings.MinimizeToTray;
+    internal bool MinimizesToTray => settings.ShowTrayIcon && (settings.MinimizeToTray || settings.TrayIconOnly);
 
     /// <summary>The X hides the window in the tray.</summary>
     internal bool ClosesToTray => MinimizesToTray && settings.CloseToTray;

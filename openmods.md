@@ -8,8 +8,9 @@ look.
 
 - Installs mods from a `.zip`, `.7z` or `.rar` download, a `.pak` file or a mod folder: drop it on the window. Every
   download is unpacked and checked first, and nothing inside it is ever run.
-- Handles pak mods (`.pak`, `.utoc` + `.ucas`), Blueprint mods (`LogicMods`), UE4SS Lua and DLL mods, and for Black
-  Myth: Wukong mods for the C# Loader.
+- Handles pak mods (`.pak`, `.utoc` + `.ucas`), Blueprint mods (`LogicMods`), UE4SS Lua and DLL mods, for Phantom
+  Blade Zero PBZModLoader mods, and for Black Myth: Wukong mods for the C# Loader.
+- Lists the open-source mods for your game on openmods.nexus, and installs or updates one with a click.
 - Enables, disables, updates and uninstalls mods. It keeps its own copy of every mod and records a checksum for every
   file it places. Files it did not place are never overwritten or removed.
 - Installs and updates UE4SS for the game, and shows the UE4SS log with its errors and warnings.
@@ -19,8 +20,8 @@ look.
 - **Reset modding** takes the game back to its original files in one step, so you can start clean.
 - Starts the game with the launch options you set; Black Myth: Wukong starts with `-fileopenlog`, which its pak mods
   need.
-- Speaks English, Simplified Chinese (简体中文), Traditional Chinese (繁體中文) and Vietnamese (Tiếng Việt): choose in
-  **Settings ▸ Language**.
+- Speaks English, Simplified Chinese (简体中文), Traditional Chinese (繁體中文), Vietnamese (Tiếng Việt), Japanese
+  (日本語) and Korean (한국어): choose in **Settings ▸ Language**.
 
 ## Screenshots
 
@@ -47,11 +48,15 @@ folder.
 - **Home:** drop a download on the window, or use **Install from 7z/zip/rar…**. A review shows what goes where
   before anything reaches the game.
 - **Mods:** turn mods on and off, update or uninstall them, and edit or reset a mod's settings.
+- **openmods:** the open-source mods for your game, with a type on every card, search, sort and **Hide installed**.
+  One click installs or updates a mod. **Full view** shows them over the whole window.
 - **UE4SS:** install or update UE4SS, open its folder, and read its log.
 - **Backups:** back up your saves, choose how many the app keeps, keep some for good in **Personal**, and restore one.
-- **Settings:** the game folder, and the manager's data, logs and backups. **Reset modding…** removes every mod and
+- **Settings:** the game folder, the tray icon, and the manager's data, logs and backups. **Reset modding…** removes every mod and
   UE4SS from the game; you choose whether the mods also leave the manager. **Report a problem…** makes a report for
   the help channel on Discord.
+
+For scripts, the same exe is a command line tool: `UEModManager.exe --cli --help` lists its commands.
 
 ## Compatibility
 
