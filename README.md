@@ -771,6 +771,15 @@ UEModManager.exe --cli uninstall <mod> --yes
   (`DataFolderLock`), as two programs would overwrite each other's mod list.
 - Which parts of a download it takes is the install review's first selection
   (`ModManager.FirstSelection`), so the tool and the app agree.
+- `--part <index|name>` takes only the named parts of a download, in the plan's
+  order from 1 or by name, and can be repeated; `--all-parts` takes every part
+  instead, and the two cannot be combined.
+- `--keep-both` installs a download that conflicts with an installed mod as
+  another mod, in a folder of its own below `~mods`, instead of replacing it.
+  The plan shows it as `keepBoth` and the folder as `ownFolder`, with no
+  `replaces`.
+- `--staging <folder>` unpacks the download there instead of the data folder's
+  `staging` folder, so `plan` also runs with a read-only data folder.
 - `UEModManager.exe` is a window program, so a terminal does not wait for it.
   Pipe the output (`... --cli list | more`, in PowerShell `| Out-String`), use
   `start /wait` in cmd or `Start-Process -Wait` in PowerShell. Scripts that wait

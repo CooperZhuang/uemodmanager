@@ -140,6 +140,9 @@ internal static class Program
           --game-root <folder>  Use this install folder instead of the one in settings.json
           --json                Machine-readable JSON output with stable fields
           --all-parts           Select every part of the download, not only the default selection
+          --part <index|name>   Select only this part; repeat for more. Cannot be used with --all-parts
+          --keep-both           Keep an installed mod the download would replace: install it as another mod
+          --staging <folder>    Unpack the download here instead of the data folder's staging folder
           --yes                 Confirm a change; install and uninstall need it
           -h, --help            Show this help
           --version             Show the CLI version
@@ -150,8 +153,9 @@ internal static class Program
           2  confirmation required; nothing was changed
 
         The game is never started. Read-only commands (status, list, verify) do not write to the data folder or to the
-        game; plan only unpacks the download into the data folder's staging folder and removes it again. plan, install,
-        enable, disable and uninstall refuse while UE MM is open with the same data folder: close the app first.
+        game; plan only unpacks the download into the data folder's staging folder and removes it again, or into the
+        --staging folder. plan, install, enable, disable and uninstall refuse while UE MM is open with the same data
+        folder: close the app first.
 
         UEModManager.exe is a window program, so a terminal does not wait for it: the prompt can come back before the
         output. Pipe the output (UEModManager.exe --cli list | more) or, in cmd, use start /wait. Scripts that wait for

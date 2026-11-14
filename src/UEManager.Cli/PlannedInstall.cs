@@ -1,3 +1,4 @@
+using System.Globalization;
 using UEManager.Core.Mods;
 
 namespace UEManager.Cli;
@@ -9,12 +10,13 @@ namespace UEManager.Cli;
 internal sealed class PlannedInstall : IDisposable
 {
     private PlannedInstall(ModManager manager, InstallPreview preview, IReadOnlyList<PackageGroup> selected, InstallCheck check,
-        PlanPayload plan)
+        string? ownFolder, PlanPayload plan)
     {
         Manager = manager;
         Preview = preview;
         Selected = selected;
         Check = check;
+        OwnFolder = ownFolder;
         Plan = plan;
     }
 
@@ -27,24 +29,45 @@ internal sealed class PlannedInstall : IDisposable
 
     public InstallCheck Check { get; }
 
+    /// <summary>
+    /// The folder below ~mods for a download kept beside an installed mod instead of replacing it; null for an install
+    /// that takes its usual places. It goes to <see cref="ModManager.Install"/> as <c>ownFolder</c>.
+    /// </summary>
+    public string? OwnFolder { get; }
+
     public PlanPayload Plan { get; }
 
     public void Dispose() => Preview.Dispose();
 
+    /// <exception cref="CliError">The selection is invalid, such as an unknown --part.</exception>
     /// <exception cref="ModException">The download cannot be read.</exception>
-    public static PlannedInstall Build(CliContext context, string source, bool allParts)
+    public static PlannedInstall Build(CliContext context, CliArguments arguments, string source)
     {
+        if (arguments.AllParts && arguments.Parts.Count > 0)
+            throw new CliError("invalid-arguments", "Options '--all-parts' and '--part' cannot be used together.",
+                details: ["Use --all-parts for every part, or --part for the parts you name."]);
         var manager = context.OpenManager();
-        var preview = manager.Inspect(source);
+        var preview = manager.Inspect(source, StagingFolder(arguments.Staging));
         try
         {
-            // The parts the app's install review ticks first, by the same rules in Core.
-            var selected = allParts ? preview.Packages.ToList() : manager.FirstSelection(preview).ToList();
+            // The parts the app's install review ticks first, by the same rules in Core; --part takes exactly those named.
+            var selected = arguments.Parts.Count > 0
+                ? Parts(preview, arguments.Parts).ToList()
+                : arguments.AllParts ? preview.Packages.ToList() : manager.FirstSelection(preview).ToList();
             var check = manager.Check(preview, selected);
-            // An update keeps the variant that is installed now, as the review does.
-            if (!allParts && KeepInstalledVariant(preview, selected, check))
+            // An update keeps the variant that is installed now, as the review does. A part the player named stays.
+            if (arguments.Parts.Count == 0 && !arguments.AllParts && KeepInstalledVariant(preview, selected, check))
                 check = manager.Check(preview, selected);
-            return new PlannedInstall(manager, preview, selected, check, BuildPlan(context, manager, preview, selected, check, allParts));
+            // --keep-both: the installed mod the download would replace stays, and the download goes into a folder of its
+            // own below ~mods, as the review's "Keep both" does (see InstallDialogViewModel.OwnFolder).
+            string? ownFolder = null;
+            if (arguments.KeepBoth && check.Replaces is not null)
+            {
+                ownFolder = manager.NewModFolder(preview.SuggestedName);
+                check = manager.Check(preview, selected, null, ownFolder);
+            }
+            return new PlannedInstall(manager, preview, selected, check, ownFolder,
+                BuildPlan(context, manager, preview, selected, check, arguments.AllParts, ownFolder));
         }
         catch
         {
@@ -52,6 +75,50 @@ internal sealed class PlannedInstall : IDisposable
             throw;
         }
     }
+
+    /// <summary>The --staging folder as a full path; null keeps the data folder's staging folder.</summary>
+    /// <exception cref="CliError">The option names no folder.</exception>
+    private static string? StagingFolder(string? given)
+    {
+        if (given is null)
+            return null;
+        if (string.IsNullOrWhiteSpace(given))
+            throw new CliError("invalid-arguments", "Option '--staging' needs a folder.");
+        var full = Path.GetFullPath(given);
+        if (File.Exists(full))
+            throw new CliError("invalid-arguments", $"Option '--staging' needs a folder, but '{full}' is a file.");
+        return full;
+    }
+
+    /// <summary>The parts named by --part, by their index in the plan (1-based) or their name or folder/name.</summary>
+    /// <exception cref="CliError">One of the names matches no part; the details list the available parts.</exception>
+    private static IReadOnlyList<PackageGroup> Parts(InstallPreview preview, IReadOnlyList<string> requested)
+    {
+        var selected = new List<PackageGroup>();
+        foreach (var request in requested)
+        {
+            var spec = request.Trim();
+            if (spec.Length == 0)
+                throw new CliError("invalid-arguments", "Option '--part' needs a part's index or name.",
+                    details: AvailableParts(preview));
+            var part = int.TryParse(spec, NumberStyles.None, CultureInfo.InvariantCulture, out var index)
+                ? index >= 1 && index <= preview.Packages.Count ? preview.Packages[index - 1] : null
+                : preview.Packages.FirstOrDefault(p => p.Label.Equals(spec, StringComparison.OrdinalIgnoreCase)
+                    || p.Name.Equals(spec, StringComparison.OrdinalIgnoreCase));
+            if (part is null)
+                throw new CliError("invalid-arguments", $"No part matches '{spec}'.", details: AvailableParts(preview));
+            if (!selected.Contains(part))
+                selected.Add(part);
+        }
+        return selected;
+    }
+
+    /// <summary>The parts a --part name may mean, for the error message: their index in the plan and where they go.</summary>
+    private static string[] AvailableParts(InstallPreview preview) =>
+    [
+        "Available parts:",
+        .. preview.Packages.Select((part, index) => $"  {index + 1}: {part.Label} ({part.Target})"),
+    ];
 
     /// <summary>
     /// Selects the variant of the mod the download updates (see <see cref="ModManager.InstalledVariant"/>), in place of
@@ -67,9 +134,9 @@ internal sealed class PlannedInstall : IDisposable
     }
 
     private static PlanPayload BuildPlan(CliContext context, ModManager manager, InstallPreview preview,
-        IReadOnlyList<PackageGroup> selected, InstallCheck check, bool allParts)
+        IReadOnlyList<PackageGroup> selected, InstallCheck check, bool allParts, string? ownFolder)
     {
-        var parts = preview.Packages.Select((part, index) => new PlanPartDto(index, part.Name, part.Folder, part.Label,
+        var parts = preview.Packages.Select((part, index) => new PlanPartDto(index + 1, part.Name, part.Folder, part.Label,
             part.Kind.ToString(), part.Target.ToString(), part.TypeLabel, part.Size, part.Files.Count, selected.Contains(part),
             part.IsUncertain, part.IsAlternate, part.Variant, part.VariantOf, part.NeedsLoader,
             [.. part.Problems.Select(Output.Text)], [.. part.Warnings.Select(Output.Text)], part.RelativePaths)).ToList();
@@ -80,7 +147,8 @@ internal sealed class PlannedInstall : IDisposable
             for (var i = 0; i < part.Files.Count; i++)
             {
                 var target = part.Target;
-                var relative = part.RelativePaths[i];
+                // A kept mod's files go into its folder below ~mods, as they will be installed.
+                var relative = ModManager.InFolder(ownFolder, target, part.RelativePaths[i]);
                 var path = Path.Combine(manager.TargetFolder(target), relative);
                 entries.Add(new PlanEntryDto(target.ToString(), relative, path, File.Exists(path), Owner(manager, target, relative)));
             }
@@ -97,7 +165,8 @@ internal sealed class PlannedInstall : IDisposable
             context.GameId, Mapping.Game(context.Profile, context.Game, checkRunning: false),
             new PlanSelectionDto(allParts, preview.Packages.Count, selected.Count,
                 [.. selected.Select(part => part.Label)]),
-            parts, entries, existing, gameFiles, replaces, check.EditedSettings ?? [], check.NeedsUe4ss, check.CanInstall,
+            parts, entries, existing, gameFiles, replaces, ownFolder is not null, ownFolder, check.EditedSettings ?? [],
+            check.NeedsUe4ss, check.CanInstall,
             [.. check.Problems.Select(Output.Text)], [.. check.Warnings.Select(Output.Text)],
             new PlanIgnoredDto(preview.IgnoredFileCount, preview.LeftOutFiles.Count, preview.IgnoredFiles, preview.LeftOutFiles,
                 preview.NestedArchiveCount, preview.ContainsUe4ssRuntime));

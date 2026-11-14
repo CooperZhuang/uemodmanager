@@ -43,11 +43,13 @@ internal sealed record PlanIgnoredDto(int Count, int LeftOutCount, IReadOnlyList
 internal sealed record PlanSelectionDto(bool AllParts, int PartCount, int SelectedCount, IReadOnlyList<string> SelectedLabels);
 
 /// <summary>The read-only install plan: the same Check the install review runs, without touching the game.</summary>
+/// <param name="KeepBoth">The download stays beside an installed mod it would replace, in the folder of <paramref name="OwnFolder"/>.</param>
+/// <param name="OwnFolder">The folder below ~mods for a kept download; null when it takes its usual places.</param>
 internal sealed record PlanPayload(int SchemaVersion, string Command, string Source, string SourceFileName, string SuggestedName,
     string? SuggestedVersion, string GameId, GameInfo Game, PlanSelectionDto Selection, IReadOnlyList<PlanPartDto> Parts,
     IReadOnlyList<PlanEntryDto> Entries, IReadOnlyList<PlanEntryDto> ExistingFiles, IReadOnlyList<PlanEntryDto> GameFilesReplaced,
-    PlanReplacedDto? Replaces, IReadOnlyList<string> EditedSettings, bool NeedsUe4ss, bool CanInstall, IReadOnlyList<string> Problems,
-    IReadOnlyList<string> Warnings, PlanIgnoredDto Ignored);
+    PlanReplacedDto? Replaces, bool KeepBoth, string? OwnFolder, IReadOnlyList<string> EditedSettings, bool NeedsUe4ss,
+    bool CanInstall, IReadOnlyList<string> Problems, IReadOnlyList<string> Warnings, PlanIgnoredDto Ignored);
 
 internal sealed record InstallPayload(int SchemaVersion, string Command, string Source, ModDto Installed, PlanReplacedDto? Replaced,
     IReadOnlyList<string> Warnings);

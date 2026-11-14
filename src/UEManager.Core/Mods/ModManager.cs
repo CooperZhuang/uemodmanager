@@ -125,9 +125,13 @@ public sealed class ModManager
         (Game.ProjectFolder ?? Game.Profile.ProjectFolder, Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/'));
 
     /// <summary>Unpacks a download into staging and reads it. Nothing reaches the game yet.</summary>
-    public InstallPreview Inspect(string source)
+    /// <param name="stagingRoot">
+    /// The folder to unpack below, one folder of its own per preview; null unpacks into the data folder's staging folder.
+    /// The command line tool passes another folder so it can plan against a data folder it may not write to.
+    /// </param>
+    public InstallPreview Inspect(string source, string? stagingRoot = null)
     {
-        var staging = Path.Combine(paths.StagingDir, Guid.NewGuid().ToString("N"));
+        var staging = Path.Combine(stagingRoot ?? paths.StagingDir, Guid.NewGuid().ToString("N"));
         try
         {
             ArchiveStager.Stage(source, staging);

@@ -10,10 +10,11 @@ internal static class InstallCommand
 {
     public static int Run(CliArguments arguments)
     {
-        arguments.Allow(["--json", "--yes", "--all-parts"], ["--data-dir", "--game", "--game-root"]);
+        arguments.Allow(["--json", "--yes", "--all-parts", "--keep-both"],
+            ["--data-dir", "--game", "--game-root", "--staging", "--part"]);
         var source = arguments.Single("a download (a .zip, .7z, .rar, .pak, .utoc, .ucas file, or a folder)");
         var context = CliContext.Open(arguments, needInstall: true, write: arguments.Yes);
-        using var planned = PlannedInstall.Build(context, source, arguments.AllParts);
+        using var planned = PlannedInstall.Build(context, arguments, source);
         var plan = planned.Plan;
 
         if (!arguments.Yes)
@@ -35,8 +36,9 @@ internal static class InstallCommand
         ModRecord mod;
         try
         {
+            // --keep-both installs beside the installed mod: no replace, and the plan's own folder below ~mods.
             mod = manager.Install(planned.Preview, planned.Selected, plan.SuggestedName, plan.SuggestedVersion,
-                replace: plan.Replaces is not null);
+                replace: plan.Replaces is not null, ownFolder: planned.OwnFolder);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
@@ -52,6 +54,8 @@ internal static class InstallCommand
         Output.Line($"Installed \"{mod.Name}\"{(mod.Version is null ? "" : $" ({mod.Version})")}: {mod.Files.Count} file(s), {mod.TypeLabel}.");
         if (plan.Replaces is { } replaced)
             Output.Line($"Replaced \"{replaced.Name}\"{(replaced.Version is null ? "" : $" ({replaced.Version})")}.");
+        if (plan.OwnFolder is { } folder)
+            Output.Line($"Kept the installed mod; the new one is in ~mods/{folder}.");
         foreach (var warning in plan.Warnings)
             Output.Line($"Warning: {warning}");
         return 0;
