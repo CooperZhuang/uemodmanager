@@ -69,7 +69,8 @@ internal sealed class CliArguments
                     if (value is null)
                     {
                         if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
-                            throw new CliError("invalid-arguments", $"Option '{name}' needs a value.", details: [$"Example: {name} <folder>"]);
+                            throw new CliError("invalid-arguments", $"Option '{name}' needs a value.",
+                                details: [$"Example: {name} {ValueExample(name)}"]);
                         value = args[++i];
                     }
                     if (RepeatableOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
@@ -144,4 +145,12 @@ internal sealed class CliArguments
                      .Where(v => !values.Contains(v, StringComparer.OrdinalIgnoreCase)))
             throw new CliError("invalid-arguments", $"Option '{value}' does not belong to '{Command}'.", details: ["Run --help for the usage."]);
     }
+
+    /// <summary>What an option's value looks like, for the message when it is missing.</summary>
+    private static string ValueExample(string option) => option.ToLowerInvariant() switch
+    {
+        "--part" => "<index|name>",
+        "--game" => "<id>",
+        _ => "<folder>",
+    };
 }

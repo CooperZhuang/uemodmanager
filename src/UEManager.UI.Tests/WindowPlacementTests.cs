@@ -81,4 +81,17 @@ public class WindowPlacementTests
 
         Assert.True(WindowFrame.Apply(source.Handle));
     });
+
+    /// <summary>
+    /// A window hides until it is ready (DWMWA_CLOAK, 13). With the read-only DWMWA_CLOAKED (14), Windows refused the
+    /// setting, and the window showed its see-through frame and its loading state at every start.
+    /// </summary>
+    [Fact]
+    public void Windows_accepts_hiding_a_window_until_it_is_ready() => UiThread.Run(() =>
+    {
+        using var source = new HwndSource(new HwndSourceParameters("UEModManager.TestCloak") { Width = 100, Height = 100 });
+
+        Assert.True(WindowFrame.SetCloak(source.Handle, true));
+        Assert.True(WindowFrame.SetCloak(source.Handle, false));
+    });
 }

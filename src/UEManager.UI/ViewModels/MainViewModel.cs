@@ -718,14 +718,33 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public string UnmanagedText => L.Plural(UnmanagedCount,
         "{0} file in the mods folder was not installed by the manager", "{0} files in the mods folder were not installed by the manager");
 
+    /// <summary>
+    /// Done once the start has looked for the game and read its mod list, or earlier when it asks the player something:
+    /// the main window shows then (see <see cref="Services.WindowFrame"/>), not in its loading state.
+    /// </summary>
+    public Task FirstLoaded => firstLoad.Task;
+
+    private readonly TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public async Task InitializeAsync(IReadOnlyList<string> downloads)
     {
-        if (settings.Language is null && L.Current.Offer() is { } offered)
-            await OfferLanguageAsync(offered);
-        ModManager.ClearStaging(paths);
-        GameInstall? found = null;
-        await RunAsync(L.T("Looking for the game…"), async () => found = await Task.Run(FindGame));
-        await SetGameAsync(found);
+        try
+        {
+            if (settings.Language is null && L.Current.Offer() is { } offered)
+            {
+                // The question needs the window.
+                firstLoad.TrySetResult();
+                await OfferLanguageAsync(offered);
+            }
+            ModManager.ClearStaging(paths);
+            GameInstall? found = null;
+            await RunAsync(L.T("Looking for the game…"), async () => found = await Task.Run(FindGame));
+            await SetGameAsync(found);
+        }
+        finally
+        {
+            firstLoad.TrySetResult();
+        }
         gameWatch.Start();
         _ = CheckUe4ssManifestAsync();
         _ = Update.CheckAsync();

@@ -243,33 +243,37 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
 
     /// <summary>
     /// The choice follows the ticked parts. Each mod that this may update is a place, an update first, as before; keeping
-    /// both is the last. When only the number on the mod site matches, keeping both is first and ticked: the download can
-    /// be another file of that page, and a wrong update would remove the mod the player has.
+    /// both is the last. When only the number on the mod site matches, keeping both is first and ticked. The first choice
+    /// is Core's (see <see cref="InstallPlaces"/>), which the command line tool takes too.
     /// </summary>
     private void RefreshPlaces(IReadOnlyCollection<PackageGroup> selected)
     {
-        var found = manager.SameNameMods(selected, catalog?.Id, SiteId);
-        var key = string.Join('|', found.Select(f => $"{f.Mod.Id}:{f.CanUpdate}:{f.BySiteNumber}"));
+        var places = manager.PlacesFor(selected, catalog?.Id, SiteId);
+        var key = string.Join('|', places.Found.Select(f => $"{f.Mod.Id}:{f.CanUpdate}:{f.BySiteNumber}"));
         if (key == placesKey)
             return;
         placesKey = key;
         placing = true;
         Places.Clear();
-        isSamePage = found.Count > 0 && found.All(f => f.BySiteNumber);
-        if (found.Count > 0)
+        isSamePage = places.SamePage;
+        if (places.Any)
         {
-            var samePage = isSamePage;
-            var keep = new PlaceOptionViewModel(samePage
+            var keep = new PlaceOptionViewModel(places.SamePage
                 ? L.T("Keep both: install this as another mod")
                 : L.T("Keep both: install this as another mod, in a folder of its own in ~mods"), true, null, OnPlaceChanged);
-            if (samePage)
+            if (places.SamePage)
                 Places.Add(keep);
-            foreach (var mod in found.Where(f => f.CanUpdate))
-                Places.Add(new PlaceOptionViewModel(L.F($"Update \"{mod.Mod.Name}\""), false, mod.Folder, OnPlaceChanged));
-            if (!samePage)
+            foreach (var mod in places.Updates)
+            {
+                var update = new PlaceOptionViewModel(L.F($"Update \"{mod.Mod.Name}\""), false, mod.Folder, OnPlaceChanged);
+                Places.Add(update);
+                if (mod == places.FirstUpdate)
+                    update.IsSelected = true;
+            }
+            if (!places.SamePage)
                 Places.Add(keep);
-            if (samePage || !Places[0].KeepsBoth)
-                Places[0].IsSelected = true;
+            if (places.SamePage)
+                keep.IsSelected = true;
         }
         placing = false;
         OnPropertyChanged(nameof(HasPlaces));
@@ -277,10 +281,10 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
     }
 
     /// <summary>What keeping both means: for the same mod page, which of its files this may be; for the same file names, that only one may show.</summary>
-    private static string KeepBothNote(IReadOnlyList<SameNameMod> found)
+    private static string KeepBothNote(InstallPlaces places)
     {
-        var names = string.Join(", ", found.Select(f => f.Mod.Name));
-        return found.All(f => f.BySiteNumber)
+        var names = string.Join(", ", places.Found.Select(f => f.Mod.Name));
+        return places.SamePage
             ? L.F($"This download comes from the same mod page as {names}. A page can hold several files, such as optional ones: keep both for another file of the page, or choose Update for a newer version of the mod you have.")
             : L.F($"This mod and {names} may change the same things in the game. Then only one style or version shows, even with both turned on. Turn off the one you do not want. Only the mod's author can make both work together, with one combined mod.");
     }
@@ -301,7 +305,7 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         var chosen = Packages.Where(p => p.IsSelected).Select(p => p.Package).ToList();
         RefreshPlaces(chosen);
         var ownFolder = OwnFolder;
-        KeepBothText = SelectedPlace is { KeepsBoth: true } ? KeepBothNote(manager.SameNameMods(chosen, catalog?.Id, SiteId)) : null;
+        KeepBothText = SelectedPlace is { KeepsBoth: true } ? KeepBothNote(manager.PlacesFor(chosen, catalog?.Id, SiteId)) : null;
         check = manager.Check(preview, chosen, catalog?.Id, ownFolder);
         // A kept mod's folder takes the name: with a new name, the review starts over with it.
         if (FillName() && SelectedPlace is { KeepsBoth: true })

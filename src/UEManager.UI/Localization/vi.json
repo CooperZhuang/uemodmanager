@@ -359,6 +359,7 @@
   "Older backups are removed after the next successful backup.": "Các bản sao lưu cũ vượt quá số lượng cần giữ sẽ bị xóa sau lần sao lưu thành công tiếp theo.",
   "Only a download that keeps the mod site's file name shows its mod page.": "Chỉ mod có tệp tải về giữ nguyên tên tệp từ trang web mod mới hiển thị liên kết đến trang mod.",
   "Only errors and warnings": "Chỉ lỗi và cảnh báo",
+  "Only one of these parts can be in the game: {0}. Select one of them.": "Chỉ một trong các phần này có thể có trong trò chơi: {0}. Hãy chọn một trong số đó.",
   "Only tools are listed for this game": "Game này chỉ có công cụ trong danh sách",
   "Open data folder": "Mở thư mục dữ liệu",
   "Open download page": "Mở trang tải về",

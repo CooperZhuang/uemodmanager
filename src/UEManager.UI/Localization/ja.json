@@ -359,6 +359,7 @@
   "Older backups are removed after the next successful backup.": "古いバックアップは、次のバックアップが成功した後に削除されます。",
   "Only a download that keeps the mod site's file name shows its mod page.": "MODサイトのファイル名を保持しているダウンロードだけ、MODページを表示できます。",
   "Only errors and warnings": "エラーと警告のみ",
+  "Only one of these parts can be in the game: {0}. Select one of them.": "ゲームに入れられるのは次の部分のうち1つだけです：{0}。どれか1つを選んでください。",
   "Only tools are listed for this game": "このゲームにはツールのみ掲載されています",
   "Open data folder": "データフォルダーを開く",
   "Open download page": "ダウンロードページを開く",

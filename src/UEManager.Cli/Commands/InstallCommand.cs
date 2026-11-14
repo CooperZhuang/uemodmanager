@@ -36,7 +36,7 @@ internal static class InstallCommand
         ModRecord mod;
         try
         {
-            // --keep-both installs beside the installed mod: no replace, and the plan's own folder below ~mods.
+            // Kept beside an installed mod: no replace, and the plan's folder below ~mods.
             mod = manager.Install(planned.Preview, planned.Selected, plan.SuggestedName, plan.SuggestedVersion,
                 replace: plan.Replaces is not null, ownFolder: planned.OwnFolder);
         }
@@ -45,7 +45,8 @@ internal static class InstallCommand
             throw new CliError("install-failed", $"The install failed: {error.Message}");
         }
 
-        var payload = new InstallPayload(1, "install", plan.Source, Mapping.Mod(mod), plan.Replaces, plan.Warnings);
+        var payload = new InstallPayload(1, "install", plan.Source, Mapping.Mod(mod), plan.Replaces, plan.KeepBoth, plan.OwnFolder,
+            plan.Warnings);
         if (arguments.Json)
         {
             Output.Json(payload);
@@ -54,8 +55,10 @@ internal static class InstallCommand
         Output.Line($"Installed \"{mod.Name}\"{(mod.Version is null ? "" : $" ({mod.Version})")}: {mod.Files.Count} file(s), {mod.TypeLabel}.");
         if (plan.Replaces is { } replaced)
             Output.Line($"Replaced \"{replaced.Name}\"{(replaced.Version is null ? "" : $" ({replaced.Version})")}.");
-        if (plan.OwnFolder is { } folder)
-            Output.Line($"Kept the installed mod; the new one is in ~mods/{folder}.");
+        if (planned.KeepBoth)
+            Output.Line(planned.Selected.Any(part => part.Target == DeployTarget.Mods)
+                ? $"Kept the installed mod; the new one is in ~mods/{planned.OwnFolder}."
+                : "Kept the installed mod; the new one is another mod beside it.");
         foreach (var warning in plan.Warnings)
             Output.Line($"Warning: {warning}");
         return 0;

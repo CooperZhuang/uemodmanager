@@ -359,6 +359,7 @@
   "Older backups are removed after the next successful backup.": "下次成功備份後，會刪除超出保留數量的舊備份。",
   "Only a download that keeps the mod site's file name shows its mod page.": "只有下載檔案保留了模組網站提供的原始檔名，才會顯示模組頁面連結。",
   "Only errors and warnings": "僅顯示錯誤和警告",
+  "Only one of these parts can be in the game: {0}. Select one of them.": "以下部分只能有一個在遊戲中：{0}。請只選擇其中一個。",
   "Only tools are listed for this game": "此遊戲目前只列出了工具",
   "Open data folder": "開啟 Data 資料夾",
   "Open download page": "開啟下載頁面",

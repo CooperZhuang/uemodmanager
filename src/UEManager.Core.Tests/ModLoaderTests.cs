@@ -211,6 +211,31 @@ public class ModLoaderTests : IDisposable
         Assert.Single(preview.Packages.Select(p => p.VariantOf).Distinct());
     }
 
+    [Fact]
+    public void Both_copies_of_a_script_mod_are_a_problem()
+    {
+        // The review lets the player tick one copy; the command line tool can name both.
+        using var preview = manager.Inspect(TwoLoaders());
+
+        var check = manager.Check(preview, preview.Packages.ToList());
+
+        Assert.False(check.CanInstall);
+        Assert.Contains(check.Problems, p => p.ToString().StartsWith("Only one of these parts can be in the game: Mods Menu, PBZModLoader", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Variants_with_the_same_files_are_one_problem_not_two()
+    {
+        folder.File(@"Downloads\Speed\x2\Speed_P.pak", "x2");
+        folder.File(@"Downloads\Speed\x3\Speed_P.pak", "x3");
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Speed"));
+
+        var problems = manager.Check(preview, preview.Packages.ToList()).Problems.Select(p => p.ToString()).ToList();
+
+        Assert.Contains(problems, p => p.Contains("is in more than one selected part"));
+        Assert.DoesNotContain(problems, p => p.StartsWith("Only one of these parts", StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(@"TestGame\PBZModLoader\mods\Markers\main.js")]
     [InlineData(@"TestGame\Content\JavaScript\PBZModsMenu\Mods\Markers\main.js")]

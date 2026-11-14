@@ -69,6 +69,32 @@ public sealed record InstallCheck(IReadOnlyList<FormattableString> Problems, IRe
 /// page, which can hold several files, so keeping both comes first.</param>
 public sealed record SameNameMod(ModRecord Mod, string? Folder, bool CanUpdate, bool BySiteNumber = false);
 
+/// <summary>
+/// What an install offers when installed mods have the download's file names or mod page: update one of them, or keep
+/// both. The install review lists these places and the command line tool takes its first choice, so both agree.
+/// </summary>
+/// <param name="Found">The installed mods with the same file names, or the one from the same mod page.</param>
+public sealed record InstallPlaces(IReadOnlyList<SameNameMod> Found)
+{
+    /// <summary>There is something to choose: one of the installed mods may be the one this download updates.</summary>
+    public bool Any => Found.Count > 0;
+
+    /// <summary>
+    /// Only the number on the mod site matches: the download can be another file of that page, and a wrong update would
+    /// remove the mod the player has. Keeping both comes first then, and is the first choice.
+    /// </summary>
+    public bool SamePage => Found.Count > 0 && Found.All(f => f.BySiteNumber);
+
+    /// <summary>The installed mods this download can update, in the order the review lists them.</summary>
+    public IEnumerable<SameNameMod> Updates => Found.Where(f => f.CanUpdate);
+
+    /// <summary>
+    /// The update that is the first choice: the first one, unless the same mod page puts keeping both first. Null with
+    /// only another mod of the same file names: the player must choose to keep both, as nothing can be updated.
+    /// </summary>
+    public SameNameMod? FirstUpdate => SamePage ? null : Updates.FirstOrDefault();
+}
+
 /// <summary>What a PBZModLoader installed by hand keeps in the game and the manager's copy does not need.</summary>
 /// <param name="Places">Files and folders, below the install folder.</param>
 /// <param name="SourceOnlyMods">Mods with a main.ts and no main.js: only the old loader could compile them.</param>

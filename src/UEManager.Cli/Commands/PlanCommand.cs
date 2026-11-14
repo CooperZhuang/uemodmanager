@@ -8,8 +8,8 @@ internal static class PlanCommand
         arguments.Allow(["--json", "--all-parts", "--keep-both"],
             ["--data-dir", "--game", "--game-root", "--staging", "--part"]);
         var source = arguments.Single("a download (a .zip, .7z, .rar, .pak, .utoc, .ucas file, or a folder)");
-        // plan writes nothing but its own staging: --staging keeps that out of a read-only data folder. The lock is still
-        // taken, as the app holds the plan's mod list in memory.
+        // plan changes nothing in the game. It unpacks the download into staging (--staging names another folder) and
+        // takes the data folder's lock, as the app holds the mod list the plan reads in memory.
         var context = CliContext.Open(arguments, needInstall: true, write: false);
         using var planned = PlannedInstall.Build(context, arguments, source);
         // The plan is JSON by design, so --json changes nothing here.

@@ -133,6 +133,32 @@ public class SameNameModsTests : IDisposable
     }
 
     [Fact]
+    public void The_first_choice_updates_the_mod_in_its_own_folder()
+    {
+        Install("Blue", "Blue", "Skin");
+        using var preview = Download("Blue 2", "Skin");
+
+        var places = manager.PlacesFor(preview.Packages.ToList());
+
+        Assert.False(places.SamePage);
+        Assert.Equal("Blue", places.FirstUpdate!.Mod.Name);
+        Assert.Equal("Blue", places.FirstUpdate.Folder);
+    }
+
+    [Fact]
+    public void For_another_mod_with_the_same_names_the_player_chooses()
+    {
+        Install("Big", null, "One", "Two", "Three");
+        using var preview = Download("Small", "One");
+
+        var places = manager.PlacesFor(preview.Packages.ToList());
+
+        Assert.True(places.Any);
+        Assert.False(places.SamePage);
+        Assert.Null(places.FirstUpdate);
+    }
+
+    [Fact]
     public void With_other_names_or_from_the_catalog_there_is_no_choice()
     {
         Install("Red", null, "Skin");
@@ -250,6 +276,20 @@ public class SameNameModsTests : IDisposable
 
         Assert.Equal([OldPak, NewScript], manager.Mods.Select(m => m.Name));
         Assert.True(File.Exists(Deployed("zzz_PBZAutoCollect_P.pak")));
+    }
+
+    [Fact]
+    public void For_the_same_page_keeping_both_is_the_first_choice()
+    {
+        InstallDownload(OldPak, "zzz_PBZAutoCollect_P.pak");
+        folder.File($@"Downloads\{NewScript}\{Script}", NewScript);
+        using var preview = manager.Inspect(folder.Combine("Downloads", NewScript));
+
+        var places = manager.PlacesFor(preview.Packages.ToList(), siteId: "70");
+
+        Assert.True(places.SamePage);
+        Assert.Null(places.FirstUpdate);
+        Assert.Equal(OldPak, Assert.Single(places.Updates).Mod.Name);
     }
 
     [Fact]

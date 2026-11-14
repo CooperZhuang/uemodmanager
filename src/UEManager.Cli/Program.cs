@@ -142,7 +142,7 @@ internal static class Program
           --all-parts           Select every part of the download, not only the default selection
           --part <index|name>   Select only this part; repeat for more. Cannot be used with --all-parts
           --keep-both           Keep an installed mod the download would replace: install it as another mod
-          --staging <folder>    Unpack the download here instead of the data folder's staging folder
+          --staging <folder>    Unpack the download here, outside the game, instead of the data folder's staging folder
           --yes                 Confirm a change; install and uninstall need it
           -h, --help            Show this help
           --version             Show the CLI version

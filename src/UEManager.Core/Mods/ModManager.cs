@@ -127,7 +127,7 @@ public sealed class ModManager
     /// <summary>Unpacks a download into staging and reads it. Nothing reaches the game yet.</summary>
     /// <param name="stagingRoot">
     /// The folder to unpack below, one folder of its own per preview; null unpacks into the data folder's staging folder.
-    /// The command line tool passes another folder so it can plan against a data folder it may not write to.
+    /// The command line tool's --staging names another one, such as a drive with more room.
     /// </param>
     public InstallPreview Inspect(string source, string? stagingRoot = null)
     {
@@ -244,6 +244,17 @@ public sealed class ModManager
         foreach (var duplicate in entries.GroupBy(e => (e.Target, e.Path.ToUpperInvariant()))
                      .Where(g => g.Select(e => e.Source).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1))
             problems.Add($"{duplicate.First().Path} is in more than one selected part. Select only one of them.");
+        // The parts of one choice, such as a script mod's copies for two loaders or a loader's entries, are one mod: only
+        // one of them belongs in the game. The review lets the player tick one; the command line tool can name more.
+        // Variants with the same files are said above already.
+        foreach (var choice in selected.Where(p => p.VariantOf is not null).GroupBy(p => p.VariantOf, StringComparer.OrdinalIgnoreCase)
+                     .Where(g => g.Count() > 1))
+        {
+            var samePaths = choice.SelectMany(p => p.RelativePaths.Select(path => $"{p.Target}|{path}"))
+                .GroupBy(place => place, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
+            if (!samePaths)
+                problems.Add($"Only one of these parts can be in the game: {string.Join(", ", choice.Select(p => p.Variant ?? p.Label))}. Select one of them.");
+        }
         var shared = entries.Where(e => SharedFiles.Is(e.Target, e.Path)).DistinctBy(e => e.Path.ToUpperInvariant()).ToList();
 
         ModRecord? replaces;
@@ -2272,11 +2283,6 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// The part of a download's choice to tick at first: the one in the game already, or a script mod's copy for the
-    /// script loader that is installed, or with neither for the one the app recommends, so the review says what to do.
-    /// Null when the player must decide.
-    /// </summary>
-    /// <summary>
     /// The parts the install review ticks first, and the command line tool takes: every part that is certain, of a
     /// choice only the one the game tells (see <see cref="PreferredChoice"/>), and of parts that land in the same place
     /// only the first. Files for the exe folder that do not look like a loader wait for the player.
@@ -2306,6 +2312,11 @@ public sealed class ModManager
                 && string.Equals(part.Variant, installed, StringComparison.OrdinalIgnoreCase))
             : null;
 
+    /// <summary>
+    /// The part of a download's choice to tick at first: the one in the game already, or a script mod's copy for the
+    /// script loader that is installed, or with neither for the one the app recommends, so the review says what to do.
+    /// Null when the player must decide.
+    /// </summary>
     public PackageGroup? PreferredChoice(InstallPreview preview)
     {
         if (preview.Packages.FirstOrDefault(p => p.IsAlternate && IsInstalled(p)) is { } made)
@@ -2357,6 +2368,10 @@ public sealed class ModManager
             return found;
         }
     }
+
+    /// <summary>The places to offer for these parts, with the first choice (see <see cref="InstallPlaces"/>).</summary>
+    public InstallPlaces PlacesFor(IReadOnlyCollection<PackageGroup> selected, string? catalogId = null, string? siteId = null) =>
+        new(SameNameMods(selected, catalogId, siteId));
 
     /// <summary>
     /// The installed mod that has the download's number on the mod site (see <see cref="ModNaming.SiteModId"/>) and

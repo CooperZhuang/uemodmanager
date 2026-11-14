@@ -359,6 +359,7 @@
   "Older backups are removed after the next successful backup.": "오래된 백업은 다음 백업이 성공한 후 삭제됩니다.",
   "Only a download that keeps the mod site's file name shows its mod page.": "모드 사이트의 파일 이름을 유지한 다운로드만 모드 페이지를 표시합니다.",
   "Only errors and warnings": "오류 및 경고만",
+  "Only one of these parts can be in the game: {0}. Select one of them.": "다음 부분 중 하나만 게임에 있을 수 있습니다: {0}. 하나를 선택하십시오.",
   "Only tools are listed for this game": "이 게임에는 도구만 등록되어 있습니다",
   "Open data folder": "데이터 폴더 열기",
   "Open download page": "다운로드 페이지 열기",

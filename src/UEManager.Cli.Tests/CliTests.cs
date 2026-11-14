@@ -191,6 +191,77 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Another_file_of_the_same_page_is_kept_beside_the_mod_as_the_app_does()
+    {
+        // The same mod page, but no file in common: the download may be an optional file of that page. The app ticks
+        // Keep both first then, and so does the tool, so a script never removes the mod the player has.
+        var first = Zip("MyMod-77-1-0-1730000000.zip", ("MyMod_P.pak", "the main pak"));
+        var optional = Zip("MyMod-77-1-0-1730000005.zip", ("MyMod_Extra_P.pak", "an optional pak"));
+        Assert.Equal(0, Run("install", first, "--yes").Code);
+
+        using (var plan = JsonDocument.Parse(Run("plan", optional).Out))
+        {
+            Assert.True(plan.RootElement.GetProperty("keepBoth").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, plan.RootElement.GetProperty("replaces").ValueKind);
+        }
+
+        var (code, output, _) = Run("install", optional, "--yes", "--json");
+
+        Assert.Equal(0, code);
+        using var installed = JsonDocument.Parse(output);
+        var folder = installed.RootElement.GetProperty("ownFolder").GetString()!;
+        Assert.True(installed.RootElement.GetProperty("keepBoth").GetBoolean());
+        Assert.True(File.Exists(Path.Combine(ModsFolder, "MyMod_P.pak")));
+        Assert.True(File.Exists(Path.Combine(ModsFolder, folder, "MyMod_Extra_P.pak")));
+        using var list = JsonDocument.Parse(Run("list", "--json").Out);
+        Assert.Equal(2, list.RootElement.GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public void Keep_both_says_so_when_the_download_must_take_the_mods_place()
+    {
+        // A pak and a Lua mod: a folder of its own keeps the pak apart, but the Lua mod has one place in the game.
+        (string, string)[] Files(string version) =>
+        [
+            ("Mixed_P.pak", $"pak {version}"),
+            ("Mixed/Scripts/main.lua", $"-- main {version}"),
+            ("Mixed/Scripts/a.lua", $"-- a {version}"),
+            ("Mixed/Scripts/b.lua", $"-- b {version}"),
+        ];
+        var first = Zip("Mixed-91-1-0-1730000006.zip", Files("1"));
+        var second = Zip("Mixed-91-2-0-1730000007.zip", Files("2"));
+        Assert.Equal(0, Run("install", first, "--yes").Code);
+
+        var (code, _, error) = Run("install", second, "--keep-both", "--yes");
+
+        Assert.Equal(1, code);
+        Assert.Contains("cannot keep", error);
+        Assert.Equal("pak 1", File.ReadAllText(Path.Combine(ModsFolder, "Mixed_P.pak")));
+        // Without --keep-both it is the mod's update.
+        Assert.Equal(0, Run("install", second, "--yes").Code);
+        Assert.Equal("pak 2", File.ReadAllText(Path.Combine(ModsFolder, "Mixed_P.pak")));
+    }
+
+    [Fact]
+    public void A_part_name_that_several_parts_share_asks_for_more()
+    {
+        var download = Zip("Speed-92-1-0-1730000008.zip", ("x2/Speed_P.pak", "x2"), ("x3/Speed_P.pak", "x3"));
+
+        var (code, _, error) = Run("plan", download, "--part", "Speed_P");
+
+        Assert.Equal(1, code);
+        Assert.Contains("More than one part matches 'Speed_P'", error);
+        // The variant names one, and so does its folder/name.
+        foreach (var name in new[] { "x3", "x3/Speed_P" })
+        {
+            using var plan = JsonDocument.Parse(Run("plan", download, "--part", name).Out);
+            var parts = plan.RootElement.GetProperty("parts");
+            Assert.False(parts[0].GetProperty("selected").GetBoolean());
+            Assert.True(parts[1].GetProperty("selected").GetBoolean());
+        }
+    }
+
+    [Fact]
     public void Part_picks_the_named_parts_of_a_download()
     {
         var download = Zip("TwoParts-88-1-0-1730000002.zip", ("A_P.pak", "a pak"), ("B_P.pak", "b pak"));
@@ -244,7 +315,8 @@ public sealed class CliTests : IDisposable
         Assert.Equal(1, code);
         Assert.Contains("--part", error);
         Assert.Contains("--all-parts", error);
-        Assert.False(Directory.Exists(ModsFolder));
+        // It stops at the arguments, before the download is unpacked.
+        Assert.False(Directory.Exists(Path.Combine(Data, "staging")));
     }
 
     [Fact]
@@ -279,5 +351,15 @@ public sealed class CliTests : IDisposable
         Assert.True(Directory.Exists(staging));
         Assert.Empty(Directory.EnumerateFileSystemEntries(staging));
         Assert.False(Directory.Exists(Path.Combine(Data, "staging")));
+    }
+
+    [Fact]
+    public void Staging_inside_the_game_is_refused()
+    {
+        var (code, _, error) = Run("plan", Download(), "--staging", Path.Combine(ModsFolder, "unpacked"));
+
+        Assert.Equal(1, code);
+        Assert.Contains("outside the game", error);
+        Assert.False(Directory.Exists(Path.Combine(ModsFolder, "unpacked")));
     }
 }
