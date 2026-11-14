@@ -67,3 +67,24 @@ internal sealed record UninstallModDto(string Id, string Name, string? Version, 
 
 internal sealed record UninstallPayload(int SchemaVersion, string Command, string GameId, bool Confirmed, string? BackupFolder,
     int RemainingMods, UninstallModDto Mod);
+
+/// <summary>One save backup: a zip of the game's save folder, with the player's note and whether it is a personal one.</summary>
+internal sealed record SaveBackupDto(string Name, string Path, bool Personal, DateTimeOffset CreatedAt, long SizeBytes, string? Note);
+
+internal sealed record BackupListPayload(int SchemaVersion, string Command, string DataDir, string GameId, string BackupDir,
+    int Count, int PersonalCount, IReadOnlyList<SaveBackupDto> Backups);
+
+internal sealed record BackupCreatePayload(int SchemaVersion, string Command, string DataDir, string GameId, string SaveFolder,
+    int Keep, SaveBackupDto Backup, IReadOnlyList<string> Removed);
+
+internal sealed record BackupRestorePayload(int SchemaVersion, string Command, string DataDir, string GameId, string SaveFolder,
+    bool Confirmed, SaveBackupDto Backup, SaveBackupDto? BeforeBackup);
+
+internal sealed record BackupPersonalPayload(int SchemaVersion, string Command, string DataDir, string GameId, SaveBackupDto Backup,
+    bool Changed);
+
+internal sealed record BackupNotePayload(int SchemaVersion, string Command, string DataDir, string GameId, SaveBackupDto Backup,
+    bool Changed);
+
+internal sealed record BackupDeletePayload(int SchemaVersion, string Command, string DataDir, string GameId, bool Confirmed,
+    SaveBackupDto Backup);

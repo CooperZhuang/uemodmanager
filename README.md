@@ -758,17 +758,25 @@ UEModManager.exe --cli plan <archive|folder>
 UEModManager.exe --cli install <archive|folder> --yes
 UEModManager.exe --cli enable <mod> | disable <mod>
 UEModManager.exe --cli uninstall <mod> --yes
+UEModManager.exe --cli backup list | create | restore | personal | note | delete
 ```
 
 - `--json` gives one JSON object with stable fields; `--data-dir`, `--game` and
   `--game-root` pick the data folder, the game and its install folder.
+- `backup` is the Save backups page without a window: `create` zips the save
+  folder now (`--note`, `--keep`), `restore`, `personal`, `note` and `delete`
+  work on the backups the app shows, and `list` prints them. The save folder is
+  the app's (settings.json, then the game profile), and `--save-folder` overrides
+  it for `create` and `restore`.
 - `install` and `uninstall` without `--yes` only show what they would do, with
-  exit code 2. Exit code 1 is an error, on stderr.
+  exit code 2; so do `backup restore` and `backup delete`. Exit code 1 is an
+  error, on stderr.
 - The data folder is `--data-dir`, else `UEMM_DATA_DIR`, else the `Data` folder
   beside `UEModManager.exe`, where the app keeps it.
 - `plan`, `install`, `enable`, `disable` and `uninstall` refuse while the app is
   open with the same data folder: both take the data folder's lock
-  (`DataFolderLock`), as two programs would overwrite each other's mod list.
+  (`DataFolderLock`), as two programs would overwrite each other's mod list. The
+  `backup` commands that change the data folder take that lock too.
 - Which parts of a download it takes is the install review's first selection
   (`ModManager.FirstSelection`), so the tool and the app agree.
 - `--part <index|name>` takes only the named parts of a download: by the plan's

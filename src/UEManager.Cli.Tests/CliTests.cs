@@ -7,8 +7,10 @@ namespace UEManager.Cli.Tests;
 
 /// <summary>
 /// The command line tool, run in this process against a fake Phantom Blade Zero install and a data folder of its own.
-/// One class, so the tests run one after the other: they take over the console's output.
+/// One class, so the tests run one after the other: they take over the console's output. The console is shared with the
+/// backup tests, so both classes are in the "Console" collection and never run at the same time.
 /// </summary>
+[Collection("Console")]
 public sealed class CliTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "uemm-cli-tests", Guid.NewGuid().ToString("N"));
