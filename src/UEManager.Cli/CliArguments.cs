@@ -7,13 +7,14 @@ namespace UEManager.Cli;
 internal sealed class CliArguments
 {
     /// <summary>Options that take a value: "--data-dir C:\Games\UEMM\Data" or "--data-dir=C:\Games\UEMM\Data".</summary>
-    private static readonly string[] ValueOptions = ["--data-dir", "--game", "--game-root", "--staging", "--part"];
+    private static readonly string[] ValueOptions =
+        ["--data-dir", "--game", "--game-root", "--staging", "--part", "--save-folder", "--note", "--keep"];
 
     /// <summary>Value options that may be given more than once, such as "--part 1 --part Extras".</summary>
     private static readonly string[] RepeatableOptions = ["--part"];
 
     private static readonly string[] FlagOptions =
-        ["--json", "--yes", "--all-parts", "--keep-both", "--help", "--version"];
+        ["--json", "--yes", "--all-parts", "--keep-both", "--help", "--version", "--on", "--off", "--clear"];
 
     public string Command { get; private set; } = "";
 
@@ -50,6 +51,24 @@ internal sealed class CliArguments
 
     /// <summary>The parts named by --part, in the order given; empty for the plan's default selection.</summary>
     public IReadOnlyList<string> Parts => Lists.TryGetValue("--part", out var parts) ? parts : [];
+
+    /// <summary>backup create and restore: the save folder to use instead of the one in settings.json and the profile.</summary>
+    public string? SaveFolder => Values.GetValueOrDefault("--save-folder");
+
+    /// <summary>backup create: the player's note for the new backup.</summary>
+    public string? Note => Values.GetValueOrDefault("--note");
+
+    /// <summary>backup create: how many normal backups to keep, as text until it is checked.</summary>
+    public string? Keep => Values.GetValueOrDefault("--keep");
+
+    /// <summary>backup personal: make the backup a personal one.</summary>
+    public bool On => Flags.Contains("--on");
+
+    /// <summary>backup personal: move the backup back to the normal ones.</summary>
+    public bool Off => Flags.Contains("--off");
+
+    /// <summary>backup note: remove the note instead of setting one.</summary>
+    public bool Clear => Flags.Contains("--clear");
 
     /// <exception cref="CliError">An option is unknown or lacks its value.</exception>
     public static CliArguments Parse(string[] args)

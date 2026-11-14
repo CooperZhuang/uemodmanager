@@ -8,8 +8,9 @@ namespace UEManager.Cli;
 /// <summary>
 /// The state every command shares: where the manager's data folder is, which game is meant, and, for commands that
 /// need it, the game install folder. The data folder is found the way the app finds it, and --data-dir overrides it.
-/// A command that opens the mod list for changes, or plans against it, holds the data folder's lock while it runs, as
-/// the app does while it runs (<see cref="DataFolderLock"/>): it refuses while the app is open with that folder.
+/// A command that opens the mod list for changes, plans against it, or writes the data folder holds the data folder's
+/// lock while it runs, as the app does while it runs (<see cref="DataFolderLock"/>): it refuses while the app is open
+/// with that folder.
 /// </summary>
 internal sealed class CliContext
 {
@@ -53,15 +54,17 @@ internal sealed class CliContext
     /// data folder is created if missing, proved writable, and the Core log goes into its logs folder.
     /// </summary>
     /// <param name="needInstall">
-    /// The command changes the game or plans against it, so an install folder must be found, and the data folder's lock
-    /// must be free: the app keeps the mod list in memory and writes it back, and empties the staging folder at its start.
+    /// The command changes the game or plans against it, so an install folder must be found. Such a command, and every
+    /// command that changes the data folder, also needs the data folder's lock free: the app keeps the mod list in
+    /// memory and writes it back, and empties the staging folder at its start. Save backups live in the data folder too,
+    /// so the commands that write them take the lock even when they need no install.
     /// </param>
     /// <exception cref="CliError">The data folder or the game cannot be found, or the app holds the data folder.</exception>
     public static CliContext Open(CliArguments arguments, bool needInstall, bool write)
     {
         var dataDir = FindDataDir(arguments.DataDir, write);
         var paths = new AppPaths(dataDir);
-        if (needInstall && held is null)
+        if ((needInstall || write) && held is null)
         {
             held = DataFolderLock.TryTake(paths)
                 ?? throw new CliError("app-running", $"UE MM is open with the data folder '{dataDir}'.",

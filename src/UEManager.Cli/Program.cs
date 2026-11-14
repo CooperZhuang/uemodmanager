@@ -71,6 +71,7 @@ internal static class Program
                 "enable" => ModCommand.RunToggle(arguments, enable: true),
                 "disable" => ModCommand.RunToggle(arguments, enable: false),
                 "uninstall" => ModCommand.RunUninstall(arguments),
+                "backup" => BackupCommand.Run(arguments),
                 _ => Fail(new CliError("invalid-arguments", $"Unknown command '{arguments.Command}'.",
                     details: ["Run --help for the commands."]), jsonRequested),
             };
@@ -133,17 +134,32 @@ internal static class Program
           enable <mod>                    Enable an installed mod
           disable <mod>                   Disable an installed mod
           uninstall <mod> --yes           Uninstall a mod; without --yes it prints what would be removed and exits 2
+          backup list                     Save backups with their notes, normal and personal
+          backup create [--note <text>] [--keep <n>]
+                                          Back up the game's save folder now
+          backup restore <name> --yes     Put a save backup back; without --yes it prints what it would do and exits 2
+          backup personal <name> --on|--off
+                                          Keep a save backup for good (--on), or move it back (--off)
+          backup note <name> <text>|--clear
+                                          Set or clear a save backup's note
+          backup delete <name> --yes      Delete a save backup; without --yes it prints what it would delete and exits 2
 
         Options:
           --data-dir <folder>   The manager's data folder; default: UEMM_DATA_DIR, then Data beside UEModManager.exe
           --game <id>           The game profile id; default: the game in settings.json
           --game-root <folder>  Use this install folder instead of the one in settings.json
+          --save-folder <folder>
+                                The save folder for backup create and restore; default: settings.json, then the profile
+          --note <text>         The note on a new save backup
+          --keep <n>            Normal save backups to keep after a new one; default: settings.json
+          --on, --off           backup personal: keep the backup for good, or move it back
+          --clear               backup note: remove the note
           --json                Machine-readable JSON output with stable fields
           --all-parts           Select every part of the download, not only the default selection
           --part <index|name>   Select only this part; repeat for more. Cannot be used with --all-parts
           --keep-both           Keep an installed mod the download would replace: install it as another mod
           --staging <folder>    Unpack the download here, outside the game, instead of the data folder's staging folder
-          --yes                 Confirm a change; install and uninstall need it
+          --yes                 Confirm a change; install, uninstall, backup restore and backup delete need it
           -h, --help            Show this help
           --version             Show the CLI version
 
@@ -152,10 +168,10 @@ internal static class Program
           1  error (stderr says what)
           2  confirmation required; nothing was changed
 
-        The game is never started. Read-only commands (status, list, verify) do not write to the data folder or to the
-        game; plan only unpacks the download into the data folder's staging folder and removes it again, or into the
-        --staging folder. plan, install, enable, disable and uninstall refuse while UE MM is open with the same data
-        folder: close the app first.
+        The game is never started. Read-only commands (status, list, verify, backup list) do not write to the data folder
+        or to the game; plan only unpacks the download into the data folder's staging folder and removes it again, or
+        into the --staging folder. plan, install, enable, disable, uninstall and the backup commands that change the data
+        folder refuse while UE MM is open with the same data folder: close the app first.
 
         UEModManager.exe is a window program, so a terminal does not wait for it: the prompt can come back before the
         output. Pipe the output (UEModManager.exe --cli list | more) or, in cmd, use start /wait. Scripts that wait for
