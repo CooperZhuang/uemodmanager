@@ -1538,7 +1538,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (!EnsureGame() || SaveFolder is not { } saves)
             return;
-        if (GameProcess.IsRunning(Game!))
+        if (!SaveBackups.CanRestoreNow(Game))
         {
             ShowToast(L.F($"{GameDisplayName} is running. Close the game first, then try again."), isError: true);
             return;
@@ -1549,7 +1549,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 L.T("Restore saves")))
             return;
         if (await RunAsync(L.T("Restoring your saves…"),
-                () => Task.Run(() => SaveBackups.Restore(backup, saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep))))
+                () => Task.Run(() => SaveBackups.Restore(backup, saves, paths.SaveBackupDir(Profile.Id), DateTime.Now, SaveBackupKeep, Game))))
             ShowToast(L.F($"The saves of {made:G} are back."));
         RefreshSaveBackups();
     }

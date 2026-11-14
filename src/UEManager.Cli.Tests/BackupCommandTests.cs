@@ -8,9 +8,9 @@ namespace UEManager.Cli.Tests;
 /// <summary>
 /// `--cli backup`, run in this process against a fake Phantom Blade Zero install and a data folder of its own: every
 /// save and backup lives below a temp folder, so no real save is read. The console is shared with
-/// <see cref="CliTests"/>, so both classes are in the "Console" collection and never run at the same time.
+/// <see cref="CliTests"/>, so both classes are in one collection (<see cref="CliConsole"/>) and never run at the same time.
 /// </summary>
-[Collection("Console")]
+[Collection(CliConsole.Name)]
 public sealed class BackupCommandTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "uemm-cli-backup-tests", Guid.NewGuid().ToString("N"));
@@ -191,6 +191,16 @@ public sealed class BackupCommandTests : IDisposable
         Assert.Equal(JsonValueKind.Null, clear.GetProperty("backup").GetProperty("note").ValueKind);
         Assert.True(clear.GetProperty("changed").GetBoolean());
 
+        // The full path that list prints names the backup too, with either kind of slash.
+        var path = Json(Run("backup", "list", "--json").Out).GetProperty("backups")[0].GetProperty("path").GetString()!;
+        foreach (var given in new[] { path, path.Replace('\\', '/') })
+        {
+            var (pathCode, pathOutput, pathError) = Run("backup", "note", given, "By path", "--json");
+            Assert.True(pathCode == 0, pathError);
+            Assert.Equal(name, Json(pathOutput).GetProperty("backup").GetProperty("name").GetString());
+        }
+        Assert.Equal(0, Run("backup", "note", name, "--clear").Code);
+
         // Clearing twice changes nothing; a note needs text unless --clear, and --clear takes none.
         Assert.False(Json(Run("backup", "note", name, "--clear", "--json").Out).GetProperty("changed").GetBoolean());
         Assert.Equal(1, Run("backup", "note", name).Code);
@@ -290,7 +300,11 @@ public sealed class BackupCommandTests : IDisposable
         using (var zip = ZipFile.OpenRead(PathOf(created)))
             Assert.Equal(["Slot9.sav"], zip.Entries.Select(entry => entry.FullName.Replace('\\', '/')));
 
-        // The option belongs to backup create and restore only.
+        // The option belongs to backup create only: a restore empties the folder it fills, so it never takes one.
+        var (restoreCode, _, restoreError) = Run("backup", "restore", Path.GetFileName(PathOf(created)), "--save-folder", chosen);
+        Assert.Equal(1, restoreCode);
+        Assert.Contains("--save-folder", restoreError);
+        Assert.Equal("slot nine", File.ReadAllText(Path.Combine(chosen, "Slot9.sav")));
         var (otherCode, _, otherError) = Run("list", "--save-folder", chosen);
         Assert.Equal(1, otherCode);
         Assert.Contains("--save-folder", otherError);
@@ -315,9 +329,14 @@ public sealed class BackupCommandTests : IDisposable
         Assert.True(File.Exists(PathOf(second)));
         Assert.True(File.Exists(PathOf(third)));
 
-        // The count is a whole number of at least 1.
-        Assert.Equal(1, Run("backup", "create", "--keep", "0").Code);
-        Assert.Equal(1, Run("backup", "create", "--keep", "many").Code);
+        // The count is one the app's Settings offer: 2 to 20, in steps of 2. Nothing else removes a backup.
+        foreach (var keep in new[] { "0", "1", "3", "22", "many" })
+        {
+            var (code, _, error) = Run("backup", "create", "--keep", keep);
+            Assert.Equal(1, code);
+            Assert.Contains("even number from 2 to 20", error);
+        }
+        Assert.Equal(2, Json(Run("backup", "list", "--json").Out).GetProperty("count").GetInt32());
     }
 
     [Fact]

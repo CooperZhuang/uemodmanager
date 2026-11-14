@@ -52,7 +52,7 @@ internal sealed class CliArguments
     /// <summary>The parts named by --part, in the order given; empty for the plan's default selection.</summary>
     public IReadOnlyList<string> Parts => Lists.TryGetValue("--part", out var parts) ? parts : [];
 
-    /// <summary>backup create and restore: the save folder to use instead of the one in settings.json and the profile.</summary>
+    /// <summary>backup create: the save folder to use instead of the one in settings.json and the profile.</summary>
     public string? SaveFolder => Values.GetValueOrDefault("--save-folder");
 
     /// <summary>backup create: the player's note for the new backup.</summary>
@@ -170,6 +170,8 @@ internal sealed class CliArguments
     {
         "--part" => "<index|name>",
         "--game" => "<id>",
+        "--note" => "<text>",
+        "--keep" => "<number>",
         _ => "<folder>",
     };
 }

@@ -197,14 +197,26 @@ public static class SaveBackups
     }
 
     /// <summary>
+    /// Whether the saves can be put back now: not while the game runs. The game keeps its saves and writes them again,
+    /// so a restore would be undone or leave broken saves. The app asks before its question, the command line tool
+    /// before its plan, and <see cref="Restore"/> once more right before it changes anything.
+    /// </summary>
+    public static bool CanRestoreNow(GameInstall? game) => game is null || !GameProcess.IsRunning(game);
+
+    /// <summary>
     /// Puts a backup back: the save folder then holds exactly the backup's files. The saves of now are backed up
     /// first, so a restore can be undone. The backup is unpacked next to the save folder before anything changes,
     /// and the old save folder moves aside until the new one is in place; when a step fails, it moves back.
     /// </summary>
+    /// <param name="game">The game the saves belong to: while it runs, nothing changes (see <see cref="CanRestoreNow"/>).</param>
     /// <returns>The backup of the saves before the restore, or null when there were none.</returns>
-    public static string? Restore(string backup, string saveFolder, string backupDir, DateTime now, int keep = DefaultKeep)
+    public static string? Restore(string backup, string saveFolder, string backupDir, DateTime now, int keep = DefaultKeep,
+        GameInstall? game = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(keep, 1);
+        // Asked once more here: the game may have started while the player read the question.
+        if (!CanRestoreNow(game))
+            throw new ModException($"{game!.Profile.DisplayName} is running. Close the game first, then try again.");
         if (!File.Exists(backup))
             throw new ModException($"The save backup is gone: {backup}");
         var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(saveFolder));

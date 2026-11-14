@@ -114,13 +114,18 @@ internal static class BackupCommand
         return 0;
     }
 
-    /// <summary>`backup restore`: puts a backup back, after backing up the saves of now; without --yes it only says what it would do.</summary>
+    /// <summary>
+    /// `backup restore`: puts a backup back, after backing up the saves of now; without --yes it only says what it would
+    /// do. It takes no --save-folder: a restore makes the folder hold exactly the backup's files, so it only goes into
+    /// the save folder the app uses, never one a typo names.
+    /// </summary>
     private static int Restore(CliArguments arguments, List<string> rest)
     {
-        arguments.Allow(["--json", "--yes"], [.. DataOptions, "--save-folder"]);
+        arguments.Allow(["--json", "--yes"], DataOptions);
         var query = OneName("restore", rest);
         var context = CliContext.Open(arguments, needInstall: true, write: arguments.Yes);
-        if (context.Game is { } game && GameProcess.IsRunning(game))
+        // Core's rule, which the app's Save backups page follows too; Restore asks it again before it changes anything.
+        if (!SaveBackups.CanRestoreNow(context.Game))
         {
             throw new CliError("game-running", $"{context.Profile.DisplayName} is running.",
                 details: ["Close the game first, then run the command again.", "Nothing was changed."]);
@@ -141,7 +146,8 @@ internal static class BackupCommand
             return Program.ConfirmationRequired;
         }
 
-        var before = SaveBackups.Restore(backup.Path, saveFolder, backupDir, DateTime.Now, context.Settings.SaveBackupKeep);
+        var before = SaveBackups.Restore(backup.Path, saveFolder, backupDir, DateTime.Now, context.Settings.SaveBackupKeep,
+            context.Game);
         var beforeBackup = before is not null && File.Exists(before)
             ? Item(backupDir, before, SaveBackups.Notes(backupDir), personal: false)
             : null;
@@ -157,6 +163,7 @@ internal static class BackupCommand
         Output.Line(beforeBackup is null
             ? "There were no saves to back up first."
             : $"The saves of now were backed up to '{beforeBackup.Name}' first.");
+        Output.Line(SteamCloudNote);
         return 0;
     }
 
@@ -279,8 +286,8 @@ internal static class BackupCommand
     }
 
     /// <summary>
-    /// The save folder: --save-folder, else as the app resolves it (settings.json's choice for the game, then the
-    /// profile's folder, which may be relative to the install folder).
+    /// The save folder: --save-folder (backup create only), else as the app resolves it (settings.json's choice for the
+    /// game, then the profile's folder, which may be relative to the install folder).
     /// </summary>
     /// <exception cref="CliError">The game profile names no save folder and --save-folder was not given.</exception>
     private static string ResolveSaveFolder(CliContext context, CliArguments arguments)
@@ -340,16 +347,22 @@ internal static class BackupCommand
             || given.Equals(Path.GetFileNameWithoutExtension(backup.Name), StringComparison.OrdinalIgnoreCase)
             || given.Equals(key, StringComparison.OrdinalIgnoreCase)
             || given.Equals(Path.GetFileNameWithoutExtension(key), StringComparison.OrdinalIgnoreCase)
-            || given.Equals(backup.Path, StringComparison.OrdinalIgnoreCase);
+            // A full path, as list prints it, with either kind of slash: compared as given, not with the slashes turned.
+            || (Path.IsPathFullyQualified(query)
+                && Path.GetFullPath(query).Equals(Path.GetFullPath(backup.Path), StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>The number of normal backups to keep after a backup this command makes.</summary>
-    /// <exception cref="CliError">The given text is not a whole number of 1 or more.</exception>
+    /// <summary>
+    /// The number of normal backups to keep after a backup this command makes: one the app's Settings slider offers,
+    /// 2 to 20 in steps of 2 (<see cref="SaveBackups.Normalize"/>), so a typo never removes all but one backup.
+    /// </summary>
+    /// <exception cref="CliError">The given text is not one of those numbers.</exception>
     private static int ParseKeep(string text) =>
-        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var keep) && keep >= 1
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var keep) && SaveBackups.Normalize(keep) == keep
             ? keep
-            : throw new CliError("invalid-arguments", $"Option '--keep' needs a whole number of 1 or more, but was '{text}'.",
-                details: ["Example: --keep 6"]);
+            : throw new CliError("invalid-arguments",
+                $"Option '--keep' needs an even number from {SaveBackups.MinKeep} to {SaveBackups.MaxKeep}, as the app's Settings offer, but was '{text}'.",
+                details: [$"Example: --keep {SaveBackups.DefaultKeep}"]);
 
     /// <exception cref="CliError">The command takes no arguments.</exception>
     private static void RequireNone(string subcommand, List<string> rest)
@@ -371,11 +384,15 @@ internal static class BackupCommand
             details: [.. rest.Select(argument => $"  {argument}")]),
     };
 
+    /// <summary>The app's note after its restore question: the cloud may offer the older saves back.</summary>
+    private const string SteamCloudNote = "If Steam then asks about a conflict with its cloud saves, choose the files on this PC.";
+
     private static void WriteRestorePreview(BackupRestorePayload payload)
     {
         Output.Line($"Would put back the saves of {Output.Time(payload.Backup.CreatedAt)} from '{payload.Backup.Name}' "
             + $"into '{payload.SaveFolder}'.");
         Output.Line("The saves of now are backed up first, so the restore can be undone.");
+        Output.Line(SteamCloudNote);
     }
 
     private static void WriteDeletePreview(BackupDeletePayload payload)

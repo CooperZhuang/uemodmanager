@@ -149,9 +149,9 @@ internal static class Program
           --game <id>           The game profile id; default: the game in settings.json
           --game-root <folder>  Use this install folder instead of the one in settings.json
           --save-folder <folder>
-                                The save folder for backup create and restore; default: settings.json, then the profile
+                                The save folder for backup create; default: settings.json, then the profile
           --note <text>         The note on a new save backup
-          --keep <n>            Normal save backups to keep after a new one; default: settings.json
+          --keep <n>            Normal save backups to keep after a new one: 2 to 20, even; default: settings.json
           --on, --off           backup personal: keep the backup for good, or move it back
           --clear               backup note: remove the note
           --json                Machine-readable JSON output with stable fields

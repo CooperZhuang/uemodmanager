@@ -766,8 +766,10 @@ UEModManager.exe --cli backup list | create | restore | personal | note | delete
 - `backup` is the Save backups page without a window: `create` zips the save
   folder now (`--note`, `--keep`), `restore`, `personal`, `note` and `delete`
   work on the backups the app shows, and `list` prints them. The save folder is
-  the app's (settings.json, then the game profile), and `--save-folder` overrides
-  it for `create` and `restore`.
+  the app's (settings.json, then the game profile); `--save-folder` overrides it
+  for `create` only, as a restore empties the folder it fills. `--keep` takes
+  the app's values, 2 to 20 in steps of 2. `restore` refuses while the game
+  runs (`SaveBackups.CanRestoreNow`, which the app uses too).
 - `install` and `uninstall` without `--yes` only show what they would do, with
   exit code 2; so do `backup restore` and `backup delete`. Exit code 1 is an
   error, on stderr.
