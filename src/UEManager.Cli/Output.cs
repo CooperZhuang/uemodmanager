@@ -49,6 +49,3 @@ internal sealed record AppDto(string Executable, string? Version);
 
 internal sealed record ModsCountDto(bool Readable, int Total, int Enabled, int Disabled, string StateFile, bool StateFileExists,
     string LibraryDir);
-
-/// <summary>What the app wrote about mod page versions, if anything.</summary>
-internal sealed record UpdateRecordsInfo(IReadOnlyList<string> Files, int Count, DateTimeOffset? CheckedAt);

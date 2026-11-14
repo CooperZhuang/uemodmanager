@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="UEManager.Cli.Tests" />
     <ProjectReference Include="..\UEManager.Core\UEManager.Core.csproj" />
   </ItemGroup>
 

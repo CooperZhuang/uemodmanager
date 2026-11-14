@@ -23,9 +23,20 @@ internal static class Program
     /// <summary>The source revision the build names, when the SDK put one into the informational version.</summary>
     public static string? Commit { get; } = CommitOf(typeof(Program).Assembly);
 
-    private const string DefaultDataDir = @"C:\Games\UEMM\Data";
+    /// <summary>The entry point; internal, so the tests run commands in their own process.</summary>
+    internal static int Main(string[] args)
+    {
+        try
+        {
+            return Run(args);
+        }
+        finally
+        {
+            CliContext.Release();
+        }
+    }
 
-    private static int Main(string[] args)
+    private static int Run(string[] args)
     {
         try
         {
@@ -60,7 +71,6 @@ internal static class Program
                 "enable" => ModCommand.RunToggle(arguments, enable: true),
                 "disable" => ModCommand.RunToggle(arguments, enable: false),
                 "uninstall" => ModCommand.RunUninstall(arguments),
-                "updates" => UpdatesCommand.Run(arguments),
                 _ => Fail(new CliError("invalid-arguments", $"Unknown command '{arguments.Command}'.",
                     details: ["Run --help for the commands."]), jsonRequested),
             };
@@ -111,9 +121,6 @@ internal static class Program
         return plus < 0 ? null : informational![(plus + 1)..];
     }
 
-    /// <summary>The data folder the commands use when --data-dir is not given.</summary>
-    public static string? DefaultDataFolder => Directory.Exists(DefaultDataDir) ? DefaultDataDir : null;
-
     private const string HelpText = """
         uemm-cli - a headless prototype for UE MM
 
@@ -126,10 +133,9 @@ internal static class Program
           uemm enable <mod>                    Enable an installed mod
           uemm disable <mod>                   Disable an installed mod
           uemm uninstall <mod> --yes           Uninstall a mod; without --yes it prints what would be removed and exits 2
-          uemm updates                         Read the update records the app wrote for the game
 
         Options:
-          --data-dir <folder>   The manager's data folder; default: Data beside the executable, then C:\Games\UEMM\Data
+          --data-dir <folder>   The manager's data folder; default: UEMM_DATA_DIR, then Data beside this program
           --game <id>           The game profile id; default: the game in settings.json
           --game-root <folder>  Use this install folder instead of the one in settings.json
           --json                Machine-readable JSON output with stable fields
@@ -143,8 +149,9 @@ internal static class Program
           1  error (stderr says what)
           2  confirmation required; nothing was changed
 
-        The game is never started. Read-only commands (status, list, verify, updates) do not write to the data folder
-        or to the game; plan only unpacks the download into the data folder's staging folder and removes it again.
+        The game is never started. Read-only commands (status, list, verify) do not write to the data folder or to the
+        game; plan only unpacks the download into the data folder's staging folder and removes it again. plan, install,
+        enable, disable and uninstall refuse while UE MM is open with the same data folder: close the app first.
 
         """ + "\n";
 }

@@ -8,6 +8,8 @@ namespace UEManager.Cli;
 /// <summary>
 /// The state every command shares: where the manager's data folder is, which game is meant, and, for commands that
 /// need it, the game install folder. The data folder is found the way the app finds it, and --data-dir overrides it.
+/// A command that opens the mod list for changes, or plans against it, holds the data folder's lock while it runs, as
+/// the app does while it runs (<see cref="DataFolderLock"/>): it refuses while the app is open with that folder.
 /// </summary>
 internal sealed class CliContext
 {
@@ -36,16 +38,35 @@ internal sealed class CliContext
 
     public string GamesDir => Path.Combine(DataDir, "games");
 
+    /// <summary>The data folder's lock, held from <see cref="Open"/> until the command ends (see <see cref="Release"/>).</summary>
+    private static FileStream? held;
+
+    /// <summary>Gives the data folder free at the end of a command; the end of the process would do it too.</summary>
+    public static void Release()
+    {
+        held?.Dispose();
+        held = null;
+    }
+
     /// <summary>
     /// Opens the data folder and picks the game. Nothing is written unless <paramref name="write"/> is true: then the
     /// data folder is created if missing, proved writable, and the Core log goes into its logs folder.
     /// </summary>
-    /// <param name="needInstall">The command changes the game or plans against it, so an install folder must be found.</param>
-    /// <exception cref="CliError">The data folder or the game cannot be found.</exception>
+    /// <param name="needInstall">
+    /// The command changes the game or plans against it, so an install folder must be found, and the data folder's lock
+    /// must be free: the app keeps the mod list in memory and writes it back, and empties the staging folder at its start.
+    /// </param>
+    /// <exception cref="CliError">The data folder or the game cannot be found, or the app holds the data folder.</exception>
     public static CliContext Open(CliArguments arguments, bool needInstall, bool write)
     {
         var dataDir = FindDataDir(arguments.DataDir, write);
         var paths = new AppPaths(dataDir);
+        if (needInstall && held is null)
+        {
+            held = DataFolderLock.TryTake(paths)
+                ?? throw new CliError("app-running", $"UE MM is open with the data folder '{dataDir}'.",
+                    details: ["Close the app first, then run the command again.", "Nothing was changed."]);
+        }
         if (write)
         {
             try
@@ -77,8 +98,8 @@ internal sealed class CliContext
     }
 
     /// <summary>
-    /// The data folder, in the order the CLI documents it: --data-dir, the UEMM_DATA_DIR environment variable, Data
-    /// beside the executable (the published layout), then the app's usual install in C:\Games\UEMM.
+    /// The data folder, in the order the CLI documents it: --data-dir, the UEMM_DATA_DIR environment variable, then the
+    /// Data folder beside this program, as next to the app's exe, where the portable app keeps it.
     /// </summary>
     private static string FindDataDir(string? given, bool write)
     {
@@ -89,7 +110,6 @@ internal sealed class CliContext
             (given, "--data-dir"),
             (fromEnvironment, "UEMM_DATA_DIR"),
             (Directory.Exists(beside) ? beside : null, "Data beside the executable"),
-            (Program.DefaultDataFolder, @"C:\Games\UEMM\Data"),
         };
         var (path, source) = choice.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.Path));
         if (string.IsNullOrWhiteSpace(path))
@@ -97,7 +117,7 @@ internal sealed class CliContext
             throw new CliError("data-dir-not-found", "The manager's data folder was not found.",
                 details:
                 [
-                    $"Pass --data-dir <folder>, set UEMM_DATA_DIR, or install the app so that {Program.DefaultDataFolder} exists.",
+                    "Pass --data-dir <folder>, set UEMM_DATA_DIR, or put this program next to UEModManager.exe and its Data folder.",
                     "Nothing was changed.",
                 ]);
         }

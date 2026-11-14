@@ -77,7 +77,7 @@
                                Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}" />
 
                     <!-- The cards: as many columns as fit (see CatalogFullView.ColumnsFor), every card of a row as high as the highest. -->
-                    <ItemsControl x:Name="Cards" ItemsSource="{Binding ItemsView}" Focusable="False" Grid.IsSharedSizeScope="True">
+                    <ItemsControl x:Name="Cards" ItemsSource="{Binding ItemsView}" Focusable="False">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=vm:CatalogFullView}}" />
@@ -103,8 +103,13 @@
                                         </Grid>
 
                                         <StackPanel Grid.Row="1" Margin="18,14,18,0">
-                                            <!-- The type in front of the name, as on the page. -->
-                                            <vm:CatalogCardTitle />
+                                            <!-- The name at the card's full width, and the type below it (the user's choice):
+                                                 in front of the name, the type took room and long names wrapped early. -->
+                                            <TextBlock Style="{StaticResource Text.Title}" FontSize="17" TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Name}" ToolTip="{Binding Name}" />
+                                            <!-- The type's line stays on every card, empty without a type, so the lines below
+                                                 start at the same height in a row (the user's choice). -->
+                                            <vm:CatalogTypeBadge Margin="0,6,0,0" HorizontalAlignment="Left" KeepsRoom="True" />
                                             <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" Text="{Binding AuthorText}" />
                                             <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Small}" Text="{Binding ListedByText}"
                                                        Visibility="{Binding ListedByText, Converter={StaticResource VisibleIfSet}}" />

@@ -38,9 +38,10 @@ internal sealed class PlannedInstall : IDisposable
         var preview = manager.Inspect(source);
         try
         {
-            var selected = allParts ? preview.Packages.ToList() : DefaultSelection(manager, preview);
+            // The parts the app's install review ticks first, by the same rules in Core.
+            var selected = allParts ? preview.Packages.ToList() : manager.FirstSelection(preview).ToList();
             var check = manager.Check(preview, selected);
-            // The review keeps the variant that is installed now, as its card for that variant says "installed".
+            // An update keeps the variant that is installed now, as the review does.
             if (!allParts && KeepInstalledVariant(preview, selected, check))
                 check = manager.Check(preview, selected);
             return new PlannedInstall(manager, preview, selected, check, BuildPlan(context, manager, preview, selected, check, allParts));
@@ -53,43 +54,14 @@ internal sealed class PlannedInstall : IDisposable
     }
 
     /// <summary>
-    /// The parts the review ticks first: everything certain, one of each choice of alternates, and the first of the
-    /// variants that would otherwise land in the same place. A part for the exe folder that does not look like a loader
-    /// waits for the player, as it does in the app.
+    /// Selects the variant of the mod the download updates (see <see cref="ModManager.InstalledVariant"/>), in place of
+    /// the other variants of its choice, so an update keeps the variant the player chose.
     /// </summary>
-    private static List<PackageGroup> DefaultSelection(ModManager manager, InstallPreview preview)
-    {
-        var preferred = manager.PreferredChoice(preview);
-        var selected = new List<PackageGroup>();
-        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var part in preview.Packages)
-        {
-            var places = part.RelativePaths.Select(path => $"{part.Target}|{path}").ToList();
-            if (part.IsUncertain || (part.IsAlternate && part != preferred) || places.Any(taken.Contains))
-                continue;
-            selected.Add(part);
-            taken.UnionWith(places);
-        }
-        foreach (var alternate in selected.Where(part => part.IsAlternate).ToList())
-        {
-            if (alternate.VariantOf is not { } group)
-                continue;
-            selected.RemoveAll(part => part != alternate && part.VariantOf == group);
-        }
-        return selected;
-    }
-
-    /// <summary>Selects the variant of the mod the download updates, so an update keeps the variant the player chose.</summary>
     private static bool KeepInstalledVariant(InstallPreview preview, List<PackageGroup> selected, InstallCheck check)
     {
-        if (check.Replaces?.Variant is not { } installed)
+        if (ModManager.InstalledVariant(preview, check) is not { } same || selected.Contains(same))
             return false;
-        var same = preview.Packages.FirstOrDefault(part => part.Variant is { } variant
-            && variant.Equals(installed, StringComparison.OrdinalIgnoreCase) && !selected.Contains(part));
-        if (same is null)
-            return false;
-        if (same.VariantOf is { } group)
-            selected.RemoveAll(part => part != same && part.VariantOf == group);
+        selected.RemoveAll(part => part != same && part.VariantOf == same.VariantOf);
         selected.Add(same);
         return true;
     }

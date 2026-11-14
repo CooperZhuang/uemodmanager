@@ -36,19 +36,12 @@ internal sealed class SingleInstance : IDisposable
         var deadline = DateTime.UtcNow + wait;
         while (true)
         {
-            try
-            {
-                // The lock lasts as long as the process: Windows closes the file, and deletes it, even after a crash.
-                var file = new FileStream(Path.Combine(paths.Root, "instance.lock"), FileMode.OpenOrCreate,
-                    FileAccess.ReadWrite, FileShare.None, bufferSize: 1, FileOptions.DeleteOnClose);
+            // The lock lasts as long as the process; the command line tool takes the same one for each command.
+            if (DataFolderLock.TryTake(paths) is { } file)
                 return new SingleInstance(file, PipeName(paths));
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                if (DateTime.UtcNow >= deadline)
-                    return null;
-                Thread.Sleep(250);
-            }
+            if (DateTime.UtcNow >= deadline)
+                return null;
+            Thread.Sleep(250);
         }
     }
 

@@ -32,6 +32,9 @@ public sealed class AppPaths
 
     public string SettingsFile => Path.Combine(Root, "settings.json");
 
+    /// <summary>The data folder's lock; see <see cref="DataFolderLock"/>.</summary>
+    public string LockFile => Path.Combine(Root, "instance.lock");
+
     public string LogsDir => Path.Combine(Root, "logs");
 
     /// <summary>Scratch space for unpacked downloads. Emptied at start-up.</summary>

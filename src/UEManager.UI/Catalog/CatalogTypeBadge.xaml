@@ -1,0 +1,34 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogTypeBadge"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogItemViewModel}">
+    <!-- A mod's type, from the paths in its zip, in the Mods page's words; none while it is not known. In front of the
+         name on the openmods page (see CatalogCardTitle), below it in the full view's narrow cards. Without a type the
+         box takes no room, or, with KeepsRoom, keeps its line empty. -->
+    <Border HorizontalAlignment="Stretch" Background="{StaticResource Brush.InfoPanel}" BorderBrush="{StaticResource Brush.Info}"
+            ToolTip="{ui:Loc 'The type of the mod, from the files in its download'}">
+        <Border.Style>
+            <Style TargetType="Border" BasedOn="{StaticResource Badge}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding KindText}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding KindText}" Value="{x:Null}" />
+                            <Condition Binding="{Binding KeepsRoom, RelativeSource={RelativeSource AncestorType=vm:CatalogTypeBadge}}" Value="True" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Visibility" Value="Hidden" />
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <TextBlock HorizontalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="11"
+                   Foreground="{StaticResource Brush.Info}" Text="{Binding KindText}" />
+    </Border>
+</UserControl>

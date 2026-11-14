@@ -33,11 +33,9 @@ internal static class StatusCommand
             context.Paths.LibraryDir(context.GameId));
 
         var app = FindApp(context);
-        var (recordFiles, records) = UpdatesReader.Read(context);
         var payload = new StatusPayload(1, "status", new ToolInfo(Program.ToolName, Program.ToolVersion, Program.Commit),
             context.DataDir, context.Paths.SettingsFile, File.Exists(context.Paths.SettingsFile), app,
-            Mapping.Game(context.Profile, context.Game, checkRunning: true), mods,
-            new UpdateRecordsInfo(recordFiles, records.Count, UpdatesReader.LastChecked(records)), warnings);
+            Mapping.Game(context.Profile, context.Game, checkRunning: true), mods, warnings);
 
         if (arguments.Json)
         {
@@ -63,9 +61,6 @@ internal static class StatusCommand
             Output.Line($"  Game running: {(game.Running == true ? "yes" : "no")}");
         }
         Output.Line($"Mods: {mods.Total} installed ({mods.Enabled} enabled, {mods.Disabled} disabled)");
-        Output.Line(payload.UpdateRecords.Count == 0
-            ? "Update records: none"
-            : $"Update records: {payload.UpdateRecords.Count}, checked {Output.Time(payload.UpdateRecords.CheckedAt)}");
         foreach (var warning in warnings)
             Output.Line($"Warning: {warning}");
         return 0;

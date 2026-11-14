@@ -415,7 +415,7 @@ are used.
   info** in the row below explains the type boxes and each type.
 - **Full view** (outlined in orange, after Mod type info) shows the page as a
   grid of cards in place of the menu and the page, at the window's size: cover,
-  the type in front of the name, author, tags, version, date, license,
+  the name with the type below it, author, tags, version, date, license,
   description and the same actions, with the same type filter, search, sort
   and switch. It leaves the window's size alone. **Exit full view** or Esc goes
   back. It is off at every start.
@@ -737,10 +737,37 @@ src/
     Catalog/              The openmods page (see Catalog switch).
     Theme/                Palette, control styles, and each game's colours (Games/) and art
                           (Art/<game id>/). Built into the exe (see Theme/README.md).
+  UEManager.Cli/          The command line tool (net8.0). Builds uemm.exe; see Command line tool.
   UEManager.Core.Tests/   xUnit tests for Core. Covers every operation that touches the game folder.
   UEManager.UI.Tests/     xUnit tests for the UI: the language files against the source, and a
                           change of language in the open window.
+  UEManager.Cli.Tests/    xUnit tests for the command line tool, against a fake install.
 ```
+
+## Command line tool
+
+`uemm.exe` (`src/UEManager.Cli`, by CooperZhuang) drives the same Core without a
+window, for scripts and tests. It is not part of the app's release zip.
+
+```text
+uemm status | list | verify
+uemm plan <archive|folder>
+uemm install <archive|folder> --yes
+uemm enable <mod> | disable <mod>
+uemm uninstall <mod> --yes
+```
+
+- `--json` gives one JSON object with stable fields; `--data-dir`, `--game` and
+  `--game-root` pick the data folder, the game and its install folder.
+- `install` and `uninstall` without `--yes` only show what they would do, with
+  exit code 2. Exit code 1 is an error, on stderr.
+- The data folder is `--data-dir`, else `UEMM_DATA_DIR`, else the `Data` folder
+  beside `uemm.exe`, as next to the app's exe.
+- `plan`, `install`, `enable`, `disable` and `uninstall` refuse while the app is
+  open with the same data folder: both take the data folder's lock
+  (`DataFolderLock`), as two programs would overwrite each other's mod list.
+- Which parts of a download it takes is the install review's first selection
+  (`ModManager.FirstSelection`), so the tool and the app agree.
 
 ## Build
 

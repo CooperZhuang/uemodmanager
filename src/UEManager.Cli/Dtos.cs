@@ -10,7 +10,7 @@ internal sealed record ModDto(string Id, string Name, string? Version, bool Enab
     bool NeedsUe4ss, string Integrity, IReadOnlyList<string> Targets, IReadOnlyList<ModFileDto> Files);
 
 internal sealed record StatusPayload(int SchemaVersion, string Command, ToolInfo Tool, string DataDir, string SettingsFile,
-    bool SettingsExists, AppDto? App, GameInfo Game, ModsCountDto Mods, UpdateRecordsInfo UpdateRecords, IReadOnlyList<string> Warnings);
+    bool SettingsExists, AppDto? App, GameInfo Game, ModsCountDto Mods, IReadOnlyList<string> Warnings);
 
 internal sealed record ListPayload(int SchemaVersion, string Command, string DataDir, string GameId, int Count, IReadOnlyList<ModDto> Mods);
 
@@ -62,14 +62,3 @@ internal sealed record UninstallModDto(string Id, string Name, string? Version, 
 
 internal sealed record UninstallPayload(int SchemaVersion, string Command, string GameId, bool Confirmed, string? BackupFolder,
     int RemainingMods, UninstallModDto Mod);
-
-/// <summary>A mod page version the app recorded, joined with the installed mod it belongs to.</summary>
-internal sealed record UpdateInstalledDto(string Id, string Name, string? Version, bool Enabled);
-
-internal sealed record UpdateRecordDto(string RecordFile, string ModId, string Name, string? PageVersion, DateTimeOffset? UpdatedAt,
-    DateTimeOffset? CheckedAt, UpdateInstalledDto? Installed, string State);
-
-internal sealed record UpdatesSummaryDto(int Records, int UpdateAvailable, int UpToDate, int NotInstalled, int Unknown);
-
-internal sealed record UpdatesPayload(int SchemaVersion, string Command, string GameId, IReadOnlyList<string> RecordFiles,
-    DateTimeOffset? CheckedAt, IReadOnlyList<UpdateRecordDto> Records, UpdatesSummaryDto Summary, string? Message);

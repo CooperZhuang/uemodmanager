@@ -2272,6 +2272,36 @@ public sealed class ModManager
     /// script loader that is installed, or with neither for the one the app recommends, so the review says what to do.
     /// Null when the player must decide.
     /// </summary>
+    /// <summary>
+    /// The parts the install review ticks first, and the command line tool takes: every part that is certain, of a
+    /// choice only the one the game tells (see <see cref="PreferredChoice"/>), and of parts that land in the same place
+    /// only the first. Files for the exe folder that do not look like a loader wait for the player.
+    /// </summary>
+    public IReadOnlyList<PackageGroup> FirstSelection(InstallPreview preview)
+    {
+        var preferred = PreferredChoice(preview);
+        var selected = new List<PackageGroup>();
+        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var part in preview.Packages)
+        {
+            var places = part.RelativePaths.Select(path => $"{part.Target}|{path}").ToList();
+            if (part.IsUncertain || (part.IsAlternate && part != preferred) || places.Any(taken.Contains))
+                continue;
+            selected.Add(part);
+            taken.UnionWith(places);
+        }
+        foreach (var made in selected.Where(part => part.IsAlternate).ToList())
+            selected.RemoveAll(part => part != made && part.VariantOf == made.VariantOf);
+        return selected;
+    }
+
+    /// <summary>For an update: the part of the download that is the variant of the installed mod, which the update keeps.</summary>
+    public static PackageGroup? InstalledVariant(InstallPreview preview, InstallCheck? check) =>
+        check?.Replaces?.Variant is { } installed
+            ? preview.Packages.FirstOrDefault(part => part.VariantOf is not null
+                && string.Equals(part.Variant, installed, StringComparison.OrdinalIgnoreCase))
+            : null;
+
     public PackageGroup? PreferredChoice(InstallPreview preview)
     {
         if (preview.Packages.FirstOrDefault(p => p.IsAlternate && IsInstalled(p)) is { } made)

@@ -42,31 +42,18 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
         version = catalog?.Version ?? preview.SuggestedVersion ?? "";
         Packages = preview.Packages.Select(p => new PackageOptionViewModel(p, OnOptionChanged)).ToList();
 
-        // Archives often ship variants of one package in separate folders. Those
-        // deploy to the same place, so only the first of each is selected to begin with.
-        // Files for the exe folder that do not look like a loader wait for the player, as do choices of which only one
-        // may be in the game, unless the game tells which one it is.
-        var preferred = manager.PreferredChoice(preview);
+        // Archives often ship variants of one package in separate folders. Those deploy to the same place, so only the
+        // first of each is selected to begin with; the command line tool takes the same parts (see FirstSelection).
+        var first = manager.FirstSelection(preview);
         selecting = true;
-        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var option in Packages)
-        {
-            var names = option.Package.RelativePaths.Select(p => $"{option.Package.Target}|{p}").ToList();
-            option.IsSelected = !option.Package.IsUncertain && (!option.Package.IsAlternate || option.Package == preferred) && !names.Any(taken.Contains);
-            if (option.IsSelected)
-                taken.UnionWith(names);
-        }
-        foreach (var made in Packages.Where(p => p.IsSelected && p.Package.IsAlternate).ToList())
-        {
-            foreach (var other in Packages.Where(p => p != made && p.Package.VariantOf == made.Package.VariantOf))
-                other.IsSelected = false;
-        }
+            option.IsSelected = first.Contains(option.Package);
         selecting = false;
         Recheck();
 
         // An update keeps the variant that is installed now.
-        if (check?.Replaces?.Variant is { } installed
-            && Packages.FirstOrDefault(p => p.IsVariant && string.Equals(p.Package.Variant, installed, StringComparison.OrdinalIgnoreCase)) is { IsSelected: false } same)
+        if (ModManager.InstalledVariant(preview, check) is { } installed
+            && Packages.FirstOrDefault(p => p.Package == installed) is { IsSelected: false } same)
             same.IsSelected = true;
     }
 

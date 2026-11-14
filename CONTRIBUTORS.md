@@ -5,7 +5,7 @@ every contributor is named in every release.
 
 - KintaroModding: creator and maintainer
 - Null993: Simplified Chinese translation and the live language switch
-- CooperZhuang: game files and loader mods such as ReShade, Traditional Chinese translation, Simplified Chinese polish
+- CooperZhuang: game files and loader mods such as ReShade, Traditional Chinese translation, Simplified Chinese polish, the command line tool
 - High-cla: the report of a false "game is running" alarm, which led to a better check of the running game
 - msylgj: the first update check for mods with a mod page, which led to the app's own
 - qhq: the report that an update lost the name a player gave a mod
