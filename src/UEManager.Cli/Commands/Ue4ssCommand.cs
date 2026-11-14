@@ -35,7 +35,7 @@ internal static class Ue4ssCommand
     /// </summary>
     private static int Status(CliArguments arguments)
     {
-        arguments.Allow(["--json", "--check"], ["--data-dir", "--game", "--game-root", "--manifest-url"]);
+        arguments.Allow(["--json", "--check"], ["--data-dir", "--game", "--game-root", "--ue4ss-manifest-url"]);
         arguments.NoPositionals();
         var context = CliContext.Open(arguments, needInstall: false, write: false);
         var warnings = new List<string>();
@@ -51,10 +51,11 @@ internal static class Ue4ssCommand
         var updateChecked = false;
         string? latestVersion = null;
         bool? updateAvailable = null;
+        var newerInstalled = false;
         string? manifestUrl = null;
         if (arguments.Check)
         {
-            var available = Ue4ssOnline.FindRelease(context, arguments.ManifestUrl);
+            var available = Ue4ssOnline.FindRelease(context, arguments.Ue4ssManifestUrl);
             latestVersion = available.Release.Version;
             manifestUrl = available.ManifestUrl;
             updateChecked = true;
@@ -66,13 +67,15 @@ internal static class Ue4ssCommand
                 version = installedVersion;
                 versionSource = "build";
             }
-            updateAvailable = installed && Ue4ssManifest.IsUpdate(installedVersion, available.Release);
+            // As ue4ss update has it: an older release than the installed one is no update.
+            newerInstalled = installed && Ue4ssManifest.IsOlder(installedVersion, available.Release.Version);
+            updateAvailable = installed && !newerInstalled && Ue4ssManifest.IsUpdate(installedVersion, available.Release);
         }
 
         var payload = new Ue4ssStatusPayload(1, "ue4ss status", context.GameId, context.DataDir, recordFile,
             record is not null, installed, version, versionSource, record is not null, record?.Source,
             record is null || record.InstalledAt == default ? null : record.InstalledAt, record?.Files?.Count ?? 0,
-            runtime?.Folder, runtime?.ModsPath, updateChecked, latestVersion, updateAvailable, manifestUrl, warnings);
+            runtime?.Folder, runtime?.ModsPath, updateChecked, latestVersion, updateAvailable, newerInstalled, manifestUrl, warnings);
 
         if (arguments.Json)
         {
@@ -106,6 +109,8 @@ internal static class Ue4ssCommand
             Output.Line($"  Latest: {payload.LatestVersion}, from {payload.ManifestUrl ?? "the game profile's fixed package"}");
         else if (payload.UpdateAvailable == true)
             Output.Line($"  Update: available, {payload.LatestVersion}, from {payload.ManifestUrl ?? "the game profile's fixed package"}");
+        else if (payload.NewerInstalled)
+            Output.Line($"  Update: none, the installed {payload.Version} is newer than the manifest's {payload.LatestVersion} (ue4ss install takes that one)");
         else
             Output.Line($"  Update: none, {payload.Version ?? payload.LatestVersion} is the latest release");
         foreach (var warning in payload.Warnings)
@@ -118,7 +123,8 @@ internal static class Ue4ssCommand
     /// </summary>
     private static int Install(CliArguments arguments)
     {
-        arguments.Allow(["--json"], ["--data-dir", "--game", "--game-root", "--package", "--version", "--staging", "--manifest-url"]);
+        arguments.Allow(["--json"],
+            ["--data-dir", "--game", "--game-root", "--package", "--ue4ss-version", "--staging", "--ue4ss-manifest-url"]);
         arguments.NoPositionals();
         var context = CliContext.Open(arguments, needInstall: true, write: true);
         var manager = context.OpenManager();
@@ -127,12 +133,14 @@ internal static class Ue4ssCommand
         Ue4ssInstallPayload payload;
         if (arguments.Package is { } local)
         {
-            payload = InstallPackage(context, manager, "ue4ss install", null, LocalPackage(local), arguments.VersionTag, previousVersion);
+            var package = LocalPackage(local);
+            payload = Installed(context, manager, "ue4ss install", null, package, previousVersion,
+                () => manager.InstallUe4ss(package, arguments.Ue4ssVersion));
         }
         else
         {
-            var available = Ue4ssOnline.FindRelease(context, arguments.ManifestUrl);
-            if (arguments.VersionTag is { Length: > 0 } wanted
+            var available = Ue4ssOnline.FindRelease(context, arguments.Ue4ssManifestUrl);
+            if (arguments.Ue4ssVersion is { Length: > 0 } wanted
                 && !wanted.Trim().Equals(available.Release.Version, StringComparison.OrdinalIgnoreCase))
             {
                 throw new CliError("release-not-available",
@@ -143,8 +151,9 @@ internal static class Ue4ssCommand
                         "Nothing was installed.",
                     ]);
             }
-            using var package = DownloadPackage(context, arguments.Staging, available.Release);
-            payload = InstallPackage(context, manager, "ue4ss install", available, package.File, ReleaseVersion(available.Release), previousVersion);
+            var downloadRoot = PlannedInstall.StagingFolder(arguments.Staging, context.Game!.RootPath);
+            payload = Installed(context, manager, "ue4ss install", available, null, previousVersion,
+                () => Ue4ssOnline.DownloadAndInstall(manager, available.Release, downloadRoot));
         }
         if (arguments.Json)
         {
@@ -156,12 +165,14 @@ internal static class Ue4ssCommand
     }
 
     /// <summary>
-    /// Installs the release the manifest names only when it differs from the installed one; when it does not, the
-    /// command says so and exits 0 without downloading anything.
+    /// Installs the release the manifest names when it differs from the installed one and is not older; otherwise the
+    /// command says so and exits 0 without downloading anything. It never goes back: after a newer build was installed
+    /// with --package, a script's update must not quietly take it away. The manifest may go back on purpose, so
+    /// ue4ss install still takes its release, whatever it is.
     /// </summary>
     private static int Update(CliArguments arguments)
     {
-        arguments.Allow(["--json"], ["--data-dir", "--game", "--game-root", "--staging", "--manifest-url"]);
+        arguments.Allow(["--json"], ["--data-dir", "--game", "--game-root", "--staging", "--ue4ss-manifest-url"]);
         arguments.NoPositionals();
         var context = CliContext.Open(arguments, needInstall: true, write: true);
         var manager = context.OpenManager();
@@ -173,23 +184,24 @@ internal static class Ue4ssCommand
         }
 
         var previousVersion = ReadRecord(context.Paths.Ue4ssRecordFile(context.GameId), [])?.Version;
-        var available = Ue4ssOnline.FindRelease(context, arguments.ManifestUrl);
+        var available = Ue4ssOnline.FindRelease(context, arguments.Ue4ssManifestUrl);
         // As the app reads it: a UE4SS with no record whose DLL is the manifest's build is already up to date.
         var installedVersion = previousVersion;
         if (installedVersion is null && runtime.IsBuild(available.Release.Version))
             installedVersion = available.Release.Version;
 
         Ue4ssInstallPayload payload;
-        if (Ue4ssManifest.IsUpdate(installedVersion, available.Release))
+        var newerInstalled = Ue4ssManifest.IsOlder(installedVersion, available.Release.Version);
+        if (!newerInstalled && Ue4ssManifest.IsUpdate(installedVersion, available.Release))
         {
-            using var package = DownloadPackage(context, arguments.Staging, available.Release);
-            payload = InstallPackage(context, manager, "ue4ss update", available, package.File,
-                ReleaseVersion(available.Release), previousVersion);
+            var downloadRoot = PlannedInstall.StagingFolder(arguments.Staging, context.Game!.RootPath);
+            payload = Installed(context, manager, "ue4ss update", available, null, previousVersion,
+                () => Ue4ssOnline.DownloadAndInstall(manager, available.Release, downloadRoot));
         }
         else
         {
-            payload = new Ue4ssInstallPayload(1, "ue4ss update", context.GameId, "up-to-date",
-                ReleaseDto(available), null, installedVersion, installedVersion, runtime.Folder, 0, false, [], []);
+            payload = new Ue4ssInstallPayload(1, "ue4ss update", context.GameId, newerInstalled ? "newer-installed" : "up-to-date",
+                ReleaseDto(available), null, installedVersion, installedVersion, runtime.Folder, 0, false, [], [], []);
         }
 
         if (arguments.Json)
@@ -211,18 +223,13 @@ internal static class Ue4ssCommand
         arguments.NoPositionals();
         var context = CliContext.Open(arguments, needInstall: true, write: arguments.Yes);
         var manager = context.OpenManager();
-        var win64 = context.Game!.BinariesPath;
-        var runtime = Ue4ssRuntime.Detect(context.Game);
+        var runtime = Ue4ssRuntime.Detect(context.Game!);
         var record = ReadRecord(context.Paths.Ue4ssRecordFile(context.GameId), []);
-        var paths = RemovablePaths(win64);
-        // What RemoveUe4ss looks for: the 3.x folder or the 2.x UE4SS.dll, whoever put it there.
-        var installed = runtime.Installed || paths.Count > 0;
-        var disabledMods = manager.Mods
-            .Where(mod => mod.Enabled && mod.Files.Any(file => file.Target == DeployTarget.Ue4ssMods))
-            .Select(mod => new Ue4ssModRefDto(mod.Id, mod.Name))
-            .ToList();
-        var preview = new Ue4ssRemovePayload(1, "ue4ss remove", context.GameId, false, installed,
-            record?.Version ?? runtime.Version, installed ? runtime.Folder : null, paths, disabledMods);
+        // The Core's own list of what RemoveUe4ss takes, whoever put UE4SS there, and of the mods it disables.
+        var removal = manager.PreviewUe4ssRemoval();
+        var preview = new Ue4ssRemovePayload(1, "ue4ss remove", context.GameId, false, removal.Installed,
+            record?.Version ?? runtime.Version, removal.Installed ? runtime.Folder : null, removal.Paths,
+            [.. removal.DisabledMods.Select(mod => new Ue4ssModRefDto(mod.Id, mod.Name))]);
 
         if (!arguments.Yes)
         {
@@ -258,14 +265,18 @@ internal static class Ue4ssCommand
         return 0;
     }
 
-    /// <summary>The result of installing one package, as the command's JSON and text report it.</summary>
-    private static Ue4ssInstallPayload InstallPackage(CliContext context, ModManager manager, string command,
-        Ue4ssAvailableRelease? available, string package, string? version, string? previousVersion)
+    /// <summary>
+    /// Runs one install of UE4SS, from a package on this PC or a download, and reports it as the command's JSON and text
+    /// do, with the app's warning for installed C++ mods: each is made for one UE4SS build.
+    /// </summary>
+    private static Ue4ssInstallPayload Installed(CliContext context, ModManager manager, string command,
+        Ue4ssAvailableRelease? available, string? package, string? previousVersion, Func<Ue4ssInstallResult> install)
     {
+        var warnings = CppModWarning(manager.Mods) is { } warning ? new List<string> { warning } : [];
         Ue4ssInstallResult result;
         try
         {
-            result = manager.InstallUe4ss(package, version);
+            result = install();
         }
         catch (ModException error)
         {
@@ -278,8 +289,20 @@ internal static class Ue4ssCommand
         var installed = ReadRecord(context.Paths.Ue4ssRecordFile(context.GameId), []);
         return new Ue4ssInstallPayload(1, command, context.GameId, result.Updated ? "updated" : "installed",
             // A downloaded package lives in a temporary folder, so the release names it; a local one is reported by path.
-            available is null ? null : ReleaseDto(available), available is null ? package : null, installed?.Version,
-            previousVersion, result.TargetFolder, result.FilesWritten, result.Updated, result.KeptFiles, result.RemovedFiles);
+            available is null ? null : ReleaseDto(available), package, installed?.Version,
+            previousVersion, result.TargetFolder, result.FilesWritten, result.Updated, result.KeptFiles, result.RemovedFiles, warnings);
+    }
+
+    /// <summary>The app's note before a change of UE4SS (MainViewModel.Ue4ssChangeWarning), in English; null without C++ mods.</summary>
+    private static string? CppModWarning(IReadOnlyList<ModRecord> mods)
+    {
+        var names = ModTypes.BuiltForOneUe4ss(mods).Select(mod => $"\"{mod.Name}\"").ToList();
+        return names.Count switch
+        {
+            0 => null,
+            1 => $"{names[0]} is a C++ mod. A C++ mod is made for one UE4SS build, and with another build it may not load until its author updates it. Its mod page names the UE4SS build it needs.",
+            _ => $"{string.Join(", ", names)} are C++ mods. A C++ mod is made for one UE4SS build, and with another build it may not load until its author updates it. Each mod's page names the UE4SS build it needs.",
+        };
     }
 
     private static string LocalPackage(string path)
@@ -299,56 +322,8 @@ internal static class Ue4ssCommand
         return full;
     }
 
-    private static Ue4ssPackage DownloadPackage(CliContext context, string? staging, Ue4ssRelease release)
-    {
-        string root;
-        try
-        {
-            root = staging is null ? context.Paths.StagingDir : Path.GetFullPath(staging);
-        }
-        catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            throw new CliError("invalid-arguments", $"--staging '{staging}' is not a usable path: {error.Message}");
-        }
-        if (File.Exists(root))
-            throw new CliError("invalid-arguments", $"--staging '{root}' is a file, not a folder.");
-        return Ue4ssPackage.Download(release, root);
-    }
-
-    /// <summary>A release version as the manifest's entry spells it, or null when the entry names none.</summary>
-    private static string? ReleaseVersion(Ue4ssRelease release) => string.IsNullOrWhiteSpace(release.Version) ? null : release.Version;
-
     private static Ue4ssReleaseDto ReleaseDto(Ue4ssAvailableRelease available) =>
         new(available.Release.Version, available.Release.FileName, available.Release.Url, available.Release.Sha256, available.ManifestUrl);
-
-    /// <summary>
-    /// The files and folders <see cref="ModManager.RemoveUe4ss"/> takes: UE4SS 3.x's folder and proxy DLL, and for a
-    /// UE4SS 2.x the files it put straight into the exe folder, so the preview lists what the removal would touch.
-    /// Empty when the removal would take nothing, as when only another tool's proxy DLL is there.
-    /// </summary>
-    private static IReadOnlyList<string> RemovablePaths(string win64)
-    {
-        var paths = new List<string>();
-        var current = Directory.Exists(Path.Combine(win64, "ue4ss"));
-        var legacy = File.Exists(Path.Combine(win64, "UE4SS.dll"));
-        if (current)
-            paths.Add(Path.Combine(win64, "ue4ss"));
-        if ((current || legacy) && File.Exists(Path.Combine(win64, "dwmapi.dll")))
-            paths.Add(Path.Combine(win64, "dwmapi.dll"));
-        if (legacy)
-        {
-            var mods = Path.Combine(win64, "Mods");
-            if (Directory.Exists(mods))
-                paths.Add(mods);
-            foreach (var name in new[] { "UE4SS.dll", "UE4SS.pdb", "UE4SS-settings.ini", "UE4SS.log", "xinput1_3.dll" })
-            {
-                var file = Path.Combine(win64, name);
-                if (File.Exists(file))
-                    paths.Add(file);
-            }
-        }
-        return paths;
-    }
 
     /// <summary>The manager's record of the UE4SS it installed; null when it installed none. An unreadable one is a warning.</summary>
     private static Ue4ssInstallRecord? ReadRecord(string file, List<string> warnings)
@@ -371,12 +346,20 @@ internal static class Ue4ssCommand
             Output.Line($"UE4SS is up to date ({payload.Version}).");
             return;
         }
+        if (payload.Action == "newer-installed")
+        {
+            Output.Line($"The installed UE4SS {payload.Version} is newer than the manifest's {payload.Release?.Version}: "
+                + "ue4ss update never goes back. Run ue4ss install to take the manifest's release.");
+            return;
+        }
         var verb = payload.Action == "updated" ? "Updated" : "Installed";
         Output.Line($"{verb} UE4SS {payload.Version} in {payload.TargetFolder}: {payload.FilesWritten} file(s) written.");
         if (payload.RemovedFiles.Count > 0)
             Output.Line($"{payload.RemovedFiles.Count} file(s) of the previous release were removed.");
         if (payload.KeptFiles.Count > 0)
             Output.Line($"{payload.KeptFiles.Count} file(s) the player changed were kept.");
+        foreach (var warning in payload.Warnings)
+            Output.Line($"Warning: {warning}");
     }
 
     private static void WriteRemovePreview(string displayName, Ue4ssRemovePayload payload)
@@ -386,15 +369,18 @@ internal static class Ue4ssCommand
             Output.Line($"UE4SS is not installed in {displayName}: nothing would be removed.");
             return;
         }
-        Output.Line($"Would remove UE4SS from {displayName}:");
+        // The app's question before its removal says the same.
+        Output.Line($"Would remove UE4SS from {displayName} completely: dwmapi.dll and the whole ue4ss folder, with UE4SS's "
+            + "settings and every mod inside it, also mods installed by hand:");
         foreach (var path in payload.Paths)
             Output.Line($"  {path}");
         if (payload.DisabledMods.Count == 0)
-            Output.Line("No enabled mod in your list lives in UE4SS's folder.");
+            Output.Line("No enabled mod in your list has files in UE4SS's Mods folder.");
         else
-            Output.Line($"{payload.DisabledMods.Count} enabled mod(s) would be disabled and stay in the library: "
-                + string.Join(", ", payload.DisabledMods.Select(mod => mod.Name)));
-        Output.Line("Settings the player changed are backed up first, as the Core does.");
+            Output.Line($"{payload.DisabledMods.Count} enabled mod(s) in your list would be disabled: "
+                + string.Join(", ", payload.DisabledMods.Select(mod => mod.Name))
+                + ". Their copies stay in the library, so you can enable them again after installing UE4SS.");
+        Output.Line("Close the game first.");
     }
 
     private static void WriteRemoved(string displayName, Ue4ssRemovePayload payload, int disabledMods)

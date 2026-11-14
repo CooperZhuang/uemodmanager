@@ -11,7 +11,8 @@ namespace UEManager.Cli.Tests;
 
 /// <summary>
 /// The `ue4ss` commands, run in this process against a fake Phantom Blade Zero install and a data folder of its own.
-/// Every test is offline: the manifest checks point at a loopback address that refuses the connection.
+/// Every test is offline: the manifest checks point at a loopback server of the test's own, or at a loopback address
+/// that refuses the connection, and a release's GitHub address is on .invalid, which no name server answers.
 /// </summary>
 [Collection(CliConsole.Name)]
 public sealed class Ue4ssCliTests : IDisposable
@@ -98,7 +99,7 @@ public sealed class Ue4ssCliTests : IDisposable
 
     private void InstallUe4ss(string version = "v3.0.1-7-gabc")
     {
-        var (code, _, error) = Run("ue4ss", "install", "--package", ReleaseZip(version), "--version", version);
+        var (code, _, error) = Run("ue4ss", "install", "--package", ReleaseZip(version), "--ue4ss-version", version);
         Assert.True(code == 0, error);
     }
 
@@ -154,7 +155,7 @@ public sealed class Ue4ssCliTests : IDisposable
     [Fact]
     public void Install_from_a_package_writes_the_files_and_the_record_and_installs_again_as_an_update()
     {
-        var first = Run("ue4ss", "install", "--package", ReleaseZip("v3.0.1-7-gabc"), "--version", "v3.0.1-7-gabc", "--json");
+        var first = Run("ue4ss", "install", "--package", ReleaseZip("v3.0.1-7-gabc"), "--ue4ss-version", "v3.0.1-7-gabc", "--json");
 
         Assert.Equal(0, first.Code);
         Assert.Contains("\"action\": \"installed\"", first.Out);
@@ -185,7 +186,7 @@ public sealed class Ue4ssCliTests : IDisposable
         Write(Path.Combine(Ue4ssFolder, "UE4SS.dll"), "runtime");
 
         // A loopback address nothing listens on: no internet, and the failure arrives at once.
-        var (code, _, error) = Run("ue4ss", "update", "--manifest-url", "http://127.0.0.1:1/manifest.json", "--json");
+        var (code, _, error) = Run("ue4ss", "update", "--ue4ss-manifest-url", "http://127.0.0.1:1/manifest.json", "--json");
 
         Assert.Equal(1, code);
         Assert.Contains("manifest", error);
@@ -196,7 +197,7 @@ public sealed class Ue4ssCliTests : IDisposable
     [Fact]
     public void Update_without_ue4ss_says_so_instead_of_installing()
     {
-        var (code, _, error) = Run("ue4ss", "update", "--manifest-url", "http://127.0.0.1:1/manifest.json");
+        var (code, _, error) = Run("ue4ss", "update", "--ue4ss-manifest-url", "http://127.0.0.1:1/manifest.json");
 
         Assert.Equal(1, code);
         Assert.Contains("not installed", error);
@@ -264,7 +265,7 @@ public sealed class Ue4ssCliTests : IDisposable
         server.Add("/manifest.json", Manifest("v3.0.2-9-gdef", "ue4ss.zip", Sha256(zip)));
         server.Add("/ue4ss.zip", zip);
 
-        var install = Run("ue4ss", "install", "--manifest-url", server.Url("/manifest.json"), "--json");
+        var install = Run("ue4ss", "install", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
 
         Assert.Equal(0, install.Code);
         Assert.Contains("\"action\": \"installed\"", install.Out);
@@ -277,13 +278,13 @@ public sealed class Ue4ssCliTests : IDisposable
 
         // The record and the manifest name the same release, so an update downloads nothing.
         var requestsBefore = server.Requests.Count;
-        var update = Run("ue4ss", "update", "--manifest-url", server.Url("/manifest.json"), "--json");
+        var update = Run("ue4ss", "update", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
 
         Assert.Equal(0, update.Code);
         Assert.Contains("\"action\": \"up-to-date\"", update.Out);
         Assert.Equal(requestsBefore + 1, server.Requests.Count);
 
-        var status = Run("ue4ss", "status", "--check", "--manifest-url", server.Url("/manifest.json"), "--json");
+        var status = Run("ue4ss", "status", "--check", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
 
         Assert.Equal(0, status.Code);
         Assert.Contains("\"updateChecked\": true", status.Out);
@@ -296,16 +297,75 @@ public sealed class Ue4ssCliTests : IDisposable
     {
         var zip = File.ReadAllBytes(ReleaseZip("v3.0.2-9-gdef"));
         using var server = new Loopback();
+        // The mirror's file fails its checksum; the GitHub address on .invalid answers nothing. The Core's own tests
+        // check the checksum's message, which the last address's problem replaces here.
+        server.Add("/manifest.json", Manifest("v3.0.2-9-gdef", "ue4ss.zip", new string('0', 64)));
         server.Add("/ue4ss.zip", zip);
-        var release = new Ue4ssRelease("v3.0.2-9-gdef", server.Url("/ue4ss.zip"), new string('0', 64));
         var staging = Path.Combine(root, "Staging");
 
-        var error = Assert.Throws<CliError>(() => Ue4ssPackage.Download(release, staging));
+        var (code, _, error) = Run("ue4ss", "install", "--ue4ss-manifest-url", server.Url("/manifest.json"),
+            "--staging", staging, "--json");
 
-        Assert.Equal("download-failed", error.Code);
-        Assert.Equal(1, error.ExitCode);
-        Assert.Contains("checksum", error.Message);
+        Assert.Equal(1, code);
+        Assert.True(error.Contains("\"code\": \"download-failed\""), error);
+        Assert.Contains("/ue4ss.zip", server.Requests);
+        Assert.False(Directory.Exists(Ue4ssFolder));
         Assert.False(Directory.Exists(staging) && Directory.EnumerateFileSystemEntries(staging).Any());
+    }
+
+    [Fact]
+    public void Update_never_goes_back_but_install_takes_the_manifests_release()
+    {
+        // A newer build than the manifest's, installed from a package.
+        InstallUe4ss("v3.0.3-12-gaaa");
+        var zip = File.ReadAllBytes(ReleaseZip("v3.0.2-9-gdef"));
+        using var server = new Loopback();
+        server.Add("/manifest.json", Manifest("v3.0.2-9-gdef", "ue4ss.zip", Sha256(zip)));
+        server.Add("/ue4ss.zip", zip);
+
+        var update = Run("ue4ss", "update", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
+
+        Assert.Equal(0, update.Code);
+        Assert.Contains("\"action\": \"newer-installed\"", update.Out);
+        Assert.DoesNotContain("/ue4ss.zip", server.Requests);
+        Assert.Equal("v3.0.3-12-gaaa", JsonFile.Read<Ue4ssInstallRecord>(RecordFile)!.Version);
+
+        var status = Run("ue4ss", "status", "--check", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
+        Assert.Contains("\"updateAvailable\": false", status.Out);
+        Assert.Contains("\"newerInstalled\": true", status.Out);
+
+        // The manifest may go back on purpose: install takes its release.
+        var install = Run("ue4ss", "install", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
+        Assert.Equal(0, install.Code);
+        Assert.Equal("v3.0.2-9-gdef", JsonFile.Read<Ue4ssInstallRecord>(RecordFile)!.Version);
+    }
+
+    [Fact]
+    public void A_change_of_ue4ss_names_the_installed_cpp_mods()
+    {
+        InstallUe4ss();
+        var cpp = Path.Combine(root, "Downloads", "CppTest");
+        Write(Path.Combine(cpp, "ue4ss", "Mods", "CppTest", "dlls", "main.dll"), "a C++ mod");
+        Assert.Equal(0, Run("install", cpp, "--yes").Code);
+
+        var (code, output, error) = Run("ue4ss", "install", "--package", ReleaseZip("v3.0.2-9-gdef"));
+
+        Assert.True(code == 0, error);
+        Assert.Contains("Warning: \"CppTest\" is a C++ mod.", output);
+    }
+
+    [Fact]
+    public void Remove_says_what_goes_as_the_app_does()
+    {
+        InstallUe4ss();
+
+        var (code, output, _) = Run("ue4ss", "remove");
+
+        Assert.Equal(2, code);
+        Assert.Contains("with UE4SS's settings and every mod inside it, also mods installed by hand", output);
+        Assert.Contains("Close the game first.", output);
+        Assert.DoesNotContain("backed up", output);
+        Assert.True(File.Exists(Path.Combine(Ue4ssFolder, "UE4SS.dll")));
     }
 
     [Fact]
@@ -321,7 +381,7 @@ public sealed class Ue4ssCliTests : IDisposable
         server.Add("/manifest.json", Manifest("v3.0.2-9-gdef", "ue4ss.zip", Sha256(zip)));
         server.Add("/ue4ss.zip", zip);
 
-        var (code, _, error) = Run("ue4ss", "install", "--manifest-url", server.Url("/manifest.json"), "--json");
+        var (code, _, error) = Run("ue4ss", "install", "--ue4ss-manifest-url", server.Url("/manifest.json"), "--json");
 
         Assert.Equal(1, code);
         Assert.Contains("not a UE4SS release", error);
@@ -331,11 +391,11 @@ public sealed class Ue4ssCliTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(Data, "staging")) && Directory.EnumerateFileSystemEntries(Path.Combine(Data, "staging")).Any());
     }
 
-    /// <summary>The manifest a game profile's addresses serve: a Cloudflare-style mirror and the GitHub release.</summary>
+    /// <summary>The manifest a game profile's addresses serve: a Cloudflare-style mirror and the GitHub release, here on .invalid.</summary>
     private static byte[] Manifest(string version, string mirror, string sha256) => Encoding.UTF8.GetBytes($$"""
         { "ue4ss": { "phantom-blade-zero": {
           "version": "{{version}}",
-          "url": "https://github.com/example/ue4ss/releases/download/{{version}}/ue4ss_{{version}}.zip",
+          "url": "https://ue4ss.invalid/releases/download/{{version}}/ue4ss_{{version}}.zip",
           "sha256": "{{sha256}}",
           "mirror": "{{mirror}}" } } }
         """);

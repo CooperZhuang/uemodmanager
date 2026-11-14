@@ -282,6 +282,39 @@ public static partial class Ue4ssManifest
     public static bool IsUpdate(string? installedVersion, Ue4ssRelease? latest) =>
         latest is not null && !string.Equals(installedVersion?.Trim(), latest.Version, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Whether the release <paramref name="offered"/> is older than <paramref name="installed"/>, as UE4SS's tags tell:
+    /// "v3.0.1-1181-g83330635" is 3.0.1 and 1181 commits after it, so older than "v3.0.1-1188-g…" and "v4.0.0". False
+    /// when either tag says no such number. The manifest may go back on purpose, as when a newer UE4SS breaks the game's
+    /// mods: the app then offers the manifest's release, and the command line's update leaves that to an install.
+    /// </summary>
+    public static bool IsOlder(string? installed, string offered)
+    {
+        if (installed is null || ReleaseOrder(offered) is not { } a || ReleaseOrder(installed) is not { } b)
+            return false;
+        var order = ModVersion.CompareNumbers(a.Numbers, b.Numbers) ?? 0;
+        return order != 0 ? order < 0 : a.Commits < b.Commits;
+    }
+
+    /// <summary>A UE4SS tag's version number and its commits after that version, such as ("3.0.1", 1181).</summary>
+    private static (string Numbers, long Commits)? ReleaseOrder(string tag)
+    {
+        var match = Regex.Match(tag.Trim(), @"^[vV]?(\d+(?:\.\d+)*)(?:-(\d+))?(?:-g[0-9a-fA-F]+)?$");
+        if (!match.Success)
+            return null;
+        var commits = match.Groups[2].Success ? long.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) : 0;
+        return (match.Groups[1].Value, commits);
+    }
+
+    /// <summary>
+    /// The game profile's fixed UE4SS release, which one-click install takes when no manifest answers or the manifest
+    /// names no entry; null for a profile without one.
+    /// </summary>
+    public static Ue4ssRelease? FixedRelease(Games.GameProfile profile) =>
+        string.IsNullOrWhiteSpace(profile.Ue4ssPackageUrl)
+            ? null
+            : new Ue4ssRelease(VersionFromFileName(profile.Ue4ssPackageUrl) ?? "", profile.Ue4ssPackageUrl, profile.Ue4ssPackageSha256);
+
     /// <summary>The version in a release file name, such as "v3.0.1-1181-g83330635" in "mortalshell2_ue4ss_v3.0.1-1181-g83330635.zip".</summary>
     public static string? VersionFromFileName(string path)
     {

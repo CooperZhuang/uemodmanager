@@ -10,7 +10,7 @@ internal sealed class CliArguments
     private static readonly string[] ValueOptions =
     [
         "--data-dir", "--game", "--game-root", "--staging", "--part", "--save-folder", "--note", "--keep", "--package",
-        "--manifest-url",
+        "--ue4ss-version", "--ue4ss-manifest-url",
     ];
 
     /// <summary>Value options that may be given more than once, such as "--part 1 --part Extras".</summary>
@@ -81,11 +81,14 @@ internal sealed class CliArguments
     /// <summary>The release package UE4SS is installed from, when it is a file on this PC instead of the manifest's.</summary>
     public string? Package => Values.GetValueOrDefault("--package");
 
-    /// <summary>The release version to record: with --package it names a package whose file name does not, else the manifest's.</summary>
-    public string? VersionTag => Values.GetValueOrDefault("--version");
+    /// <summary>
+    /// ue4ss install: the release version to record for --package whose file name names none, else the manifest's to
+    /// require. Not --version, which is the CLI's own version wherever it stands.
+    /// </summary>
+    public string? Ue4ssVersion => Values.GetValueOrDefault("--ue4ss-version");
 
-    /// <summary>A test copy of the UE4SS manifest, read instead of the game profile's addresses.</summary>
-    public string? ManifestUrl => Values.GetValueOrDefault("--manifest-url");
+    /// <summary>A test copy of the UE4SS manifest, read instead of the game profile's addresses, as the app's own option of that name.</summary>
+    public string? Ue4ssManifestUrl => Values.GetValueOrDefault("--ue4ss-manifest-url");
 
     /// <exception cref="CliError">An option is unknown or lacks its value.</exception>
     public static CliArguments Parse(string[] args)
@@ -99,21 +102,7 @@ internal sealed class CliArguments
                 var equals = arg.IndexOf('=');
                 var name = equals < 0 ? arg : arg[..equals];
                 var inline = equals < 0 ? null : arg[(equals + 1)..];
-                if (name.Equals("--version", StringComparison.OrdinalIgnoreCase) && (inline is not null || parsed.Command.Length > 0))
-                {
-                    // After a command "--version <tag>" is the command's release version; before one it stays the
-                    // CLI's own version, so "UEModManager.exe --cli --version" still prints that.
-                    var tag = inline;
-                    if (tag is null)
-                    {
-                        if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
-                            throw new CliError("invalid-arguments", "Option '--version' needs a value.",
-                                details: [$"Example: {parsed.Command} --version v3.0.1-1181-g83330635"]);
-                        tag = args[++i];
-                    }
-                    parsed.Values[name] = tag;
-                }
-                else if (ValueOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
+                if (ValueOptions.Contains(name, StringComparer.OrdinalIgnoreCase))
                 {
                     var value = inline;
                     if (value is null)
@@ -203,6 +192,9 @@ internal sealed class CliArguments
         "--game" => "<id>",
         "--note" => "<text>",
         "--keep" => "<number>",
+        "--package" => "<file>",
+        "--ue4ss-version" => "<tag>",
+        "--ue4ss-manifest-url" => "<url>",
         _ => "<folder>",
     };
 }

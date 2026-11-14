@@ -209,6 +209,20 @@ public class Ue4ssManifestTests : IDisposable
     }
 
     [Theory]
+    [InlineData("v3.0.1-1188-g1234567", "v3.0.1-1181-g83330635", true)]
+    [InlineData("v4.0.0", "v3.0.1-1188-g1234567", true)]
+    [InlineData("v3.0.1-1181-g83330635", "v3.0.1", true)]
+    [InlineData("v3.0.1-1181-g83330635", "v3.0.1-1188-g1234567", false)]
+    [InlineData("v3.0.1-1181-g83330635", "v3.0.1-1181-g83330635", false)]
+    [InlineData("v3.0.1", "V3.0.2", false)]
+    [InlineData("experimental", "v3.0.1", false)]
+    [InlineData(null, "v3.0.1", false)]
+    public void An_older_release_is_told_by_its_number_and_commits(string? installed, string offered, bool older)
+    {
+        Assert.Equal(older, Ue4ssManifest.IsOlder(installed, offered));
+    }
+
+    [Theory]
     [InlineData(@"C:\Downloads\mortalshell2_ue4ss_v3.0.1-1181-g83330635.zip", "v3.0.1-1181-g83330635")]
     [InlineData(@"C:\Downloads\UE4SS_v3.0.1.zip", "v3.0.1")]
     [InlineData(@"C:\Downloads\ue4ss.zip", null)]

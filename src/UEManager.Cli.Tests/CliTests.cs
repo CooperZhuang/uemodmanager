@@ -139,6 +139,10 @@ public sealed class CliTests : IDisposable
 
         Assert.Equal(0, code);
         Assert.Contains("UEModManager --cli", output);
+        // After a command too: --version has one meaning (ue4ss install takes --ue4ss-version).
+        var (afterCode, afterOutput, _) = Raw("list", "--version");
+        Assert.Equal(0, afterCode);
+        Assert.Contains("UEModManager --cli", afterOutput);
     }
 
     [Fact]

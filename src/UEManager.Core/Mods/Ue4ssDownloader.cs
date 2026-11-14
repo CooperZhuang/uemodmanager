@@ -10,6 +10,14 @@ public sealed record Ue4ssInstallResult(string TargetFolder, int FilesWritten, I
 /// <param name="DisabledMods">Managed mods that lived in UE4SS's folder and are now disabled; their library copies stay.</param>
 public sealed record Ue4ssRemoveResult(int DisabledMods);
 
+/// <summary>What <see cref="ModManager.RemoveUe4ss"/> would take now.</summary>
+/// <param name="Paths">UE4SS's files and folders in the game, whoever put them there; empty when UE4SS is not installed.</param>
+/// <param name="DisabledMods">The enabled mods with files in UE4SS's Mods folder, which it would disable.</param>
+public sealed record Ue4ssRemovePreview(IReadOnlyList<string> Paths, IReadOnlyList<ModRecord> DisabledMods)
+{
+    public bool Installed => Paths.Count > 0;
+}
+
 /// <summary>What "Reset modding" would change, for the question before it.</summary>
 /// <param name="OtherFiles">Files in the mods folders that the manager did not install.</param>
 public sealed record ResetPreview(int EnabledMods, int InstalledMods, bool Ue4ssInstalled, int OtherFiles);

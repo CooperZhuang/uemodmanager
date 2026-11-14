@@ -1023,6 +1023,31 @@ public sealed class ModManager
     }
 
     /// <summary>
+    /// Downloads a UE4SS release (the manifest's, or the game profile's fixed one), checks its SHA-256 and installs it
+    /// with <see cref="InstallUe4ss"/>. The download goes into a folder of its own below <paramref name="downloadRoot"/>,
+    /// the data folder's staging folder when null, and that folder goes again afterwards, also when a step fails. The
+    /// app's one-click install and the command line tool both install a release this way.
+    /// </summary>
+    /// <param name="downloaded">Called when the download is checked and the install starts, such as for a busy text.</param>
+    /// <exception cref="ModException">The download failed or its checksum differs, or the install failed.</exception>
+    public async Task<Ue4ssInstallResult> DownloadAndInstallUe4ssAsync(HttpClient http, Ue4ssRelease release,
+        string? downloadRoot = null, IProgress<double>? progress = null, Action? downloaded = null)
+    {
+        var folder = Path.Combine(downloadRoot ?? paths.StagingDir, "download-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var file = await Ue4ssDownloader.DownloadAsync(http, release.Urls, release.Sha256, folder, progress);
+            downloaded?.Invoke();
+            var version = string.IsNullOrWhiteSpace(release.Version) ? null : release.Version;
+            return await Task.Run(() => InstallUe4ss(file, version));
+        }
+        finally
+        {
+            FileSystem.TryDeleteDirectory(folder);
+        }
+    }
+
+    /// <summary>
     /// Installs or updates UE4SS from its release package (a zip, 7z or folder holding
     /// dwmapi.dll and the ue4ss folder) next to the game's shipping executable, in Binaries\Win64
     /// in most games. Files of managed mods are kept, and so are settings the user changed. Files of
@@ -1204,12 +1229,11 @@ public sealed class ModManager
         {
             EnsureCanChange();
             var win64 = Game.BinariesPath;
-            var current = Path.Combine(win64, "ue4ss");
-            var legacy = File.Exists(Path.Combine(win64, "UE4SS.dll"));
-            if (!Directory.Exists(current) && !legacy)
+            var ue4ss = Ue4ssRemovalPaths();
+            if (ue4ss.Count == 0)
                 throw new ModException($"UE4SS is not installed in this game.");
 
-            var affected = mods.Where(m => m.Enabled && m.Files.Any(f => f.Target == DeployTarget.Ue4ssMods)).ToList();
+            var affected = mods.Where(LivesInUe4ss).ToList();
             // A mixed mod's files outside UE4SS's folder, such as its pak, are checked like any removal.
             var outside = affected.SelectMany(m => m.Files)
                 .Where(f => f.Target != DeployTarget.Ue4ssMods && f.DeployedPath is not null && File.Exists(f.DeployedPath))
@@ -1220,19 +1244,8 @@ public sealed class ModManager
             foreach (var mod in affected)
                 SaveEditedSettings(mod);
 
-            var folders = new List<string> { current };
-            var files = new List<string> { Path.Combine(win64, "dwmapi.dll") };
-            if (legacy)
-            {
-                folders.Add(Path.Combine(win64, "Mods"));
-                files.AddRange(new[] { "UE4SS.dll", "UE4SS.pdb", "UE4SS-settings.ini", "UE4SS.log", "xinput1_3.dll" }
-                    .Select(name => Path.Combine(win64, name)));
-            }
-
             // UE4SS and the mixed mods' outside files are moved aside together, so nothing is left half removed.
-            var items = folders.Where(Directory.Exists)
-                .Concat(files.Where(File.Exists))
-                .Concat(outside.Select(f => f.DeployedPath!));
+            var items = ue4ss.Concat(outside.Select(f => f.DeployedPath!));
             var removal = new Removal(Park(items), ProjectFolder);
             foreach (var mod in affected)
                 removal.Disable(mod);
@@ -1242,6 +1255,38 @@ public sealed class ModManager
             return new Ue4ssRemoveResult(affected.Count);
         }
     }
+
+    /// <summary>What <see cref="RemoveUe4ss"/> would take now, for a question or a plan before it.</summary>
+    public Ue4ssRemovePreview PreviewUe4ssRemoval()
+    {
+        lock (gate)
+            return new Ue4ssRemovePreview(Ue4ssRemovalPaths(), [.. mods.Where(LivesInUe4ss)]);
+    }
+
+    /// <summary>
+    /// UE4SS's files and folders in the game that a removal takes, whoever put them there: the proxy DLL and the ue4ss
+    /// folder, and for UE4SS 2.x its files and Mods folder in Win64. Empty when UE4SS is not installed.
+    /// </summary>
+    private List<string> Ue4ssRemovalPaths()
+    {
+        var win64 = Game.BinariesPath;
+        var current = Path.Combine(win64, "ue4ss");
+        var legacy = File.Exists(Path.Combine(win64, "UE4SS.dll"));
+        if (!Directory.Exists(current) && !legacy)
+            return [];
+        var folders = new List<string> { current };
+        var files = new List<string> { Path.Combine(win64, "dwmapi.dll") };
+        if (legacy)
+        {
+            folders.Add(Path.Combine(win64, "Mods"));
+            files.AddRange(new[] { "UE4SS.dll", "UE4SS.pdb", "UE4SS-settings.ini", "UE4SS.log", "xinput1_3.dll" }
+                .Select(name => Path.Combine(win64, name)));
+        }
+        return [.. folders.Where(Directory.Exists), .. files.Where(File.Exists)];
+    }
+
+    /// <summary>An enabled mod with files in UE4SS's Mods folder: a removal of UE4SS disables it.</summary>
+    private static bool LivesInUe4ss(ModRecord mod) => mod.Enabled && mod.Files.Any(f => f.Target == DeployTarget.Ue4ssMods);
 
     /// <summary>What <see cref="ResetModding"/> would change.</summary>
     public ResetPreview PreviewReset()

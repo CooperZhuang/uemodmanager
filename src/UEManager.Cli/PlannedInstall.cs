@@ -88,9 +88,9 @@ internal sealed class PlannedInstall : IDisposable
         }
     }
 
-    /// <summary>The --staging folder as a full path; null keeps the data folder's staging folder.</summary>
+    /// <summary>The --staging folder as a full path; null keeps the data folder's staging folder. ue4ss install and update use it too.</summary>
     /// <exception cref="CliError">The option names no folder, or one inside the game.</exception>
-    private static string? StagingFolder(string? given, string gameRoot)
+    internal static string? StagingFolder(string? given, string gameRoot)
     {
         if (given is null)
             return null;

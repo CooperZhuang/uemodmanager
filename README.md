@@ -760,7 +760,7 @@ UEModManager.exe --cli enable <mod> | disable <mod>
 UEModManager.exe --cli uninstall <mod> --yes
 UEModManager.exe --cli backup list | create | restore | personal | note | delete
 UEModManager.exe --cli ue4ss status [--check]
-UEModManager.exe --cli ue4ss install [--package <file>] [--version <tag>]
+UEModManager.exe --cli ue4ss install [--package <file>] [--ue4ss-version <tag>]
 UEModManager.exe --cli ue4ss update
 UEModManager.exe --cli ue4ss remove --yes
 ```
@@ -807,20 +807,31 @@ UEModManager.exe --cli ue4ss remove --yes
 - `ue4ss status` reads the data folder's `ue4ss.json` record and UE4SS's own
   files; `--check` also reads the manifest, online, to say whether a newer
   release exists.
-- `ue4ss install` downloads the release the game profile's manifest names, from
-  the first address that answers, into the data folder's staging folder (or
-  `--staging <folder>`), checks its SHA-256, and installs it with the Core's
-  `ModManager.InstallUe4ss`; `--package` takes a local zip, 7z file or folder
-  instead, which also works offline, and `--version` names the version recorded
-  for it. Without `--package`, `--version` must be the release the manifest
-  names. An install over an installed UE4SS is an update.
-- `ue4ss update` installs the manifest's release only when it differs from the
-  installed one; when it does not, it says so and exits 0 without downloading.
-- `ue4ss remove` without `--yes` lists the folders and files it would remove and
-  the enabled mods that would be disabled; with `--yes` it removes UE4SS and
-  disables those mods, which stay in the library, as the app does. A failed
-  manifest read, download or checksum is an error with exit code 1, and no
-  temporary download is left behind.
+- `ue4ss install` takes the release the game profile's manifest names, from
+  the first address that answers, else the profile's fixed one
+  (`Ue4ssManifest.FixedRelease`), and downloads, checks and installs it with
+  the Core's `ModManager.DownloadAndInstallUe4ssAsync`, as the app's one-click
+  install does, below the data folder's staging folder (or `--staging
+  <folder>`, outside the game). `--package` takes a local zip, 7z file or
+  folder instead, which also works offline, and `--ue4ss-version` names the
+  version recorded for it. Without `--package`, `--ue4ss-version` must be the
+  release the manifest names. An install over an installed UE4SS is an update.
+  With C++ mods installed it warns as the app does: each is made for one UE4SS
+  build.
+- `ue4ss update` installs the manifest's release when it differs from the
+  installed one, but never an older one (`Ue4ssManifest.IsOlder`): after a
+  newer build from `--package`, a script's update must not take it away. The
+  manifest may go back on purpose, so `ue4ss install` still takes its release.
+  Otherwise it says so and exits 0 without downloading.
+- `ue4ss remove` without `--yes` lists what it would remove
+  (`ModManager.PreviewUe4ssRemoval`, the Core's own list): dwmapi.dll and the
+  whole ue4ss folder, with UE4SS's settings and every mod inside it, also mods
+  installed by hand, and the enabled mods it would disable, which stay in the
+  library. With `--yes` it removes UE4SS as the app does. A failed manifest
+  read, download or checksum is an error with exit code 1, and no temporary
+  download is left behind.
+- `--ue4ss-manifest-url <url>` reads a test copy of the UE4SS manifest, as the
+  app's own option of that name does.
 - `UEModManager.exe` is a window program, so a terminal does not wait for it.
   Pipe the output (`... --cli list | more`, in PowerShell `| Out-String`), use
   `start /wait` in cmd or `Start-Process -Wait` in PowerShell. Scripts that wait

@@ -61,4 +61,11 @@ public static class ModTypes
     public static bool HasUe4ssDll(IEnumerable<(DeployTarget Target, string Path)> files) =>
         files.Any(f => f.Target == DeployTarget.Ue4ssMods
             && ("/" + f.Path.Replace('\\', '/')).Contains("/dlls/", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// The mods, on or off, with a C++ part (see <see cref="HasUe4ssDll"/>): another UE4SS build may stop them from
+    /// loading, so the app warns before a change of UE4SS, and the command line tool says so.
+    /// </summary>
+    public static IReadOnlyList<ModRecord> BuiltForOneUe4ss(IEnumerable<ModRecord> mods) =>
+        [.. mods.Where(m => HasUe4ssDll(m.Files.Select(f => (f.Target, f.FileName))))];
 }

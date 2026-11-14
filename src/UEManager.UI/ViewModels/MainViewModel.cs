@@ -616,10 +616,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public string Ue4ssUpdateText => latestUe4ss is null ? "" : L.F($"Update to {latestUe4ss.Version}");
 
     /// <summary>What one-click install uses: the manifest's release, else the fixed one in the game profile.</summary>
-    public Ue4ssRelease? AvailableUe4ss => latestUe4ss
-        ?? (string.IsNullOrWhiteSpace(Profile.Ue4ssPackageUrl)
-            ? null
-            : new Ue4ssRelease(Ue4ssManifest.VersionFromFileName(Profile.Ue4ssPackageUrl) ?? "", Profile.Ue4ssPackageUrl, Profile.Ue4ssPackageSha256));
+    public Ue4ssRelease? AvailableUe4ss => latestUe4ss ?? Ue4ssManifest.FixedRelease(Profile);
 
     public string Ue4ssModsPath => ue4ss switch
     {
@@ -1062,23 +1059,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (!EnsureGame() || AvailableUe4ss is not { } release || !await ConfirmUe4ssChangeAsync())
             return;
-        var folder = Path.Combine(paths.StagingDir, "download-" + Guid.NewGuid().ToString("N"));
         Ue4ssInstallResult? result = null;
-        try
+        await RunAsync(L.T("Downloading UE4SS…"), async () =>
         {
-            await RunAsync(L.T("Downloading UE4SS…"), async () =>
-            {
-                var progress = new Progress<double>(share => BusyText = L.F($"Downloading UE4SS…  {share:P0}"));
-                var file = await Ue4ssDownloader.DownloadAsync(Http, release.Urls, release.Sha256, folder, progress);
-                BusyText = L.T("Installing UE4SS…");
-                var version = string.IsNullOrEmpty(release.Version) ? null : release.Version;
-                result = await Task.Run(() => manager!.InstallUe4ss(file, version));
-            });
-        }
-        finally
-        {
-            TryDeleteFolder(folder);
-        }
+            var progress = new Progress<double>(share => BusyText = L.F($"Downloading UE4SS…  {share:P0}"));
+            result = await manager!.DownloadAndInstallUe4ssAsync(Http, release, progress: progress,
+                downloaded: () => BusyText = L.T("Installing UE4SS…"));
+        });
         if (result is not null)
             Ue4ssInstalled(result);
     }
@@ -1105,7 +1092,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// </summary>
     internal static string? Ue4ssChangeWarning(IReadOnlyList<ModRecord> mods)
     {
-        var names = mods.Where(m => ModTypes.HasUe4ssDll(m.Files.Select(f => (f.Target, f.FileName))))
+        var names = ModTypes.BuiltForOneUe4ss(mods)
             .Select(m => $"\"{m.Name}\"")
             .ToList();
         return names.Count == 0

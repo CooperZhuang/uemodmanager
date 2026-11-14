@@ -100,15 +100,18 @@ internal sealed record Ue4ssReleaseDto(string Version, string FileName, string U
 internal sealed record Ue4ssStatusPayload(int SchemaVersion, string Command, string GameId, string DataDir,
     string RecordFile, bool RecordExists, bool Installed, string? Version, string? VersionSource, bool Managed,
     string? Source, DateTimeOffset? InstalledAt, int FilesRecorded, string? Folder, string? ModsPath,
-    bool UpdateChecked, string? LatestVersion, bool? UpdateAvailable, string? ManifestUrl, IReadOnlyList<string> Warnings);
+    bool UpdateChecked, string? LatestVersion, bool? UpdateAvailable, bool NewerInstalled, string? ManifestUrl,
+    IReadOnlyList<string> Warnings);
 
 /// <summary>
-/// What `ue4ss install` or `ue4ss update` did: "installed", "updated", or "up-to-date" when the manifest names the
-/// installed release and nothing was downloaded.
+/// What `ue4ss install` or `ue4ss update` did: "installed", "updated", "up-to-date" when the manifest names the
+/// installed release, or "newer-installed" when the installed one is newer (update never goes back); with these two
+/// nothing was downloaded. The warnings name installed C++ mods, which another UE4SS build may stop.
 /// </summary>
 internal sealed record Ue4ssInstallPayload(int SchemaVersion, string Command, string GameId, string Action,
     Ue4ssReleaseDto? Release, string? Package, string? Version, string? PreviousVersion, string TargetFolder,
-    int FilesWritten, bool Updated, IReadOnlyList<string> KeptFiles, IReadOnlyList<string> RemovedFiles);
+    int FilesWritten, bool Updated, IReadOnlyList<string> KeptFiles, IReadOnlyList<string> RemovedFiles,
+    IReadOnlyList<string> Warnings);
 
 /// <summary>An installed mod the removal would turn off, or turned off: it stays in the library.</summary>
 internal sealed record Ue4ssModRefDto(string Id, string Name);

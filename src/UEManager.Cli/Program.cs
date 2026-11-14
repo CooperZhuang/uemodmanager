@@ -145,9 +145,9 @@ internal static class Program
                                           Set or clear a save backup's note
           backup delete <name> --yes      Delete a save backup; without --yes it prints what it would delete and exits 2
           ue4ss status [--check]          The UE4SS in the game: installed, version, source, and with --check any update
-          ue4ss install [--package <file>] [--version <tag>]
+          ue4ss install [--package <file>] [--ue4ss-version <tag>]
                                           Install UE4SS from the manifest's release, or from a local package
-          ue4ss update                    Install the manifest's UE4SS release when it is newer than the installed one
+          ue4ss update                    Install the manifest's UE4SS release when it differs; never an older one
           ue4ss remove --yes              Remove UE4SS; without --yes it prints what would be removed and exits 2
 
         Options:
@@ -168,8 +168,9 @@ internal static class Program
           --yes                 Confirm a change; install, uninstall, ue4ss remove, backup restore and backup delete need it
           --check               With ue4ss status: read the manifest too, to tell whether a newer release exists
           --package <file>      With ue4ss install: a UE4SS release zip, 7z file or folder, instead of the manifest's
-          --version <tag>       With ue4ss install: the release version to record for --package, or the manifest's to require
-          --manifest-url <url>  Read a test copy of the UE4SS manifest instead of the game profile's addresses
+          --ue4ss-version <tag> With ue4ss install: the release version to record for --package, or the manifest's to require
+          --ue4ss-manifest-url <url>
+                                Read a test copy of the UE4SS manifest instead of the game profile's addresses
           -h, --help            Show this help
           --version             Show the CLI version
 
