@@ -72,6 +72,7 @@ internal static class Program
                 "disable" => ModCommand.RunToggle(arguments, enable: false),
                 "uninstall" => ModCommand.RunUninstall(arguments),
                 "backup" => BackupCommand.Run(arguments),
+                "ue4ss" => Ue4ssCommand.Run(arguments),
                 _ => Fail(new CliError("invalid-arguments", $"Unknown command '{arguments.Command}'.",
                     details: ["Run --help for the commands."]), jsonRequested),
             };
@@ -143,6 +144,11 @@ internal static class Program
           backup note <name> <text>|--clear
                                           Set or clear a save backup's note
           backup delete <name> --yes      Delete a save backup; without --yes it prints what it would delete and exits 2
+          ue4ss status [--check]          The UE4SS in the game: installed, version, source, and with --check any update
+          ue4ss install [--package <file>] [--version <tag>]
+                                          Install UE4SS from the manifest's release, or from a local package
+          ue4ss update                    Install the manifest's UE4SS release when it is newer than the installed one
+          ue4ss remove --yes              Remove UE4SS; without --yes it prints what would be removed and exits 2
 
         Options:
           --data-dir <folder>   The manager's data folder; default: UEMM_DATA_DIR, then Data beside UEModManager.exe
@@ -158,8 +164,12 @@ internal static class Program
           --all-parts           Select every part of the download, not only the default selection
           --part <index|name>   Select only this part; repeat for more. Cannot be used with --all-parts
           --keep-both           Keep an installed mod the download would replace: install it as another mod
-          --staging <folder>    Unpack the download here, outside the game, instead of the data folder's staging folder
-          --yes                 Confirm a change; install, uninstall, backup restore and backup delete need it
+          --staging <folder>    Unpack downloads here, outside the game, instead of the data folder's staging folder
+          --yes                 Confirm a change; install, uninstall, ue4ss remove, backup restore and backup delete need it
+          --check               With ue4ss status: read the manifest too, to tell whether a newer release exists
+          --package <file>      With ue4ss install: a UE4SS release zip, 7z file or folder, instead of the manifest's
+          --version <tag>       With ue4ss install: the release version to record for --package, or the manifest's to require
+          --manifest-url <url>  Read a test copy of the UE4SS manifest instead of the game profile's addresses
           -h, --help            Show this help
           --version             Show the CLI version
 
@@ -168,10 +178,15 @@ internal static class Program
           1  error (stderr says what)
           2  confirmation required; nothing was changed
 
-        The game is never started. Read-only commands (status, list, verify, backup list) do not write to the data folder
-        or to the game; plan only unpacks the download into the data folder's staging folder and removes it again, or
-        into the --staging folder. plan, install, enable, disable, uninstall and the backup commands that change the data
-        folder refuse while UE MM is open with the same data folder: close the app first.
+        The game is never started. Read-only commands (status, list, verify, backup list, ue4ss status) do not write to
+        the data folder or to the game; plan only unpacks the download into the data folder's staging folder and removes
+        it again, or into the --staging folder. plan, install, enable, disable, uninstall, ue4ss install, ue4ss update,
+        ue4ss remove and the backup commands that change the data folder refuse while UE MM is open with the same data
+        folder: close the app first. ue4ss status works beside the open app.
+
+        ue4ss install and update read the release manifest of the game profile, check the download's SHA-256, and install
+        through the same Core code as the app; a failed download or install leaves no package behind. --package installs a
+        release from this PC, which also works offline.
 
         UEModManager.exe is a window program, so a terminal does not wait for it: the prompt can come back before the
         output. Pipe the output (UEModManager.exe --cli list | more) or, in cmd, use start /wait. Scripts that wait for
