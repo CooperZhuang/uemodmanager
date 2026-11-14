@@ -99,7 +99,7 @@ internal sealed class CliContext
 
     /// <summary>
     /// The data folder, in the order the CLI documents it: --data-dir, the UEMM_DATA_DIR environment variable, then the
-    /// Data folder beside this program, as next to the app's exe, where the portable app keeps it.
+    /// Data folder beside the app's exe, where the portable app keeps it.
     /// </summary>
     private static string FindDataDir(string? given, bool write)
     {
@@ -117,7 +117,7 @@ internal sealed class CliContext
             throw new CliError("data-dir-not-found", "The manager's data folder was not found.",
                 details:
                 [
-                    "Pass --data-dir <folder>, set UEMM_DATA_DIR, or put this program next to UEModManager.exe and its Data folder.",
+                    "Pass --data-dir <folder>, set UEMM_DATA_DIR, or start the app once, so its Data folder exists next to UEModManager.exe.",
                     "Nothing was changed.",
                 ]);
         }

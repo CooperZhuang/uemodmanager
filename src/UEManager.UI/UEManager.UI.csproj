@@ -19,6 +19,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="UEManager.UI.Tests" />
     <ProjectReference Include="..\UEManager.Core\UEManager.Core.csproj" />
+    <!-- The command line tool, built into this exe and started by its cli switch (see UEManager.Cli.CommandLine). -->
+    <ProjectReference Include="..\UEManager.Cli\UEManager.Cli.csproj" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <!-- The settings editor: text with simple colours. -->
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />

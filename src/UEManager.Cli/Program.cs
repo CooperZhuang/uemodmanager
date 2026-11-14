@@ -8,12 +8,12 @@ using UEManager.Core.Storage;
 namespace UEManager.Cli;
 
 /// <summary>
-/// Entry point of the headless prototype: command dispatch, option handling and the one place where a failure becomes
-/// stderr and a non-zero exit code.
+/// The command line tool's commands (by CooperZhuang, PR #25), reached through <see cref="CommandLine"/> from the app's
+/// exe: command dispatch, option handling and the one place where a failure becomes stderr and a non-zero exit code.
 /// </summary>
 internal static class Program
 {
-    public const string ToolName = "uemm-cli";
+    public const string ToolName = "UEModManager --cli";
 
     /// <summary>Exit code 2: the command needs --yes; nothing was changed.</summary>
     public const int ConfirmationRequired = 2;
@@ -122,20 +122,20 @@ internal static class Program
     }
 
     private const string HelpText = """
-        uemm-cli - a headless prototype for UE MM
+        UE MM's command line: UEModManager.exe --cli <command> [options]
 
-        Usage:
-          uemm status                          App version, game, data folder and mod count
-          uemm list                            Installed mods
-          uemm verify                          Compare deployed files with the recorded SHA-256
-          uemm plan <archive|folder>           Read-only install plan as JSON (Inspect + Check)
-          uemm install <archive|folder> --yes  Install the planned parts; without --yes it prints the plan and exits 2
-          uemm enable <mod>                    Enable an installed mod
-          uemm disable <mod>                   Disable an installed mod
-          uemm uninstall <mod> --yes           Uninstall a mod; without --yes it prints what would be removed and exits 2
+        Commands:
+          status                          App version, game, data folder and mod count
+          list                            Installed mods
+          verify                          Compare deployed files with the recorded SHA-256
+          plan <archive|folder>           Read-only install plan as JSON (Inspect + Check)
+          install <archive|folder> --yes  Install the planned parts; without --yes it prints the plan and exits 2
+          enable <mod>                    Enable an installed mod
+          disable <mod>                   Disable an installed mod
+          uninstall <mod> --yes           Uninstall a mod; without --yes it prints what would be removed and exits 2
 
         Options:
-          --data-dir <folder>   The manager's data folder; default: UEMM_DATA_DIR, then Data beside this program
+          --data-dir <folder>   The manager's data folder; default: UEMM_DATA_DIR, then Data beside UEModManager.exe
           --game <id>           The game profile id; default: the game in settings.json
           --game-root <folder>  Use this install folder instead of the one in settings.json
           --json                Machine-readable JSON output with stable fields
@@ -152,6 +152,10 @@ internal static class Program
         The game is never started. Read-only commands (status, list, verify) do not write to the data folder or to the
         game; plan only unpacks the download into the data folder's staging folder and removes it again. plan, install,
         enable, disable and uninstall refuse while UE MM is open with the same data folder: close the app first.
+
+        UEModManager.exe is a window program, so a terminal does not wait for it: the prompt can come back before the
+        output. Pipe the output (UEModManager.exe --cli list | more) or, in cmd, use start /wait. Scripts that wait for
+        the process and read its output get the output and the exit code as usual.
 
         """ + "\n";
 }

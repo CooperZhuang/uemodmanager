@@ -3,7 +3,7 @@ using UEManager.Core.Mods;
 namespace UEManager.Cli.Commands;
 
 /// <summary>
-/// `uemm install`: the plan, then the Core's own Install for the parts the plan selected. Without --yes it prints the
+/// `--cli install`: the plan, then the Core's own Install for the parts the plan selected. Without --yes it prints the
 /// plan and exits 2, so a script can review the plan before it changes anything.
 /// </summary>
 internal static class InstallCommand

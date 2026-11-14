@@ -2,7 +2,7 @@ using UEManager.Core.Mods;
 
 namespace UEManager.Cli.Commands;
 
-/// <summary>`uemm enable|disable|uninstall`: the Core's own operations, reached by the mod's name instead of the UI.</summary>
+/// <summary>`--cli enable|disable|uninstall`: the Core's own operations, reached by the mod's name instead of the UI.</summary>
 internal static class ModCommand
 {
     public static int RunToggle(CliArguments arguments, bool enable)

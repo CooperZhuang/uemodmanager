@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using UEManager.Cli;
 using UEManager.Core;
 using UEManager.Core.Games;
 using UEManager.Core.Storage;
@@ -100,6 +101,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // "UEModManager.exe --cli <command>": one command of the command line tool, without a window and without the
+        // hand-over to an open app; it refuses changes while the app holds the data folder (see UEManager.Cli).
+        if (CommandLine.Wants(e.Args))
+        {
+            ParentConsole.Attach();
+            Shutdown(CommandLine.Run(e.Args));
+            return;
+        }
         Options = OptionArguments(e.Args);
 
         // --data-dir <folder> keeps a test run away from the real data folder.

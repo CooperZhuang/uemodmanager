@@ -1,6 +1,6 @@
 namespace UEManager.Cli.Commands;
 
-/// <summary>`uemm plan`: Inspect and Check the download and print the plan as JSON. Nothing in the game is changed.</summary>
+/// <summary>`--cli plan`: Inspect and Check the download and print the plan as JSON. Nothing in the game is changed.</summary>
 internal static class PlanCommand
 {
     public static int Run(CliArguments arguments)

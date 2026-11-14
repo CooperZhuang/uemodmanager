@@ -4,7 +4,7 @@ using UEManager.Core.Mods;
 
 namespace UEManager.Cli;
 
-/// <summary>`uemm status`: the app version, the game, the data folder and how many mods are installed.</summary>
+/// <summary>`--cli status`: the app version, the game, the data folder and how many mods are installed.</summary>
 internal static class StatusCommand
 {
     public static int Run(CliArguments arguments)

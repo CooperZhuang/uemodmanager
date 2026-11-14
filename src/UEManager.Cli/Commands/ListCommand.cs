@@ -1,6 +1,6 @@
 namespace UEManager.Cli;
 
-/// <summary>`uemm list`: every installed mod with its version, state, files, targets and source.</summary>
+/// <summary>`--cli list`: every installed mod with its version, state, files, targets and source.</summary>
 internal static class ListCommand
 {
     public static int Run(CliArguments arguments)

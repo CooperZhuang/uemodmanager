@@ -737,7 +737,8 @@ src/
     Catalog/              The openmods page (see Catalog switch).
     Theme/                Palette, control styles, and each game's colours (Games/) and art
                           (Art/<game id>/). Built into the exe (see Theme/README.md).
-  UEManager.Cli/          The command line tool (net8.0). Builds uemm.exe; see Command line tool.
+  UEManager.Cli/          The command line tool (net8.0), a library built into UEModManager.exe;
+                          see Command line tool.
   UEManager.Core.Tests/   xUnit tests for Core. Covers every operation that touches the game folder.
   UEManager.UI.Tests/     xUnit tests for the UI: the language files against the source, and a
                           change of language in the open window.
@@ -746,15 +747,17 @@ src/
 
 ## Command line tool
 
-`uemm.exe` (`src/UEManager.Cli`, by CooperZhuang) drives the same Core without a
-window, for scripts and tests. It is not part of the app's release zip.
+`UEModManager.exe --cli <command>` (`src/UEManager.Cli`, by CooperZhuang) drives
+the same Core without a window, for scripts, tests and AI agents. It is built
+into the app's exe: the release stays one exe, as the self-update takes exactly
+one, and normal starts of the app do not change.
 
 ```text
-uemm status | list | verify
-uemm plan <archive|folder>
-uemm install <archive|folder> --yes
-uemm enable <mod> | disable <mod>
-uemm uninstall <mod> --yes
+UEModManager.exe --cli status | list | verify
+UEModManager.exe --cli plan <archive|folder>
+UEModManager.exe --cli install <archive|folder> --yes
+UEModManager.exe --cli enable <mod> | disable <mod>
+UEModManager.exe --cli uninstall <mod> --yes
 ```
 
 - `--json` gives one JSON object with stable fields; `--data-dir`, `--game` and
@@ -762,12 +765,16 @@ uemm uninstall <mod> --yes
 - `install` and `uninstall` without `--yes` only show what they would do, with
   exit code 2. Exit code 1 is an error, on stderr.
 - The data folder is `--data-dir`, else `UEMM_DATA_DIR`, else the `Data` folder
-  beside `uemm.exe`, as next to the app's exe.
+  beside `UEModManager.exe`, where the app keeps it.
 - `plan`, `install`, `enable`, `disable` and `uninstall` refuse while the app is
   open with the same data folder: both take the data folder's lock
   (`DataFolderLock`), as two programs would overwrite each other's mod list.
 - Which parts of a download it takes is the install review's first selection
   (`ModManager.FirstSelection`), so the tool and the app agree.
+- `UEModManager.exe` is a window program, so a terminal does not wait for it.
+  Pipe the output (`... --cli list | more`, in PowerShell `| Out-String`), use
+  `start /wait` in cmd or `Start-Process -Wait` in PowerShell. Scripts that wait
+  for the process and read its output get the output and the exit code.
 
 ## Build
 

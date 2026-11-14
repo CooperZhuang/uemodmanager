@@ -4,7 +4,7 @@ using UEManager.Core.Mods;
 namespace UEManager.Cli;
 
 /// <summary>
-/// `uemm verify`: every deployed file of every mod is re-hashed and compared with the SHA-256 the manager recorded.
+/// `--cli verify`: every deployed file of every mod is re-hashed and compared with the SHA-256 the manager recorded.
 /// Settings files the player may edit, the game's own files and borrowed shared libraries are reported apart, as the
 /// Core treats their changes as expected; everything else that differs is a problem.
 /// </summary>
