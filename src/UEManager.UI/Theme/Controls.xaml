@@ -67,8 +67,10 @@
                         </ToggleButton>
                         <ContentPresenter Margin="12,8,34,8" VerticalAlignment="Center" IsHitTestVisible="False"
                                           Content="{Binding SelectedItem.Name, RelativeSource={RelativeSource TemplatedParent}}" />
+                        <!-- The list's margin leaves room for its shadow. The list still lines up with the box above it,
+                             so the popup needs no offset: one of -12 moved the list 12 px to the left (checked 2026-11-14). -->
                         <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False"
-                               HorizontalOffset="-12" IsOpen="{TemplateBinding IsDropDownOpen}">
+                               IsOpen="{TemplateBinding IsDropDownOpen}">
                             <Border Margin="12,2,12,12" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}"
                                     BorderThickness="1" CornerRadius="2" Padding="2">

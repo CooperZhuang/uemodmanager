@@ -10,6 +10,7 @@ every contributor is named in every release.
 - msylgj: the first update check for mods with a mod page, which led to the app's own
 - qhq: the report that an update lost the name a player gave a mod
 - EstusFlask: a chosen number of save backups to keep, which led to the Backups page
+- HumanMus1c: the window shadow and the shadows of lists and tooltips
 
 Your name goes here with your first merged contribution: code, a game profile, a
 translation, or a bug report that led to a fix. See CONTRIBUTING.md.
