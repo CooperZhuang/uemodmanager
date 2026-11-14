@@ -134,8 +134,11 @@ public class ModLoaderTests : IDisposable
             var part = Assert.Single(preview.Packages);
             Assert.Equal("Regen", part.Name);
             Assert.Equal(3, part.RelativePaths.Count);
+            // Its type names the loader it runs in, in the review and on the Mods page, not "Game files".
+            Assert.Equal(ModTypes.ModLoader, part.TypeLabel);
             mod = manager.Install(preview, [part], "Regen", null);
         }
+        Assert.Equal("PBZModLoader", mod.TypeLabel);
         var mods = Path.Combine(game.RootPath, "TestGame", "PBZModLoader", "mods");
         Assert.True(File.Exists(Path.Combine(mods, "Regen", "data", "credits.json")));
         Assert.False(File.Exists(Path.Combine(mods, "Regen", "README.md")));
@@ -144,6 +147,51 @@ public class ModLoaderTests : IDisposable
 
         Assert.False(Directory.Exists(Path.Combine(mods, "Regen")));
         Assert.True(Directory.Exists(mods));
+    }
+
+    /// <summary>A PBZModLoader mod as KintaroModding's Animation Cancel 2.0 ships it: its script and its settings file.</summary>
+    private string Cancel(string version, string settings = "guard = 1")
+    {
+        folder.File($@"Downloads\Cancel{version}\ProjectPBZ\PBZModLoader\mods\cancel\main.js", $"main {version}");
+        folder.File($@"Downloads\Cancel{version}\ProjectPBZ\PBZModLoader\mods\cancel\cancel.txt", settings);
+        folder.File($@"Downloads\Cancel{version}\ProjectPBZ\PBZModLoader\mods\cancel\README.txt", "a readme");
+        return folder.Combine("Downloads", $"Cancel{version}");
+    }
+
+    [Fact]
+    public void A_loader_mods_settings_file_is_the_players_and_an_update_asks_to_keep_it()
+    {
+        folder.File(@"Game\TestGame\Binaries\Win64\version.dll", "[PBZMOD] by hand");
+        ModRecord mod;
+        using (var preview = manager.Inspect(Cancel("1.0")))
+            mod = manager.Install(preview, preview.Packages.ToList(), "Cancel", "1.0");
+
+        // The settings file is the player's: Edit settings opens it; the script is the mod's own.
+        Assert.Equal(["TestGame/PBZModLoader/mods/cancel/cancel.txt"], mod.Files.Where(f => f.IsSettingsFile).Select(f => f.FileName));
+        var settings = Path.Combine(game.RootPath, "TestGame", "PBZModLoader", "mods", "cancel", "cancel.txt");
+        File.WriteAllText(settings, "guard = 0");
+
+        using (var preview = manager.Inspect(Cancel("1.1", "guard = 1, dodge = 1")))
+        {
+            var check = manager.Check(preview, preview.Packages.ToList());
+            Assert.Equal(["TestGame/PBZModLoader/mods/cancel/cancel.txt"], check.EditedSettings);
+            manager.Install(preview, preview.Packages.ToList(), "Cancel", "1.1", replace: true, keepSettings: true);
+        }
+
+        Assert.Equal("guard = 0", File.ReadAllText(settings));
+        Assert.Equal("main 1.1", File.ReadAllText(Path.Combine(game.RootPath, "TestGame", "PBZModLoader", "mods", "cancel", "main.js")));
+    }
+
+    [Theory]
+    [InlineData("ProjectPBZ/PBZModLoader/mods/cancel/cancel.txt", true)]
+    [InlineData("ProjectPBZ/PBZModLoader/mods/cancel/data/table.json", true)]
+    [InlineData("ProjectPBZ/PBZModLoader/mods/cancel/main.js", false)]
+    [InlineData("ProjectPBZ/PBZModLoader/mods/cancel/README.txt", false)]
+    [InlineData("ProjectPBZ/PBZModLoader/LICENSES.txt", false)]
+    [InlineData("ProjectPBZ/Saved/Config/Windows/Input.ini", false)]
+    public void Only_the_data_files_in_a_loader_mods_folder_are_settings(string path, bool settings)
+    {
+        Assert.Equal(settings, SettingsFiles.Is(DeployTarget.InstallRoot, path));
     }
 
     private string TwoLoaders()

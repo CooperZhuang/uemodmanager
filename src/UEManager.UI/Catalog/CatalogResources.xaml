@@ -3,13 +3,21 @@
                     xmlns:ui="clr-namespace:UEManager.UI"
                     xmlns:catalog="clr-namespace:UEManager.UI.Catalog">
 
-    <!-- The openmods entry in the navigation and the page itself. MainWindow shows both through
-         DynamicResource; the app adds this file only while the catalog is switched on, else it has neither. -->
+    <!-- The openmods entry in the navigation, the page itself, its full view in place of the menu and the page, and its
+         views over the whole window: what openmods is, and what the type boxes mean.
+         MainWindow shows them through DynamicResource; the app adds this file only while the catalog is switched on,
+         else it has none of them. -->
     <ui:PageConverter x:Key="CatalogPageConverter" />
 
     <RadioButton x:Key="CatalogNavItem" x:Shared="False" Style="{DynamicResource NavItem}" Content="openmods" ui:Icon.Glyph="&#xE774;"
                  IsChecked="{Binding SelectedPage, Converter={StaticResource CatalogPageConverter}, ConverterParameter=Catalog}" />
 
     <catalog:CatalogView x:Key="CatalogPage" x:Shared="False" DataContext="{Binding Catalog}" />
+
+    <catalog:CatalogAboutView x:Key="CatalogAbout" x:Shared="False" DataContext="{Binding Catalog}" />
+
+    <catalog:CatalogTypesView x:Key="CatalogTypesInfo" x:Shared="False" DataContext="{Binding Catalog}" />
+
+    <catalog:CatalogFullView x:Key="CatalogFullView" x:Shared="False" DataContext="{Binding Catalog}" />
 
 </ResourceDictionary>

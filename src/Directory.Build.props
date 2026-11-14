@@ -14,8 +14,8 @@
     <DebugType>embedded</DebugType>
 
     <!-- The catalog: the openmods page, which lists the game's mods from openmods.nexus. Its code is
-         always built in; this switch shows the page and lets it go online. Off for now. -->
-    <Catalog>false</Catalog>
+         always built in; this switch shows the page and lets it go online. -->
+    <Catalog>true</Catalog>
   </PropertyGroup>
 
   <ItemGroup>

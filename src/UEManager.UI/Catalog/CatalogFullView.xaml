@@ -1,0 +1,161 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogFullView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogViewModel}"
+             x:Name="View" Focusable="True" FocusVisualStyle="{x:Null}"
+             Visibility="{Binding IsFullView, Converter={StaticResource Visible}}">
+    <UserControl.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding ExitFullViewCommand}" />
+    </UserControl.InputBindings>
+
+    <!-- The openmods page over the whole window: the menu and the page stay below, out of sight. -->
+    <Grid Background="{StaticResource Brush.Ink}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- The game's cover art, faded into the ink as on the pages. -->
+            <Grid Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False" MaxHeight="520" Opacity="0.55">
+                <Image Source="{Binding DataContext.Art.Background, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <Rectangle>
+                    <Rectangle.Fill>
+                        <RadialGradientBrush Center="1,0" GradientOrigin="1,0" RadiusX="0.95" RadiusY="1.5">
+                            <GradientStop Color="{StaticResource Color.InkClear}" Offset="0" />
+                            <GradientStop Color="{StaticResource Color.InkClear}" Offset="0.4" />
+                            <GradientStop Color="{StaticResource Color.Ink}" Offset="1" />
+                        </RadialGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle>
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="{StaticResource Color.InkClear}" Offset="0.5" />
+                            <GradientStop Color="{StaticResource Color.Ink}" Offset="1" />
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Grid>
+
+            <!-- Header: the title, the way out, and the same search, sort and switch as the page. -->
+            <StackPanel Margin="36,22,36,0">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" VerticalAlignment="Top" Orientation="Horizontal">
+                        <Button Style="{StaticResource Button.OpenMods}" Content="{Binding SiteText}" ui:Icon.Glyph="&#xE8A7;"
+                                Command="{Binding OpenSiteCommand}" ToolTip="{ui:Loc 'Open openmods'}" />
+                        <Button Margin="8,0,0,0" Content="{ui:Loc 'Exit full view'}" ui:Icon.Glyph="&#xE73F;"
+                                Command="{Binding ExitFullViewCommand}" ToolTip="Esc" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Bottom" Style="{StaticResource Text.Display}" FontSize="34" Text="openmods" />
+                        <TextBlock Margin="16,0,0,7" VerticalAlignment="Bottom" Style="{StaticResource Text.Overline}"
+                                   Text="{Binding DataContext.GameDisplayName, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Tracked}}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <vm:CatalogTypeFilter Margin="0,16,0,0" HorizontalAlignment="Left" />
+                <vm:CatalogToolbar Margin="0,18,0,0" Visibility="{Binding HasItems, Converter={StaticResource Visible}}" />
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" Margin="0,16,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="36,0,36,28">
+                    <TextBlock Margin="0,52" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" Text="{ui:Loc 'Loading the openmods list…'}"
+                               Visibility="{Binding IsLoading, Converter={StaticResource Visible}}" />
+                    <TextBlock Margin="0,52" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Accent}"
+                               Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource VisibleIfSet}}" />
+
+                    <!-- Nothing here matches the search, or this side of the switch is empty: shared with the page. -->
+                    <vm:CatalogNoMatch />
+                    <TextBlock Margin="0,52" HorizontalAlignment="Center" Style="{StaticResource Text.Title}" Text="{Binding EmptyText}"
+                               Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}" />
+
+                    <!-- The cards: as many columns as fit (see CatalogFullView.ColumnsFor), every card of a row as high as the highest. -->
+                    <ItemsControl x:Name="Cards" ItemsSource="{Binding ItemsView}" Focusable="False" Grid.IsSharedSizeScope="True">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=vm:CatalogFullView}}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:CatalogItemViewModel}">
+                                <Border Margin="{x:Static vm:CatalogFullView.CardMargin}" Style="{StaticResource Card}" Padding="0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Cover, 16:9 over the card's width. -->
+                                        <Grid Margin="1,1,1,0" ClipToBounds="True" Background="{StaticResource Brush.Field}">
+                                            <Viewbox Stretch="UniformToFill">
+                                                <Grid Width="480" Height="270">
+                                                    <Image Source="{Binding Cover}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                </Grid>
+                                            </Viewbox>
+                                        </Grid>
+
+                                        <StackPanel Grid.Row="1" Margin="18,14,18,0">
+                                            <!-- The type in front of the name, as on the page. -->
+                                            <vm:CatalogCardTitle />
+                                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" Text="{Binding AuthorText}" />
+                                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Small}" Text="{Binding ListedByText}"
+                                                       Visibility="{Binding ListedByText, Converter={StaticResource VisibleIfSet}}" />
+                                            <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding Tags}" Focusable="False">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Margin="0,0,6,6" Style="{StaticResource Badge}">
+                                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding MetaText}" />
+                                            <!-- Three lines at most; the whole description in the tooltip and on the mod's page. -->
+                                            <TextBlock Margin="0,10,0,0" MaxHeight="54" FontSize="12.5" LineHeight="18" TextWrapping="Wrap" TextTrimming="WordEllipsis"
+                                                       Foreground="{StaticResource Brush.TextMuted}" Text="{Binding Summary}" ToolTip="{Binding Summary}"
+                                                       Visibility="{Binding Summary, Converter={StaticResource VisibleIfSet}}" />
+                                        </StackPanel>
+
+                                        <!-- The same actions as on the page, at the bottom of every card. -->
+                                        <DockPanel Grid.Row="2" Margin="18,14,18,16">
+                                            <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                                                <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
+                                                        Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
+                                                        ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
+                                                <Button Margin="4,0,0,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE943;" Command="{Binding OpenSourceCommand}"
+                                                        Visibility="{Binding HasSource, Converter={StaticResource Visible}}" ToolTip="{Binding Mod.Source}" />
+                                            </StackPanel>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <Button HorizontalAlignment="Left" Style="{StaticResource Button.Primary}" Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
+                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
+                                                <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding StatusText, Converter={StaticResource VisibleIfSet}}">
+                                                    <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
+                                                               Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />
+                                                    <TextBlock FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                               Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusText}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

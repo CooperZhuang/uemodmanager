@@ -1,0 +1,112 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogAboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogViewModel}">
+    <UserControl.Resources>
+        <!-- One thing openmods does not do, in a row of them. -->
+        <Style x:Key="NoBadge" TargetType="Border" BasedOn="{StaticResource Badge}">
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Padding" Value="10,5" />
+        </Style>
+    </UserControl.Resources>
+
+    <!-- What openmods is, over the whole window, from the box at the top of the openmods page. -->
+    <Grid Background="{StaticResource Brush.Overlay}" Visibility="{Binding IsAboutOpen, Converter={StaticResource Visible}}">
+        <Border Style="{StaticResource Dialog}" Width="880">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'ABOUT OPENMODS', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" FontSize="22" Text="{ui:Loc 'Free and open, for everyone'}" />
+                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'openmods is not a closed ecosystem. It is free for players, and mod authors need nothing but a GitHub account.'}" />
+
+                <Grid Margin="0,22,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="15" Foreground="{StaticResource Brush.Info}" Text="&#xE7FC;" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="16" Text="{ui:Loc 'For players'}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'You need no account. Find a mod, click Install, and that is it.'}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="15" Foreground="{StaticResource Brush.Info}" Text="&#xE943;" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="16" Text="{ui:Loc 'For mod authors'}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'All you need is a GitHub account. The only rule: your mod is open source, and you add it to openmods.nexus to list it here.'}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'After that, your GitHub .md files and your releases are all it takes to keep your listing up to date, so the work is minimal compared to other places.'}" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Margin="0,22,0,0" Padding="18,14" CornerRadius="2" BorderThickness="1"
+                        Background="{StaticResource Brush.InfoWash}" BorderBrush="{StaticResource Brush.Info}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="15" Foreground="{StaticResource Brush.Info}" Text="&#xE716;" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="16" Text="{ui:Loc 'Everyone is treated equally'}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'There is no moderation of the listings, or anything like it. Your mods reach every player the same way, and there is no censorship like on other sites.'}" />
+                    </StackPanel>
+                </Border>
+
+                <WrapPanel Margin="0,22,0,0">
+                    <Border Style="{StaticResource NoBadge}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10" Foreground="{StaticResource Brush.Accent}" Text="&#xE711;" />
+                            <TextBlock Margin="8,0,0,0" FontSize="12.5" Text="{ui:Loc 'No premium downloads'}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource NoBadge}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10" Foreground="{StaticResource Brush.Accent}" Text="&#xE711;" />
+                            <TextBlock Margin="8,0,0,0" FontSize="12.5" Text="{ui:Loc 'No advertisements'}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource NoBadge}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10" Foreground="{StaticResource Brush.Accent}" Text="&#xE711;" />
+                            <TextBlock Margin="8,0,0,0" FontSize="12.5" Text="{ui:Loc 'No data collection'}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource NoBadge}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10" Foreground="{StaticResource Brush.Accent}" Text="&#xE711;" />
+                            <TextBlock Margin="8,0,0,0" FontSize="12.5" Text="{ui:Loc 'No prompts for extra download speed'}" />
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'Just the pure click and download experience everyone deserves.'}" />
+
+                <DockPanel Margin="0,24,0,0">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Style="{StaticResource Button.OpenMods}" Content="{Binding SiteText}" ui:Icon.Glyph="&#xE8A7;"
+                                Command="{Binding OpenSiteCommand}" ToolTip="{ui:Loc 'Open openmods'}" />
+                        <Button Margin="10,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                                Command="{Binding CloseAboutCommand}" IsCancel="True" />
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="13" Foreground="{StaticResource Brush.Accent}" Text="&#xEB52;" />
+                        <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontStyle="Italic"
+                                   Text="{ui:Loc 'Provided to you kindly by KintaroModding'}" />
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

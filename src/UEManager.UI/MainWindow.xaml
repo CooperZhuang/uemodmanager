@@ -279,6 +279,10 @@
             </Grid>
         </Grid>
 
+        <!-- ===== The openmods page's full view, in place of the menu and the page. Filled by Catalog\CatalogResources.xaml
+             while the catalog is switched on; it hides itself until asked. Messages and dialogs open over it. ===== -->
+        <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogFullView}" />
+
         <!-- ===== Message ===== -->
         <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,28,28" MaxWidth="480"
                 Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}"
@@ -485,6 +489,11 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- ===== What openmods is, from the box on the openmods page. Filled by Catalog\CatalogResources.xaml while the
+             catalog is switched on; its view hides itself until the box is clicked. ===== -->
+        <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogAbout}" />
+        <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogTypesInfo}" />
 
         <!-- ===== A thank-you of a recommended mod ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"

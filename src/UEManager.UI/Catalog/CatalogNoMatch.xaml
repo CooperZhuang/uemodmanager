@@ -1,0 +1,21 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogNoMatch"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogViewModel}">
+    <!-- Nothing here matches the search, or this side of the switch is empty; other types here, or else the other side,
+         may hold matches. The margin sits inside, so the hidden block takes no room. -->
+    <StackPanel Margin="0,52" HorizontalAlignment="Center" Visibility="{Binding ShowNoMatch, Converter={StaticResource Visible}}">
+        <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.Title}" Text="{Binding NoMatchTitle}" />
+        <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding NoMatchText}"
+                   Visibility="{Binding NoMatchText, Converter={StaticResource VisibleIfSet}}" />
+        <Button Margin="0,14,0,0" HorizontalAlignment="Center" Content="{ui:Loc 'Show all types'}" ui:Icon.Glyph="&#xE71C;"
+                Command="{Binding ShowAllTypesCommand}" Visibility="{Binding ShowAllTypesHint, Converter={StaticResource Visible}}" />
+        <Button Margin="0,14,0,0" HorizontalAlignment="Center" Content="{Binding SwitchText}" ui:Icon.Glyph="&#xE8AB;"
+                Command="{Binding SwitchSideCommand}" Visibility="{Binding ShowSwitchHint, Converter={StaticResource Visible}}" />
+    </StackPanel>
+</UserControl>

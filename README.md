@@ -99,7 +99,8 @@ settings on.
 | PAK / IoStore | `.pak`, `.utoc` + `.ucas` | `<Project>/Content/Paks/~mods` |
 | Blueprint | package files below a `LogicMods` folder | `<Project>/Content/Paks/LogicMods` |
 | UE4SS Lua / DLL | a folder with `Scripts/main.lua` or `dlls/*.dll` | UE4SS's `Mods` folder |
-| Game files | a file below the download's `<Project>` folder, except in `Content/Paks` and `Binaries`; `PBZModLoader/mods` and a top-level `Content` count without that folder too | the same path in the game |
+| PBZModLoader (Phantom Blade Zero) | files below `<Project>/PBZModLoader/mods`; a top-level `PBZModLoader/mods` counts without that folder too | the same path in the game |
+| Game files | a file below the download's `<Project>` folder, except in `Content/Paks`, `Binaries` and `PBZModLoader/mods`; a top-level `Content` counts without that folder too | the same path in the game |
 | Exe files | a `.dll`, `.addon64` or `.asi` file, with the files in its folder | the game's exe folder |
 | C# Loader (Black Myth: Wukong) | files in `CSharpLoader/Mods`, at the download's top or below `<Project>/Binaries/Win64` | `CSharpLoader/Mods` next to the game's exe |
 
@@ -201,7 +202,11 @@ installed: …"), so a file that matters cannot pass as a readme.
   `.txt` file that a download keeps in the same folder as its pak, whatever
   the folder and the file are called (such as a mod that reads its color from
   `~mods`, or an asset mod's `.txt` loose at the top of the zip). It goes into
-  `~mods` or `LogicMods` with the pak. Files named like a readme, license or
+  `~mods` or `LogicMods` with the pak. A PBZModLoader mod's `.json`, `.ini`,
+  `.cfg`, `.toml`, `.yaml` or `.txt` files in its folder below
+  `<Project>/PBZModLoader/mods` are settings too (such as Animation Cancel's
+  `phantombladezero_animationcancel.txt` next to its `main.js`), as are the
+  data files of a C# Loader mod. Files named like a readme, license or
   change log are no settings, and neither are other files beside the packages:
   they are not installed. Disabling keeps the player's
   version for the next enable. An update asks whether to keep it (the default) or take the new
@@ -396,12 +401,28 @@ the mod is updated.
 
 ## openmods page
 
-The openmods page (the catalog, switched off for now: see Catalog switch) lists the game's mods from
+The openmods page (the catalog: see Catalog switch) lists the game's mods from
 [openmods](https://openmods.nexus): the game is found in openmods' games list
 by its Steam app id, and its own list is read from there. The lists are read
 when the page opens, at most every 10 minutes (openmods' own refresh interval),
 and only format 1 is accepted; unknown fields are ignored, and only https links
 are used.
+
+- The box **About openmods.nexus ecosystem** next to the title opens a view over
+  the whole window: openmods is free for players, open to every author with a
+  GitHub account and an open-source mod, has no moderation of its listings, and
+  has no premium downloads, advertisements or data collection. The box **Mod type
+  info** in the row below explains the type boxes and each type.
+- **Full view** (outlined in orange, after Mod type info) shows the page as a
+  grid of cards in place of the menu and the page, at the window's size: cover,
+  the type in front of the name, author, tags, version, date, license,
+  description and the same actions, with the same type filter, search, sort
+  and switch. It leaves the window's size alone. **Exit full view** or Esc goes
+  back. It is off at every start.
+- The **Mods | Tools** switch is two plain buttons: the app shows the open side on
+  them, and a click runs a command. Radio buttons bound both ways to the two
+  sides could write each other back without end (a stack overflow at the start
+  on one PC).
 
 - **Install** downloads the release's only zip from GitHub, checks its size
   and, when the list gives one, its SHA-256 (`files[].sha256`), and installs
@@ -410,14 +431,43 @@ are used.
   parts, a warning (such as UE4SS missing), a mod installed by hand that it
   would replace, or settings the player changed.
 - When the list names a newer version than the installed one, the card offers
-  **Update to …**. An update replaces the mod with the same catalog id, even
-  when the new version renamed its files.
+  **Update to …**, and the mod's row on the Mods page offers **Install update**
+  (see Mod pages and updates). An update replaces the mod with the same catalog
+  id, even when the new version renamed its files.
 - A catalog mod never takes over files of another enabled mod: the install
   stops and names that mod.
 - The UE4SS entry opens the manager's own UE4SS install.
-- A search field filters by name, description, author and tag. The list sorts
+- A search field filters by name, description, author, tag and type. The list sorts
   by name or by the date of the latest release (newest first by default); the
   choice is kept in `settings.json`.
+- A switch, **Mods (n) | Tools (n)**, shows either the mods or those tagged
+  `tools` (such as UE4SS and the manager itself); the page opens on the mods at
+  every start, and the switch shows only when the list has tools. When the search
+  finds nothing on one side but something on the other, or the game lists only
+  tools, the page says so and offers to switch.
+- The type filter, **Type: All (n) | UE4SS Lua (n) | …**, after Full view (in
+  the full view, below the title), shows the cards of one type at a time: All,
+  then each type on the open side of the switch, in the order of Mod type info,
+  with its number of cards. A mod with UE4SS scripts and a DLL is under both
+  UE4SS Lua and UE4SS DLL; a card without a known type only under All. Every
+  start and each side of the switch begin on All, and the filter shows only
+  when a type would leave out a card. When the search finds nothing of the type
+  but cards of other types, the page says so and offers **Show all types**
+  before the other side. Plain buttons, as in the switch.
+- Each card shows the mod's type in the words of the Mods page (UE4SS Lua,
+  UE4SS DLL, PAK, IoStore, Blueprint, UE4SS files, PBZModLoader, Game files,
+  Exe files) or
+  Other. The app's own scanner reads the paths in the release zip that openmods
+  lists (`files[].entries`) as an install would, with the game's project and exe
+  folders, and the type is that of the parts a one-click install takes, so the
+  Mods page shows the same type after the install. Other: the install would
+  place nothing, such as a tool's exe or a .usmap file. Only the single zip that
+  **Install** uses counts; without its full list of paths (not read yet,
+  `entriesTruncated`, several zips) the card shows no type, and UE4SS itself has
+  none. The paths are only read, never used for a file; paths that would leave
+  the download are left out.
+  The type stands in front of the name; every type box on the page is as wide
+  as the widest, so all names start at the same place.
 
 `--catalog <url>` reads another games list, such as a test copy; the page then
 says that it is not the real one.
@@ -550,13 +600,31 @@ name:
   page's files, where the player downloads it.
 - **Up to date** (green): the page has the same version, or an older one.
 - Nothing: not checked yet, the check failed (the log says why), or the versions
-  cannot be compared, such as `1.2-beta` against `1.3`.
+  cannot be compared, such as `1.2-beta` against `1.2`.
+
+Text after a version's numbers is left out, so `0.5.2.withHP` on the page is
+newer than `0.5.1` in the list, and `1.3` is newer than `1.2-beta`. With the same
+numbers, a single letter right after them counts in the alphabet's order: `1.2b`
+is newer than `1.2a`, and `1.2a` is newer than `1.2`. Other text with the same
+numbers, or a version without a number at the start, shows **Up to date** only
+when both are the exact same text.
 
 The page's version is the mod's main version. A page with several files, such
 as styles or optional files, has one version for all of them, so only the mod's
 author keeps it right. After an update in the manager, the box follows at once
 from the version already known, without asking the site again. A newer version
 also shows **UPDATE** on the Mods entry.
+
+A mod installed from the openmods page (see openmods page) links to its page on
+openmods instead; the link reads **openmods.nexus**, in orange (in the row and
+in the details), so it stands apart from a mod site's page. The app stores that page with the mod, as the openmods list
+gives it, since a project listed for another author has a page of its own. Its
+box compares the mod's version with the newest release in the openmods list, by
+the openmods page's rule, so both pages agree. The same check reads that list
+(at most every 10 minutes, as openmods asks); so does a visit of the openmods
+page. A newer release shows **Install update** (blue): a click downloads and
+installs it, as the openmods page's **Update to …** does. Not tracked works the
+same for these mods.
 
 ## Test without mods
 
@@ -686,16 +754,21 @@ dotnet test src/UEManager.slnx
 ## Catalog switch
 
 The catalog (the openmods page) is always built in. `Catalog` in
-`src/Directory.Build.props` switches it on; it is `false` for now, so the app
+`src/Directory.Build.props` switches it on; it is `true`. With `false` the app
 shows no openmods page, reads no openmods list and takes no `--catalog` option.
 The rest of the app reaches the catalog only through partial methods
 (`CreateCatalog`, `OnModsChanged`, `ReadCatalogArgument`,
-`AddCatalogResources`), which do nothing while it is off, and through two
-resource keys (`CatalogNavItem`, `CatalogPage`) that only the catalog fills.
+`AddCatalogResources`), which do nothing while it is off; through the catalog's
+part of the main view model (`MainViewModel.Catalog.cs`), which gives the Mods
+page the page and update box of mods installed from openmods and knows no list
+while it is off; and through five resource keys (`CatalogNavItem`,
+`CatalogPage`, `CatalogFullView`, `CatalogAbout`, `CatalogTypesInfo`) that only
+the catalog fills.
 
-Every publish checks the exe it made: it must hold the main window and the
-openmods page. A build can, rarely, go wrong without an error; such an exe is
-deleted and the publish fails with "came out broken". Publish it again.
+Every publish checks the exe it made: it must hold every page of the app (each
+XAML file, compiled). A build can, rarely, go wrong without an error; such an
+exe is deleted and the publish fails with "came out broken", naming the missing
+pages. Publish it again.
 
 ## Release
 

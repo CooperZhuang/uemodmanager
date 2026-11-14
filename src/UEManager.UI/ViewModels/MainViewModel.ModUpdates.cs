@@ -44,10 +44,20 @@ public sealed partial class MainViewModel
     internal long? lastModUpdateCheck;
     private DispatcherTimer? modUpdateWait;
 
+    /// <summary>
+    /// The mod's page: on openmods for a mod installed from there, else on the mod site from the number in its download's
+    /// file name. Null without one, and for the card's mods, which have their own notes and links.
+    /// </summary>
+    internal string? ModPageOf(ModRecord mod) => mod.Recommended ? null : CatalogPageOf(mod) ?? Profile.ModPage(mod.SourceFileName);
+
     /// <summary>The state of a mod for its update box; null when it was not checked, or the check could not tell.</summary>
     internal ModUpdateStatus? ModUpdateOf(ModRecord mod)
     {
-        if (mod.NotTracked || ModNaming.SiteModId(mod.SourceFileName) is not { } id || !pageVersions.TryGetValue(id, out var page)
+        if (mod.NotTracked)
+            return null;
+        if (IsFromCatalog(mod))
+            return CatalogUpdateOf(mod);
+        if (ModNaming.SiteModId(mod.SourceFileName) is not { } id || !pageVersions.TryGetValue(id, out var page)
             || InstalledVersion(mod) is not { } installed)
             return null;
         return ModSiteVersions.Compare(installed, page) switch
@@ -56,6 +66,32 @@ public sealed partial class MainViewModel
             ModSiteState.UpToDate => new ModUpdateStatus(false, page, installed),
             _ => null,
         };
+    }
+
+    /// <summary>The words of the blue box, in English in every language: a mod from openmods installs its update with one click.</summary>
+    internal static string UpdateBoxText(ModRecord mod) => IsFromCatalog(mod) ? "Install update" : "Update available";
+
+    /// <summary>The tooltip of the update box: what was compared, and what a click does.</summary>
+    internal static string? ModUpdateHint(ModRecord mod, ModUpdateStatus? update) => (update, IsFromCatalog(mod)) switch
+    {
+        ({ IsAvailable: true } found, true) => L.F($"Version {found.Latest} is on openmods; you have {found.Installed}. A click installs it."),
+        ({ } found, true) => L.F($"openmods has version {found.Latest}, the one you have."),
+        ({ IsAvailable: true } found, false) => L.F($"Version {found.Latest} is on the mod page; you have {found.Installed}. Opens the mod page's files."),
+        ({ } found, false) => L.F($"The mod page has version {found.Latest}, the one you have."),
+        _ => null,
+    };
+
+    /// <summary>
+    /// A click on the blue box: a mod from openmods updates at once, as on the openmods page; any other mod opens its
+    /// mod page's files, where the player downloads the update, as the mod site asks.
+    /// </summary>
+    internal Task OpenModUpdateAsync(ModRecord mod)
+    {
+        if (CatalogModOf(mod) is { InstallFile: not null } entry)
+            return InstallFromCatalogAsync(entry);
+        if (ModPageOf(mod) is { } page)
+            OpenPath(IsFromCatalog(mod) ? page : page + "?tab=files");
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -101,23 +137,26 @@ public sealed partial class MainViewModel
     /// <summary>The game profile names the mod site's API, so mods with a mod page can be checked.</summary>
     public bool HasModSite => Profile.ModSiteApiUrl is { Length: > 0 } && Profile.ModSiteGameId is { Length: > 0 };
 
+    /// <summary>Mods can be checked: those of the mod site, or those installed from openmods.</summary>
+    public bool HasUpdateCheck => HasModSite || Catalog is not null;
+
     /// <summary>The notes on how the check works and where it cannot tell, from the box next to its button.</summary>
     [ObservableProperty]
     private bool isUpdateNotesOpen;
 
-    /// <summary>For the curious: what is compared with what, the request, and the limits of a page's one version.</summary>
+    /// <summary>
+    /// The notes behind the box next to the button: what is compared and how the page is found, when, what the box
+    /// says, the version rules, mods from openmods, the limits of one version per page, and what to do about a wrong box.
+    /// </summary>
     public IReadOnlyList<string> UpdateNotes =>
     [
-        L.T("What is compared: the mod's version in your list against the Version field of its mod page. Your list's version comes from the download's file name, such as 1.0.1 in \"Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip\", or from Edit. The number after the name, 61, is the mod's ID on the site. Without a version in your list, the one in the file name counts."),
-        L.T("The request: at each start and on the button, one request to the mod site's public API asks for the page version of every mod with a mod page, up to 50 per request. It sends only the game's ID and the mod IDs, needs no account and downloads nothing. The result stays until the next check, so a mod you update is compared again at once. The button then waits 30 seconds. Settings ▸ Mod updates turns off the check at start."),
-        L.T("The rules: dotted numbers are compared number by number, so 1.10 is newer than 1.9 and 1.6 equals 1.6.0. Newer on the page shows Update available; the same or older shows Up to date. Versions with letters, such as 1.2-beta, count only when both are the same text. Otherwise the box stays empty, as after a failed check: the app log says why."),
-        L.T("The limits: the API knows one version per mod page, the main version the author sets. It does not know which file you have, so the check is only as good as the author's version numbers:"),
-        L.T("• A new file without a new page version shows no update."),
-        L.T("• A file version that differs from the page, such as 10 against 1.2.4, cannot be matched."),
-        L.T("• Several files on one page, such as styles or optional files, share one version."),
-        L.T("• A renamed download has no mod ID, so no mod page and no check."),
-        L.T("To keep a version, turn off Check this mod for updates in the mod's details: the box then says Not tracked, and the check leaves the mod out."),
-        L.T("If a box looks wrong, compare the versions in its tooltip with the mod page, and fix yours with Edit."),
+        L.T("What is compared: your version of a mod against the version on its mod page. The app finds the page by the mod's number in the download's file name, such as 61 in \"Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip\", so keep that name: a renamed download has no mod page and no check. Your version, 1.0.1 here, comes from the same name, or from Edit."),
+        L.T("When: at each start and when you click the button; then the button waits 30 seconds. The app sends only the game's ID and the mod IDs, needs no account and downloads nothing. Settings ▸ Mod updates turns off the check at start."),
+        L.T("The box: Update available when the page has a newer version, Up to date when it has the same or an older one. Its tooltip shows both versions. An empty box means the check failed or could not compare the two: the app log says why."),
+        L.T("The rules: numbers are compared one by one, so 1.10 is newer than 1.9, and 1.6 equals 1.6.0. Text after the numbers counts only when the numbers are the same: a single letter in the alphabet's order, so 1.2b is newer than 1.2a; other text, such as 1.2-beta against 1.2, leaves the box empty unless both versions are the same."),
+        L.T("Mods from the openmods page are compared with their newest release on openmods, which the app reads at most every 10 minutes. Their box says Install update: one click downloads and installs it."),
+        L.T("The limits: a mod page has one version, the one its author sets, and the check does not know which file you have. So a new file without a new page version shows no update, a file version unlike the page's, such as 10 against 1.2.4, cannot be compared, and all files on one page, such as optional files, share one version."),
+        L.T("If a box looks wrong, compare the versions in its tooltip with the mod page, and fix yours with Edit. To keep your version, turn off Check this mod for updates in the mod's details: the box then says Not tracked."),
     ];
 
     [RelayCommand]
@@ -133,7 +172,7 @@ public sealed partial class MainViewModel
 
     private bool IsWaitingAfterModUpdateCheck => ModUpdateWaitLeft > TimeSpan.Zero;
 
-    public bool CanCheckModUpdates => HasModSite && !checkingModUpdates && !IsWaitingAfterModUpdateCheck;
+    public bool CanCheckModUpdates => HasUpdateCheck && !checkingModUpdates && !IsWaitingAfterModUpdateCheck;
 
     public string CheckModUpdatesHint =>
         checkingModUpdates ? L.T("Checking for updates…")
@@ -157,29 +196,32 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Asks the mod site once for the page version of every mod with a mod page; the card's mods and mods without a mod
-    /// page are left out, and with none of them nothing is sent. A failed check changes nothing in the rows; the log
-    /// says why. After a press on the button, it waits 30 seconds; the check at start leaves it ready, so the first visit
-    /// of the Mods page never finds it grey.
+    /// page are left out, and with none of them nothing is sent. Mods installed from openmods are compared with the
+    /// openmods list, which is read at most every 10 minutes, as openmods asks. A failed check changes nothing in the
+    /// rows; the log says why. After a press on the button, it waits 30 seconds; the check at start leaves it ready, so
+    /// the first visit of the Mods page never finds it grey.
     /// </summary>
     internal async Task CheckModUpdatesAsync(bool byButton = false)
     {
         if (!CanCheckModUpdates || manager is not { } current)
             return;
-        var ids = current.Mods
-            .Where(m => !m.Recommended && !m.NotTracked && Profile.ModPage(m.SourceFileName) is not null)
+        List<string> ids = !HasModSite ? [] : current.Mods
+            .Where(m => !m.Recommended && !m.NotTracked && !IsFromCatalog(m) && Profile.ModPage(m.SourceFileName) is not null)
             .Select(m => ModNaming.SiteModId(m.SourceFileName)!)
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        var fromCatalog = Catalog is not null && current.Mods.Any(m => IsFromCatalog(m) && !m.NotTracked);
         BeginModUpdateCheck(byButton);
         try
         {
-            // The button spins as long as the request takes, but at least a second, so a click is never without a sign;
-            // the rows change when it stops.
+            // The button spins as long as the requests take, but at least a second, so a click is never without a sign;
+            // the rows change when it stops. The openmods list shows its mods' boxes itself once it is read.
             var shortest = Task.Delay(ModUpdateSpin);
             var asking = ids.Count == 0
                 ? Task.FromResult<IReadOnlyDictionary<string, string>?>(null)
                 : ModSiteVersions.FetchAsync(Http, Profile.ModSiteApiUrl!, Profile.ModSiteGameId!, ids, AppInfo.Version, ModUpdateTimeout);
-            await Task.WhenAll(shortest, asking);
+            var reading = fromCatalog ? Catalog!.LoadAsync() : Task.CompletedTask;
+            await Task.WhenAll(shortest, asking, reading);
             if (await asking is { } found)
                 ShowModUpdates(found);
         }

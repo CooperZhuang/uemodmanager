@@ -24,6 +24,13 @@ public sealed class ModRecord
     public string? CatalogId { get; set; }
 
     /// <summary>
+    /// The mod's page on openmods, as the list last gave it, so the Mods page links to it without the list. It cannot be
+    /// built from <see cref="CatalogId"/>: a project listed for another author has a page of its own. An update keeps it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CatalogPage { get; set; }
+
+    /// <summary>
     /// The mod the app recommends for this game (see <see cref="RecommendedMod"/>): the Mods page shows it apart from
     /// the player's own mods, and mod sets leave it as it is.
     /// </summary>
@@ -182,8 +189,8 @@ public static class SharedFiles
 
 /// <summary>
 /// Mod files the player is meant to edit: a UE4SS mod's Scripts/config.lua (and the like) and every data file in its
-/// folder, such as the dlls/Minimap.ini a C++ mod reads, and the settings a pak mod keeps next to its pak, such as a
-/// .json in ~mods. A change to one never blocks a removal. Disabling keeps the player's version, an update asks whether
+/// folder, such as the dlls/Minimap.ini a C++ mod reads, the settings a pak mod keeps next to its pak, such as a
+/// .json in ~mods, and those in the folder of a C# Loader or PBZModLoader mod. A change to one never blocks a removal. Disabling keeps the player's version, an update asks whether
 /// to keep it, and uninstalling backs it up.
 /// </summary>
 public static partial class SettingsFiles
@@ -226,7 +233,7 @@ public static partial class SettingsFiles
         if (target is DeployTarget.Mods or DeployTarget.LogicMods)
             return IsPakSettings(relativePath);
         if (target is DeployTarget.InstallRoot or DeployTarget.ExeFolder)
-            return IsCSharpLoaderSettings(relativePath);
+            return IsCSharpLoaderSettings(relativePath) || (target == DeployTarget.InstallRoot && IsModLoaderSettings(relativePath));
         if (target != DeployTarget.Ue4ssMods || SharedFiles.Is(target, relativePath))
             return false;
         // Only files in a mod's folder: one loose in UE4SS's Mods folder, such as mods.json, is UE4SS's own.
@@ -248,6 +255,14 @@ public static partial class SettingsFiles
     /// Black Myth: Wukong's C# Loader: its settings, CSharpLoader/b1cs.ini, and the data files of its mods, such as
     /// CSharpLoader/Mods/&lt;mod&gt;/config.json, as game files or as files for the exe folder.
     /// </summary>
+    /// <summary>
+    /// Phantom Blade Zero's PBZModLoader: the settings and data files in a mod's folder, such as
+    /// ProjectPBZ/PBZModLoader/mods/&lt;mod&gt;/&lt;mod&gt;.txt, which the player edits and Mods Menu writes. The
+    /// mod's scripts and its readme or license are not.
+    /// </summary>
+    private static bool IsModLoaderSettings(string relativePath) =>
+        PackageScanner.IsModLoaderModPath(relativePath) && IsPakSettings(relativePath);
+
     private static bool IsCSharpLoaderSettings(string relativePath)
     {
         var parts = relativePath.Split('/', '\\');

@@ -1,6 +1,6 @@
 namespace UEManager.Core.Mods;
 
-/// <summary>Short type names for the interface: PAK, IoStore, Blueprint, UE4SS Lua, UE4SS DLL, UE4SS files, game files, exe files.</summary>
+/// <summary>Short type names for the interface: PAK, IoStore, Blueprint, UE4SS Lua, UE4SS DLL, UE4SS files, PBZModLoader, game files, exe files.</summary>
 public static class ModTypes
 {
     /// <summary>A folder for UE4SS's Mods folder without code (<see cref="PackageKind.Ue4ssFolder"/>), on its own.</summary>
@@ -12,10 +12,26 @@ public static class ModTypes
     /// <summary>Files that go next to the game's exe, such as a proxy DLL and its add-on.</summary>
     public const string ExeFiles = "Exe files";
 
+    /// <summary>
+    /// A download on the openmods page with none of the types above that its paths alone show, such as a tool's exe or a
+    /// .usmap file; see <see cref="Catalog.CatalogTypes"/>.
+    /// </summary>
+    public const string Other = "Other";
+
+    /// <summary>
+    /// A script mod for Phantom Blade Zero's PBZModLoader, in the loader's mods folder (see
+    /// <see cref="PackageScanner.IsModLoaderModPath"/>). Its files sit in the game's folders, but it runs only in the
+    /// loader, which this name tells, where "Game files" did not.
+    /// </summary>
+    public const string ModLoader = PackageScanner.ForModLoader;
+
     /// <param name="files">Each file's deploy target and path below that target.</param>
     public static string Label(IEnumerable<(DeployTarget Target, string Path)> files)
     {
         var list = files.ToList();
+        // A download with a PBZModLoader mod runs only with the loader, whatever else it brings.
+        if (list.Any(f => f.Target == DeployTarget.InstallRoot && PackageScanner.IsModLoaderModPath(f.Path)))
+            return ModLoader;
         if (list.Count > 0 && list.All(f => f.Target == DeployTarget.InstallRoot))
             return GameFiles;
         if (list.Count > 0 && list.All(f => f.Target == DeployTarget.ExeFolder))

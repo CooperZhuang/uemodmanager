@@ -1,0 +1,142 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogTypesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:UEManager.UI"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogViewModel}">
+    <UserControl.Resources>
+        <!-- A type as the cards show it: the blue box in front of a mod's name. -->
+        <Style x:Key="TypeBox" TargetType="Border" BasedOn="{StaticResource Badge}">
+            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Background" Value="{StaticResource Brush.InfoPanel}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Info}" />
+        </Style>
+        <Style x:Key="TypeName" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Label}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Info}" />
+        </Style>
+        <Style x:Key="TypeText" TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
+            <Setter Property="Grid.Column" Value="1" />
+            <Setter Property="Margin" Value="0,1,0,0" />
+        </Style>
+        <!-- One type: its box, then what it is. The boxes share one width, as on the cards. -->
+        <Style x:Key="TypeRow" TargetType="Grid">
+            <Setter Property="Margin" Value="0,10,0,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <!-- What the type boxes on the openmods page mean, over the whole window, from the box at the top of the page. -->
+    <Grid Background="{StaticResource Brush.Overlay}" Visibility="{Binding IsTypesInfoOpen, Converter={StaticResource Visible}}">
+        <Border Style="{StaticResource Dialog}" Width="880">
+            <StackPanel Grid.IsSharedSizeScope="True">
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'MOD TYPE INFO', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" FontSize="22" Text="{ui:Loc 'What the blue boxes mean'}" />
+                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'The blue box in front of a mod\'s name tells what kind of mod it is. The app reads it from the file names in the mod\'s download, before you install it, and the Mods page shows the same type after the install.'}" />
+                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'No box: openmods has not read the download yet, the release has several files to choose from, or the entry is UE4SS itself.'}" />
+
+                <StackPanel Margin="0,8,0,0">
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="UE4SS Lua" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A script mod for UE4SS. It needs UE4SS in the game.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="UE4SS DLL" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A C++ mod for UE4SS. It is built for one UE4SS version and may not load with another.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="UE4SS Lua + DLL" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A UE4SS mod with both: scripts and a C++ part.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="{ui:Loc 'UE4SS files'}" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'Files for a folder in UE4SS\'s Mods folder without code, such as the settings that another mod reads.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="PAK" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A .pak file that the game loads from its mods folder. It needs no UE4SS.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="IoStore" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'An Unreal Engine 5 package: .utoc and .ucas files, usually with a .pak. The game loads it from its mods folder. It needs no UE4SS.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="{ui:Loc 'Blueprint'}" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A package in the LogicMods folder, which UE4SS\'s Blueprint mod loader starts. It needs UE4SS.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="PBZModLoader" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'A script mod for PBZModLoader, the script loader of Phantom Blade Zero. It needs PBZModLoader in the game.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="{ui:Loc 'Game files'}" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'Files that go into the game\'s own folders, such as a settings file or a script. The app keeps the game\'s own file and puts it back when the mod leaves.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="{ui:Loc 'Exe files'}" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'Files next to the game\'s exe, such as a proxy DLL of ReShade or of a mod loader.'}" />
+                    </Grid>
+                    <Grid Style="{StaticResource TypeRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Type" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource TypeBox}"><TextBlock Style="{StaticResource TypeName}" Text="{ui:Loc 'Other'}" /></Border>
+                        <TextBlock Style="{StaticResource TypeText}" Text="{ui:Loc 'None of the types above: the app finds nothing in the download that it would install, such as in a tool or a .usmap file. The mod\'s page tells more.'}" />
+                    </Grid>
+                </StackPanel>
+
+                <Button Margin="0,24,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                        Command="{Binding CloseTypesInfoCommand}" IsCancel="True" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

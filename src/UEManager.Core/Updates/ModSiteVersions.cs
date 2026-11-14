@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using UEManager.Core.Mods;
 
 namespace UEManager.Core.Updates;
@@ -21,7 +22,7 @@ public enum ModSiteState
 /// from the site's public API. It sends only the game's number and the mods' numbers, and needs no account. The app
 /// only shows the result; the player downloads a newer version on the mod page.
 /// </summary>
-public static class ModSiteVersions
+public static partial class ModSiteVersions
 {
     /// <summary>The most mods one request asks for; more go in further requests, one after another.</summary>
     public const int PerRequest = 50;
@@ -162,7 +163,11 @@ public static class ModSiteVersions
 
     /// <summary>
     /// The installed version against the page's: newer on the page is an update; the same, or older, is up to date, as
-    /// nothing newer is there. Versions that are not dotted numbers count only when they are the same text.
+    /// nothing newer is there. A version with text after its numbers, such as "0.5.2.withHP" or "1.2-beta", compares by
+    /// those numbers. With the same numbers, a second pass reads a single letter right after them in the alphabet's
+    /// order, as a fix: "1.2b" after "1.2a", and "1.2a" after "1.2". Any other text tells only when it is the same, as
+    /// "1.2-beta" comes before "1.2" and "withHP" is a kind, not an order. A version that does not start with a number
+    /// counts only when it is the same text.
     /// </summary>
     public static ModSiteState Compare(string? installed, string? page)
     {
@@ -170,10 +175,27 @@ public static class ModSiteVersions
             return ModSiteState.Unknown;
         var mine = ModVersion.FromTag(installed);
         var theirs = ModVersion.FromTag(page);
-        if (ModVersion.CompareNumbers(mine, theirs) is { } order)
+        if (string.Equals(mine, theirs, StringComparison.OrdinalIgnoreCase))
+            return ModSiteState.UpToDate;
+        var myNumbers = LeadingNumbers().Match(mine);
+        var theirNumbers = LeadingNumbers().Match(theirs);
+        if (!myNumbers.Success || !theirNumbers.Success || ModVersion.CompareNumbers(myNumbers.Value, theirNumbers.Value) is not { } order)
+            return ModSiteState.Unknown;
+        if (order != 0)
             return order < 0 ? ModSiteState.UpdateAvailable : ModSiteState.UpToDate;
-        return string.Equals(mine, theirs, StringComparison.OrdinalIgnoreCase) ? ModSiteState.UpToDate : ModSiteState.Unknown;
+        var myRest = mine[myNumbers.Length..];
+        var theirRest = theirs[theirNumbers.Length..];
+        if (!IsFixLetter(myRest) || !IsFixLetter(theirRest))
+            return ModSiteState.Unknown;
+        return string.Compare(myRest, theirRest, StringComparison.OrdinalIgnoreCase) < 0 ? ModSiteState.UpdateAvailable : ModSiteState.UpToDate;
     }
+
+    /// <summary>What may follow a version's numbers for the second pass: nothing, or one letter, such as the "b" of "1.2b".</summary>
+    private static bool IsFixLetter(string rest) => rest.Length == 0 || (rest.Length == 1 && char.IsAsciiLetter(rest[0]));
+
+    /// <summary>The dotted number a version starts with, such as "0.5.2" in "0.5.2.withHP".</summary>
+    [GeneratedRegex(@"^[0-9]+(?:\.[0-9]+)*")]
+    private static partial Regex LeadingNumbers();
 
     private static string Shorten(string text) => text.Length <= 300 ? text : text[..300] + "…";
 }

@@ -97,10 +97,10 @@
                                     Visibility="{Binding HasModPageLine, Converter={StaticResource Visible}}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal"
                                         Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
-                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
-                                           Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
-                                <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}"
-                                        Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                                <!-- "openmods.nexus" in orange for a mod from openmods, so it stands apart from a mod site's page. -->
+                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.ModPageIcon}" FontSize="10" />
+                                <Button VerticalAlignment="Center" Style="{StaticResource Button.ModPage}" FontSize="11"
+                                        Content="{Binding ModPageText}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
                             </StackPanel>
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
                                         ToolTip="{ui:Loc 'Only a download that keeps the mod site\'s file name shows its mod page.'}"
@@ -110,7 +110,7 @@
                                 <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource Brush.TextDim}" Text="{ui:Loc 'No mod page'}" />
                             </StackPanel>
                             <Grid Width="100" Height="21" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <Button HorizontalAlignment="Left" Style="{StaticResource Button.UpdateAvailable}"
+                                <Button HorizontalAlignment="Left" Style="{StaticResource Button.UpdateAvailable}" Content="{Binding UpdateBoxText}"
                                         Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
                                         Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
                                 <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
@@ -353,7 +353,7 @@
                     <!-- The update check: its notes, like the card's technical notes, and its button above the rows' last icon.
                          The negative margin keeps the header as low as the sort labels make it. -->
                     <StackPanel Grid.Column="5" Margin="0,-9" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal"
-                                Visibility="{Binding HasModSite, Converter={StaticResource Visible}}">
+                                Visibility="{Binding HasUpdateCheck, Converter={StaticResource Visible}}">
                         <Button Margin="0,0,8,0" Padding="7,3" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}" Command="{Binding ShowUpdateNotesCommand}"
                                 Foreground="{StaticResource Brush.Info}" BorderBrush="{StaticResource Brush.Info}" Background="{StaticResource Brush.InfoWash}">
                             <StackPanel Orientation="Horizontal">

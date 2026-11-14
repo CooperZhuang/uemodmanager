@@ -68,6 +68,14 @@
     <SolidColorBrush x:Key="Brush.Cloudflare" Color="#F38020" />
     <!-- GitHub's blue on a dark page, for its name in the same place. -->
     <SolidColorBrush x:Key="Brush.GitHub" Color="#4493F8" />
+    <!-- The openmods site's own teal (its accent color), for the link to it, so it stands apart from the app's own
+         buttons in every game's look. -->
+    <SolidColorBrush x:Key="Brush.OpenMods" Color="#2DD4BF" />
+    <!-- Orange for the openmods page's full view: a button that should catch the eye, in every game's look. -->
+    <SolidColorBrush x:Key="Brush.FullView" Color="#FF8A3D" />
+    <!-- The same orange for a mod's page on openmods, in its row and details on the Mods page: it must stand apart at a
+         glance from a page on the mod site. -->
+    <SolidColorBrush x:Key="Brush.OpenModsPage" Color="#FF8A3D" />
     <!-- Blue for the recommended mod: its card gets a slight tint; its notes box and the word on the Mods entry the full color. -->
     <SolidColorBrush x:Key="Brush.Info" Color="#4493F8" />
     <SolidColorBrush x:Key="Brush.InfoWash" Color="#224493F8" />

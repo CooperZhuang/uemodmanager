@@ -13,7 +13,13 @@ public sealed record CatalogGame(string Slug, string Name, string? SteamAppId, i
 public sealed record CatalogGameInfo(string Name, string? Art, string? Page);
 
 /// <summary>A release file: a direct download link, its size in bytes, and its SHA-256 when the list gives one.</summary>
-public sealed record CatalogFile(string Name, long Size, string Url, string? Sha256);
+/// <param name="Entries">
+/// The paths of the files in a zip, in the zip's order, once openmods has read it; null when that is not known (yet), as
+/// for a file of another type. The paths are as the zip stores them: never use them for a file without a check.
+/// </param>
+/// <param name="EntriesTruncated">The zip holds more files than <paramref name="Entries"/> lists.</param>
+public sealed record CatalogFile(string Name, long Size, string Url, string? Sha256,
+    IReadOnlyList<string>? Entries = null, bool EntriesTruncated = false);
 
 /// <summary>The newest release of a mod.</summary>
 /// <param name="LatestUrl">The newest release page on GitHub.</param>
@@ -47,6 +53,21 @@ public sealed record CatalogMod(
 
     /// <summary>UE4SS itself, which the manager installs its own way.</summary>
     public bool IsUe4ss => Id.EndsWith("/ue4ss", StringComparison.OrdinalIgnoreCase) || Name.Equals("UE4SS", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The tag of tools, such as UE4SS and the app itself: the openmods page hides them until the player asks.</summary>
+    public const string ToolsTag = "tools";
+
+    public bool IsTool => Tags.Contains(ToolsTag, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The mod's type in the Mods page's words, from the paths of its install file (<see cref="CatalogTypes.Label"/>),
+    /// read with the game's folders. Null when it is not known: no single install file, a file openmods has not read
+    /// (yet), or a cut list of paths, whose missing part could change the type. UE4SS itself has none, as it is no mod.
+    /// </summary>
+    public string? TypeLabelIn(string? projectFolder, string? exeFolder) =>
+        !IsUe4ss && InstallFile is { Entries: { } entries, EntriesTruncated: false }
+            ? CatalogTypes.Label(entries, projectFolder, exeFolder)
+            : null;
 }
 
 /// <summary>A game's mod list, as recently updated mods first.</summary>
@@ -216,9 +237,28 @@ public static class OpenMods
                 continue;
             var size = file.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number && s.TryGetInt64(out var bytes) ? bytes : 0;
             var sha256 = Text(file, "sha256") is { Length: 64 } hash && hash.All(char.IsAsciiHexDigit) ? hash : null;
-            files.Add(new CatalogFile(name, size, url, sha256));
+            var (entries, truncated) = ReadEntries(file);
+            files.Add(new CatalogFile(name, size, url, sha256, entries, truncated));
         }
         return new CatalogRelease(tag, Date(release, "date"), Link(release, "latest"), files);
+    }
+
+    /// <summary>openmods lists at most this many paths of a zip; a longer list is cut here too.</summary>
+    internal const int MaxEntries = 2000;
+
+    /// <summary>The paths of a zip's files, and whether the list was cut; null when the list gives none.</summary>
+    private static (IReadOnlyList<string>? Entries, bool Truncated) ReadEntries(JsonElement file)
+    {
+        if (!file.TryGetProperty("entries", out var array) || array.ValueKind != JsonValueKind.Array)
+            return (null, false);
+        var entries = array.EnumerateArray()
+            .Where(entry => entry.ValueKind == JsonValueKind.String)
+            .Select(entry => entry.GetString()!)
+            .Take(MaxEntries + 1)
+            .ToList();
+        var truncated = entries.Count > MaxEntries
+            || (file.TryGetProperty("entriesTruncated", out var cut) && cut.ValueKind == JsonValueKind.True);
+        return (entries.Count > MaxEntries ? entries[..MaxEntries] : entries, truncated);
     }
 
     private static IEnumerable<JsonElement> Items(JsonElement element, string name) =>

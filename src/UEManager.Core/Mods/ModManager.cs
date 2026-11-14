@@ -117,6 +117,13 @@ public sealed class ModManager
         _ => Game.ModsPath,
     };
 
+    /// <summary>
+    /// The game's folders that the scanner knows a download's own files by (see <see cref="PackageScanner.Scan"/>): the
+    /// Unreal project folder, such as "ProjectPBZ", and the exe folder below the install folder, such as "platform/steam".
+    /// </summary>
+    public (string? ProjectFolder, string ExeFolder) ScanFolders =>
+        (Game.ProjectFolder ?? Game.Profile.ProjectFolder, Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/'));
+
     /// <summary>Unpacks a download into staging and reads it. Nothing reaches the game yet.</summary>
     public InstallPreview Inspect(string source)
     {
@@ -125,8 +132,7 @@ public sealed class ModManager
         {
             ArchiveStager.Stage(source, staging);
             var (name, version) = ModNaming.FromSource(source);
-            var scan = PackageScanner.Scan(staging, name, Game.ProjectFolder ?? Game.Profile.ProjectFolder,
-                Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/'));
+            var scan = PackageScanner.Scan(staging, name, ScanFolders.ProjectFolder, ScanFolders.ExeFolder);
             Log.Info($"Inspected '{source}': {scan.Packages.Count} part(s), {scan.IgnoredFileCount} other file(s).");
             return new InstallPreview(source, staging, scan, name, version);
         }
@@ -374,6 +380,7 @@ public sealed class ModManager
                 SourceFileName = preview.SourceFileName,
                 InstalledAt = DateTimeOffset.Now,
                 CatalogId = catalogId ?? old?.CatalogId,
+                CatalogPage = old?.CatalogPage,
                 Recommended = old?.Recommended ?? false,
                 Tags = tags is null ? old?.Tags : tags.Count == 0 ? null : [.. tags],
                 NotTracked = old?.NotTracked ?? false,
@@ -496,6 +503,20 @@ public sealed class ModManager
             mod.NotTracked = !tracked;
             Commit(undo: () => mod.NotTracked = tracked);
             Log.Info(tracked ? $"\"{mod.Name}\" is checked for updates again." : $"\"{mod.Name}\" is not checked for updates: the player keeps this version.");
+        }
+    }
+
+    /// <summary>Stores the mod's page on openmods; see <see cref="ModRecord.CatalogPage"/>. Only the mod list changes, so the game may run.</summary>
+    public void SetCatalogPage(string id, string page)
+    {
+        lock (gate)
+        {
+            var mod = Find(id);
+            var before = mod.CatalogPage;
+            if (before == page)
+                return;
+            mod.CatalogPage = page;
+            Commit(undo: () => mod.CatalogPage = before);
         }
     }
 

@@ -290,6 +290,26 @@
         </Style.Triggers>
     </Style>
 
+    <!-- The link to the openmods site, which names its full address: an outline in the site's teal that stays under the pointer. -->
+    <Style x:Key="Button.OpenMods" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.OpenMods}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.OpenMods}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The openmods page's full view: an orange outline that stays under the pointer, so it catches the eye. -->
+    <Style x:Key="Button.FullView" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.FullView}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.FullView}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="Button.Icon" TargetType="Button" BasedOn="{StaticResource Button.Base}">
         <Setter Property="Width" Value="32" />
         <Setter Property="Height" Value="32" />
@@ -609,7 +629,8 @@
         </Setter>
     </Style>
 
-    <!-- A newer version of a mod on its mod page: a blue box, in English in every language, that opens the page's files. -->
+    <!-- A newer version of a mod on its mod page: a blue box, in English in every language, that opens the page's files; for a mod
+         from openmods it says Install update and installs it (the row binds that text). -->
     <Style x:Key="Button.UpdateAvailable" TargetType="Button" BasedOn="{StaticResource Button.StatusBox}">
         <!-- One more pixel below: the "p" hangs under the line, and the text then looks centred. -->
         <Setter Property="Padding" Value="7,1,7,2" />
@@ -669,6 +690,28 @@
     <Style x:Key="Button.Link" TargetType="Button" BasedOn="{StaticResource Button.Name}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <!-- A mod's page in its row and its details on the Mods page, and its globe: muted, or orange when the page is on
+         openmods (the view model's IsOpenModsPage), where the link reads "openmods.nexus". A place that wants another
+         default color sets it in a style based on these; the orange trigger still wins over that setter. -->
+    <Style x:Key="Button.ModPage" TargetType="Button" BasedOn="{StaticResource Button.Link}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsOpenModsPage}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Brush.OpenModsPage}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Text.ModPageIcon" TargetType="TextBlock" BasedOn="{StaticResource Text.Icon}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="Text" Value="&#xE774;" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsOpenModsPage}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Brush.OpenModsPage}" />
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="Button.SortHeader" TargetType="Button">
@@ -746,6 +789,37 @@
     </Style>
 
     <!-- A tab over a list, such as the parts of the UE4SS log: a red line under the chosen one. -->
+    <!-- One side of a two-way switch, such as the openmods page's Mods | Tools: a plain button that runs its command, and the
+         side shown (ui:Segment.IsActive, set by the view model) in the colors of an active filter. -->
+    <Style x:Key="Segment" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Back" Padding="10,2" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="2">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="ui:Segment.IsActive" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Info}" />
+                            <Setter TargetName="Back" Property="Background" Value="{StaticResource Brush.InfoPanel}" />
+                            <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource Brush.Info}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="Tab" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
         <Setter Property="FontFamily" Value="{DynamicResource Font.Label}" />

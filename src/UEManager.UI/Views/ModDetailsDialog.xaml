@@ -123,12 +123,17 @@
                     <!-- A download that kept the mod site's file name has the mod's number, so its page is known. -->
                     <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
-                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="11"
-                                   Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
-                        <Button VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Text}"
-                                Content="{ui:Loc 'Open mod page'}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}" />
+                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.ModPageIcon}" FontSize="11" />
+                        <!-- As in the mod's row: "openmods.nexus" in orange for a mod from openmods; brighter here otherwise. -->
+                        <Button VerticalAlignment="Center" Content="{Binding ModPageText}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Button.ModPage}">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                                </Style>
+                            </Button.Style>
+                        </Button>
                         <!-- The update box, as in the mod's row. -->
-                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.UpdateAvailable}"
+                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.UpdateAvailable}" Content="{Binding UpdateBoxText}"
                                 Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
                                 Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"

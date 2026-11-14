@@ -50,6 +50,23 @@ public class RenameTests : IDisposable
     }
 
     [Fact]
+    public void The_openmods_page_of_a_mod_stays_after_a_restart_and_an_update()
+    {
+        var mod = Install("Sharp");
+        gameRunning = true;
+
+        // Only the mod list changes, so it works while the game runs.
+        manager.SetCatalogPage(mod.Id, "https://openmods.nexus/mods/someone/sharp");
+
+        Assert.Equal("https://openmods.nexus/mods/someone/sharp", new ModManager(game, new AppPaths(folder.Combine("Data")), _ => false).Mods.Single().CatalogPage);
+        gameRunning = false;
+        folder.File(@"Downloads\Sharp 2\Sharp_P.pak", "newer");
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Sharp 2"));
+        var updated = manager.Install(preview, preview.Packages.ToList(), "Sharp", "2", replace: true);
+        Assert.Equal("https://openmods.nexus/mods/someone/sharp", updated.CatalogPage);
+    }
+
+    [Fact]
     public void A_new_name_and_version_survive_a_restart_and_the_game_files_stay()
     {
         var mod = Install("Sharp");

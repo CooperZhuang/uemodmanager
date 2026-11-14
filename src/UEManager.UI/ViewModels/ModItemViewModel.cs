@@ -23,7 +23,8 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
         this.libraryFolder = libraryFolder;
         Integrity = ModManager.Integrity(record);
         HasUe4ssErrors = owner.HadUe4ssErrors(record);
-        ModPageUrl = record.Recommended ? null : owner.Profile.ModPage(record.SourceFileName);
+        ModPageUrl = owner.ModPageOf(record);
+        IsOpenModsPage = owner.IsOpenModsPage(record);
         update = ModPageUrl is null ? null : owner.ModUpdateOf(record);
     }
 
@@ -32,8 +33,10 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     /// <summary>The line above the icons, with the mod page and the update box; the card's mods have neither.</summary>
     public bool HasModPageLine => !record.Recommended;
 
-    /// <summary>The mod page has a newer version: the blue box, which opens the page's files.</summary>
+    /// <summary>The mod page has a newer version: the blue box, which opens the page's files, or for a mod from openmods installs it.</summary>
     public bool IsUpdateAvailable => update?.IsAvailable == true;
+
+    public string UpdateBoxText => MainViewModel.UpdateBoxText(record);
 
     /// <summary>The mod page has the installed version. Before a check, or when a check could not tell, the box stays empty.</summary>
     public bool IsUpToDate => update is { IsAvailable: false };
@@ -41,26 +44,19 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     /// <summary>The player keeps this version, so the check leaves the mod out: the box says Not tracked.</summary>
     public bool IsNotTracked => ModPageUrl is not null && record.NotTracked;
 
-    public string? UpdateHint => update switch
-    {
-        { IsAvailable: true } => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),
-        not null => L.F($"The mod page has version {update.Latest}, the one you have."),
-        _ => null,
-    };
+    public string? UpdateHint => MainViewModel.ModUpdateHint(record, update);
 
-    /// <summary>The mod page's files, where the player downloads a newer version.</summary>
+    /// <summary>The mod page's files, where the player downloads a newer version; a mod from openmods updates at once.</summary>
     [RelayCommand]
-    private void OpenModFiles()
-    {
-        if (ModPageUrl is not null)
-            owner.OpenPath(ModPageUrl + "?tab=files");
-    }
+    private Task OpenModFiles() => owner.OpenModUpdateAsync(record);
 
-    /// <summary>
-    /// The mod's page on the mod site, from the number in its download's file name; null without one, and for the
-    /// mods on the card, which have their own notes and links.
-    /// </summary>
+    /// <summary>The mod's page, on openmods or on the mod site; see <see cref="MainViewModel.ModPageOf"/>.</summary>
     public string? ModPageUrl { get; }
+
+    /// <summary>The page is on openmods: the link reads "openmods.nexus", in orange.</summary>
+    public bool IsOpenModsPage { get; }
+
+    public string ModPageText => MainViewModel.ModPageText(IsOpenModsPage);
 
     /// <summary>"No mod page" in the row: a mod of the list whose download's name has no mod number. The card's mods show neither.</summary>
     public bool ShowsNoModPage => !record.Recommended && ModPageUrl is null;

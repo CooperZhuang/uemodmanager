@@ -46,7 +46,8 @@ public sealed class PackageGroup
         RelativePaths = relativePaths;
         Kind = kind;
         Target = target;
-        Size = files.Sum(f => new FileInfo(f).Length);
+        // A scan of paths alone (PackageScanner.ScanPaths) has no files on the disk: their size counts as 0.
+        Size = files.Sum(f => new FileInfo(f) is { Exists: true } file ? file.Length : 0);
 
         var problems = new List<FormattableString>();
         var warnings = new List<FormattableString>();
@@ -256,7 +257,37 @@ public static class PackageScanner
         string? exeFolder = null)
     {
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stagingDir));
-        var files = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ToList();
+        return Scan(root, Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ToList(), fallbackName, projectFolder, exeFolder);
+    }
+
+    /// <summary>
+    /// The same rules for a download known only by its file paths, such as a release zip whose paths openmods lists: what an
+    /// install of it would place, before it is downloaded. Nothing is read from or written to the disk. Paths that leave the
+    /// download, such as "../x" or "C:/x", are left out.
+    /// </summary>
+    /// <param name="paths">The files' paths from the top of the download, with / or \ between folders.</param>
+    public static ScanResult ScanPaths(IEnumerable<string> paths, string fallbackName = "Mod", string? projectFolder = null,
+        string? exeFolder = null)
+    {
+        // A folder that is never made: the scan only joins and compares paths below it.
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Combine(Path.GetTempPath(), "uemm-paths-only")));
+        var files = new List<string>();
+        foreach (var entry in paths)
+        {
+            var path = entry.Replace('\\', '/');
+            if (path.Length == 0 || path.EndsWith('/') || path.Contains(':') || path.Contains('\0') || Path.IsPathRooted(path)
+                || path.Split('/').Any(part => part is ".." or "."))
+                continue;
+            var full = Path.GetFullPath(Path.Combine(root, path));
+            if (full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                files.Add(full);
+        }
+        return Scan(root, files.Distinct(StringComparer.OrdinalIgnoreCase).ToList(), fallbackName, projectFolder, exeFolder);
+    }
+
+    /// <param name="files">Full paths of the download's files, below <paramref name="root"/>.</param>
+    private static ScanResult Scan(string root, List<string> files, string fallbackName, string? projectFolder, string? exeFolder)
+    {
         var drafts = new List<Draft>();
 
         var ue4ssRoots = Ue4ssModRoots(files);
@@ -765,6 +796,13 @@ public static class PackageScanner
 
     private static bool IsBelowProject(PackageGroup package, string folder) =>
         package.Kind == PackageKind.File && StartsAt(package.RelativePaths[0].Split('/'), 1, folder);
+
+    /// <summary>
+    /// A file of a PBZModLoader mod, by its path below the install folder: in the project's mods folder of the loader,
+    /// such as ProjectPBZ/PBZModLoader/mods/&lt;mod&gt;/main.js. The loader's own files beside that folder are not.
+    /// </summary>
+    internal static bool IsModLoaderModPath(string path) =>
+        StartsAt(path.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries), 1, ModLoaderFolder);
 
     /// <summary>
     /// A part for the C# Loader's mods folder: as game files, b1/Binaries/Win64/CSharpLoader/Mods/..., or as files for the

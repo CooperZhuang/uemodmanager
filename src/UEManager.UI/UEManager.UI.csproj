@@ -46,13 +46,14 @@
     <Resource Include="Theme\Art\**\*.png;Theme\Art\**\*.jpg;Theme\Art\**\*.jpeg;Theme\Fonts\**\*.ttf;Theme\Fonts\**\*.otf" />
   </ItemGroup>
 
-  <!-- After every publish, the exe is checked: it must hold its main window and the openmods page. A build
-       can, rarely, go wrong without an error (one once came out without its openmods page); such an exe is
-       deleted and the publish fails, so it never reaches anyone. -->
+  <!-- After every publish, the exe is checked: it must hold every page of the app (each XAML file, compiled). A
+       build can, rarely, go wrong without an error (one came out without its openmods page, another without two of
+       the openmods page's views); such an exe is deleted and the publish fails, so it never reaches anyone. -->
   <UsingTask TaskName="CheckPublishedExe" TaskFactory="RoslynCodeTaskFactory"
              AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <ExePath ParameterType="System.String" Required="true" />
+      <Pages ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System.Linq" />
@@ -63,27 +64,32 @@
         bool Has(string word) => Regex.IsMatch(text,
             string.Join("\\x00?", word.Select(c => Regex.Escape(c.ToString()))), RegexOptions.IgnoreCase);
 
-        var problems = new System.Collections.Generic.List<string>();
-        if (!Has("mainwindow.baml"))
-            problems.Add("the main window (mainwindow.baml) is missing");
-        if (!Has("catalog/catalogresources.baml"))
-            problems.Add("the openmods page (catalog/catalogresources.baml) is missing");
-        if (problems.Count > 0)
+        // A page is stored under its path in the project, with ".baml" for ".xaml": Catalog\CatalogView.xaml
+        // is catalog/catalogview.baml.
+        var missing = Pages
+            .Select(page => page.GetMetadata("Link") is { Length: > 0 } link ? link : page.ItemSpec)
+            .Select(path => System.IO.Path.ChangeExtension(path, ".baml").Replace('\\', '/'))
+            .Where(name => !Has(name))
+            .ToList();
+        if (Pages.Length == 0)
+            missing.Add("(no pages were given to check)");
+        if (missing.Count > 0)
         {
             System.IO.File.Delete(ExePath);
-            Log.LogError($"The build came out broken, so it was deleted: {string.Join("; ", problems)}. "
+            Log.LogError($"The build came out broken, so it was deleted: it is missing {string.Join(", ", missing)}. "
                 + $"Publish it again. ({ExePath})");
         }
         else
         {
-            Log.LogMessage(Microsoft.Build.Framework.MessageImportance.High, $"Checked the build: {ExePath}");
+            Log.LogMessage(Microsoft.Build.Framework.MessageImportance.High,
+                $"Checked the build ({Pages.Length} pages): {ExePath}");
         }
       ]]></Code>
     </Task>
   </UsingTask>
 
   <Target Name="CheckPublishedExe" AfterTargets="Publish" Condition="Exists('$(PublishDir)$(AssemblyName).exe')">
-    <CheckPublishedExe ExePath="$(PublishDir)$(AssemblyName).exe" />
+    <CheckPublishedExe ExePath="$(PublishDir)$(AssemblyName).exe" Pages="@(ApplicationDefinition);@(Page)" />
   </Target>
 
 </Project>

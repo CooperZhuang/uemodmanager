@@ -8,7 +8,10 @@ using Xunit;
 
 namespace UEManager.UI.Tests;
 
-/// <summary>"Open mod page" in a mod's row and details: only for a mod whose download kept the mod site's file name.</summary>
+/// <summary>
+/// "Open mod page" and the update box in a mod's row and details: for a mod whose download kept the mod site's file
+/// name, and for a mod installed from openmods.
+/// </summary>
 public class ModPageLinkTests : IDisposable
 {
     private const string SiteDownload = "Travel Anywhere 61 1.0.1 2026-10-29T13-42Z LbtEo64mS.zip";
@@ -41,6 +44,10 @@ public class ModPageLinkTests : IDisposable
         Assert.Equal("https://example.test/game/mods/61", Row(model, SiteDownload).ModPageUrl);
         Assert.False(Row(model, SiteDownload).ShowsNoModPage);
         Assert.Equal("https://example.test/game/mods/61", Details(model, SiteDownload).ModPageUrl);
+        // A page on the mod site keeps the plain words; only a page on openmods reads as its name, in orange.
+        Assert.False(Row(model, SiteDownload).IsOpenModsPage);
+        Assert.Equal("Open mod page", Row(model, SiteDownload).ModPageText);
+        Assert.Equal("Open mod page", Details(model, SiteDownload).ModPageText);
     });
 
     [Fact]
@@ -195,10 +202,89 @@ public class ModPageLinkTests : IDisposable
     });
 
     [Fact]
-    public void A_game_without_the_mod_sites_api_has_no_check() => With("https://example.test/game/mods/{id}", model =>
+    public void A_game_without_the_mod_sites_api_checks_only_the_mods_from_openmods() => With("https://example.test/game/mods/{id}", model =>
     {
-        Assert.False(model.CanCheckModUpdates);
-        Assert.False(model.CheckModUpdatesCommand.CanExecute(null));
+        Assert.False(model.HasModSite);
+        Assert.Equal(AppInfo.IsCatalogOn, model.HasUpdateCheck);
+        Assert.Equal(AppInfo.IsCatalogOn, model.CanCheckModUpdates);
+        Assert.Equal(AppInfo.IsCatalogOn, model.CheckModUpdatesCommand.CanExecute(null));
+    });
+
+    private const string OpenModsPage = "https://openmods.nexus/mods/kintaromodding/phantombladezero_passiveregen";
+
+    /// <summary>A mod installed from openmods, as the one-click install records it.</summary>
+    private static ModRecord FromOpenMods(string version = "1.2", string? page = OpenModsPage, bool notTracked = false) => new()
+    {
+        Id = "p",
+        Name = "Passive Regen",
+        Version = version,
+        SourceFileName = "phantombladezero_passiveregen_1.2.zip",
+        CatalogId = "kintaromodding/phantombladezero_passiveregen",
+        CatalogPage = page,
+        NotTracked = notTracked,
+    };
+
+    private ModItemViewModel CatalogRow(MainViewModel model, ModRecord record) => new(model, record, Path.Combine(folder, "library"));
+
+    private ModDetailsViewModel CatalogDetails(MainViewModel model, ModRecord record) => new(model, record, [], [], folder);
+
+    /// <summary>The openmods list as the page reads it, with Passive Regen at this release.</summary>
+    private static void ListOpenMods(MainViewModel model, string tag, string page = OpenModsPage) =>
+        model.ShowCatalogList(UEManager.Core.Catalog.OpenMods.ParseList($$"""
+            { "openmods": 1, "mods": [ { "name": "Passive Regen", "page": "{{page}}",
+              "source": "https://github.com/KintaroModding/phantombladezero_passiveregen",
+              "release": { "tag": "{{tag}}", "files": [ { "name": "phantombladezero_passiveregen.zip", "size": 1, "url": "https://example.test/p.zip" } ] } } ] }
+            """));
+
+    [Fact]
+    public void A_mod_from_openmods_links_its_stored_page_before_the_list_is_read() => With("https://example.test/game/mods/{id}", model =>
+    {
+        var row = CatalogRow(model, FromOpenMods());
+
+        Assert.Equal(OpenModsPage, row.ModPageUrl);
+        Assert.False(row.ShowsNoModPage);
+        Assert.False(row.IsUpdateAvailable);
+        Assert.False(row.IsUpToDate);
+        Assert.Equal(OpenModsPage, CatalogDetails(model, FromOpenMods()).ModPageUrl);
+        // The link reads "openmods.nexus", in orange, so it stands apart from a mod site's page.
+        Assert.True(row.IsOpenModsPage);
+        Assert.Equal("openmods.nexus", row.ModPageText);
+        Assert.True(CatalogDetails(model, FromOpenMods()).IsOpenModsPage);
+        Assert.Equal("openmods.nexus", CatalogDetails(model, FromOpenMods()).ModPageText);
+    });
+
+    [Fact]
+    public void A_mod_from_openmods_takes_its_page_from_the_list_once_read() => With("https://example.test/game/mods/{id}", model =>
+    {
+        ListOpenMods(model, "v1.2", page: "https://openmods.nexus/mods/kintaromodding/moved");
+
+        Assert.Equal("https://openmods.nexus/mods/kintaromodding/moved", CatalogRow(model, FromOpenMods(page: null)).ModPageUrl);
+    });
+
+    [Fact]
+    public void A_newer_release_on_openmods_offers_the_one_click_update() => With("https://example.test/game/mods/{id}", model =>
+    {
+        ListOpenMods(model, "v1.3");
+        var row = CatalogRow(model, FromOpenMods());
+
+        Assert.True(row.IsUpdateAvailable);
+        Assert.Equal("Install update", row.UpdateBoxText);
+        Assert.Equal("Version 1.3 is on openmods; you have 1.2. A click installs it.", row.UpdateHint);
+        Assert.Equal("Update available", Row(model, SiteDownload).UpdateBoxText);
+    });
+
+    [Fact]
+    public void The_same_release_on_openmods_is_up_to_date_and_a_kept_version_is_not_tracked() => With("https://example.test/game/mods/{id}", model =>
+    {
+        ListOpenMods(model, "v1.2");
+        var row = CatalogRow(model, FromOpenMods());
+        var kept = CatalogRow(model, FromOpenMods(notTracked: true));
+
+        Assert.True(row.IsUpToDate);
+        Assert.Equal("openmods has version 1.2, the one you have.", row.UpdateHint);
+        Assert.True(kept.IsNotTracked);
+        Assert.False(kept.IsUpdateAvailable);
+        Assert.False(kept.IsUpToDate);
     });
 
     [Fact]

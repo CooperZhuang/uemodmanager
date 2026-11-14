@@ -105,9 +105,29 @@ public class ModSiteVersionsTests
     [InlineData("v2.0", "2.0", ModSiteState.UpToDate)]
     // Newer than the page, as the Quest Guide's file number 10 against its page 1.2.4: nothing newer is there.
     [InlineData("10", "1.2.4", ModSiteState.UpToDate)]
-    // Not dotted numbers: only the same text tells.
-    [InlineData("1.2-beta", "1.2-beta", ModSiteState.UpToDate)]
-    [InlineData("1.2-beta", "1.3", ModSiteState.Unknown)]
+    // Text after the numbers: the numbers tell, as PhantomHUD withHP's page 0.5.2.withHP against its file 0.5.1 (#22).
+    [InlineData("0.5.1", "0.5.2.withHP", ModSiteState.UpdateAvailable)]
+    [InlineData("0.5.3", "0.5.2.withHP", ModSiteState.UpToDate)]
+    [InlineData("1.2-beta", "1.3", ModSiteState.UpdateAvailable)]
+    [InlineData("v1.1", "1.2a", ModSiteState.UpdateAvailable)]
+    // The same numbers: a single letter right after them counts in the alphabet's order, as a fix.
+    [InlineData("1.2a", "1.2b", ModSiteState.UpdateAvailable)]
+    [InlineData("1.2a", "1.2B", ModSiteState.UpdateAvailable)]
+    [InlineData("1.2", "1.2a", ModSiteState.UpdateAvailable)]
+    [InlineData("1.2b", "1.2a", ModSiteState.UpToDate)]
+    [InlineData("1.2a", "1.2", ModSiteState.UpToDate)]
+    [InlineData("1.2.0a", "1.2a", ModSiteState.UpToDate)]
+    // The same numbers with any other text: only the same text tells.
+    [InlineData("0.5.2.withHP", "0.5.2.withHP", ModSiteState.UpToDate)]
+    [InlineData("1.2-beta", "1.2-BETA", ModSiteState.UpToDate)]
+    [InlineData("0.5.2", "0.5.2.withHP", ModSiteState.Unknown)]
+    [InlineData("1.2-beta", "1.2", ModSiteState.Unknown)]
+    [InlineData("1.2-a", "1.2-b", ModSiteState.Unknown)]
+    [InlineData("1.2a", "1.2ab", ModSiteState.Unknown)]
+    // No number at the start: only the same text tells.
+    [InlineData("beta", "beta", ModSiteState.UpToDate)]
+    [InlineData("beta", "1.0", ModSiteState.Unknown)]
+    [InlineData("1.0", "Final", ModSiteState.Unknown)]
     [InlineData("1.0", "", ModSiteState.Unknown)]
     [InlineData(null, "1.0", ModSiteState.Unknown)]
     public void The_installed_version_compares_with_the_page(string? installed, string page, ModSiteState state)

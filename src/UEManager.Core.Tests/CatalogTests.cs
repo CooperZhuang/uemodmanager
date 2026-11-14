@@ -131,6 +131,131 @@ public class CatalogTests
         Assert.Null(repack.InstallFile?.Sha256);
     }
 
+    /// <summary>A list as openmods gives it since 2026-11-13: the paths in each release zip it has read.</summary>
+    private const string Entries = """
+        {
+          "openmods": 1,
+          "mods": [
+            { "name": "Live by the Blade", "tags": ["gameplay"], "source": "https://github.com/KintaroModding/phantombladezero_livebytheblade",
+              "release": { "tag": "v1.5", "files": [ { "name": "phantombladezero_livebytheblade_1.5.zip", "size": 8621, "url": "https://example.test/lbtb.zip",
+                "entries": [ "ue4ss/Mods/phantombladezero_livebytheblade/enabled.txt", 5,
+                             "ue4ss\\Mods\\phantombladezero_livebytheblade\\Scripts\\config.lua",
+                             "ue4ss/Mods/phantombladezero_livebytheblade/Scripts/main.lua" ] } ] } },
+            { "name": "Not read yet", "tags": ["gameplay"], "source": "https://github.com/KintaroModding/new",
+              "release": { "tag": "v1.0", "files": [ { "name": "new_1.0.zip", "size": 10, "url": "https://example.test/new.zip" } ] } },
+            { "name": "Cut", "tags": ["gameplay"], "source": "https://github.com/KintaroModding/cut",
+              "release": { "tag": "v1.0", "files": [ { "name": "cut_1.0.zip", "size": 10, "url": "https://example.test/cut.zip",
+                "entries": [ "cut_P.pak" ], "entriesTruncated": true } ] } },
+            { "name": "UE MM", "tags": ["Tools"], "source": "https://github.com/KintaroModding/uemodmanager",
+              "release": { "tag": "v2.1.0", "files": [
+                { "name": "uemm_2.1.0.zip", "size": 10, "url": "https://example.test/a.zip", "entries": [ "UEModManager.exe" ] },
+                { "name": "uemm_phantom-blade-zero_2.1.0.zip", "size": 10, "url": "https://example.test/b.zip", "entries": [ "UEModManager.exe" ] } ] } },
+            { "name": "USMAP File", "tags": ["tools"], "source": "https://github.com/KintaroModding/phantombladezero_pbzusmap",
+              "release": { "tag": "v1.1", "files": [
+                { "name": "phantombladezero_pbzusmap_1.1.zip", "size": 10, "url": "https://example.test/u.zip", "entries": [ "ProjectPBZ-5.7.4-302256-full.usmap" ] },
+                { "name": "ProjectPBZ-5.7.4-302256-full.usmap", "size": 10, "url": "https://example.test/u.usmap" } ] } },
+            { "name": "UE4SS", "tags": ["tools", "library"], "source": "https://github.com/KintaroModding/ue4ss",
+              "release": { "tag": "v4.0.0", "files": [ { "name": "phantombladezero_ue4ss_v4.0.0.zip", "size": 10, "url": "https://example.test/ue4ss.zip",
+                "entries": [ "dwmapi.dll", "ue4ss/UE4SS.dll", "ue4ss/Mods/Keybinds/Scripts/main.lua" ] } ] } },
+            { "name": "A library", "tags": ["library"], "source": "https://github.com/Someone/library",
+              "release": null }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void Reads_the_paths_in_each_zip()
+    {
+        var mods = OpenMods.ParseList(Entries).Mods;
+
+        var file = mods[0].InstallFile!;
+        Assert.Equal(["ue4ss/Mods/phantombladezero_livebytheblade/enabled.txt",
+            "ue4ss\\Mods\\phantombladezero_livebytheblade\\Scripts\\config.lua",
+            "ue4ss/Mods/phantombladezero_livebytheblade/Scripts/main.lua"], file.Entries);
+        Assert.False(file.EntriesTruncated);
+        Assert.Null(mods[1].InstallFile?.Entries);
+        Assert.True(mods[2].InstallFile?.EntriesTruncated);
+        Assert.Null(mods[4].Release?.Files[1].Entries);
+    }
+
+    [Fact]
+    public void A_list_of_more_paths_than_openmods_gives_is_cut()
+    {
+        var paths = string.Join(", ", Enumerable.Range(0, 2001).Select(i => $"\"file{i}.pak\""));
+        var json = $$"""
+            { "openmods": 1, "mods": [ { "name": "Big", "source": "https://github.com/x/big",
+              "release": { "tag": "v1", "files": [ { "name": "big.zip", "size": 1, "url": "https://example.test/big.zip", "entries": [ {{paths}} ] } ] } } ] }
+            """;
+
+        var file = OpenMods.ParseList(json).Mods[0].InstallFile!;
+
+        Assert.Equal(2000, file.Entries?.Count);
+        Assert.True(file.EntriesTruncated);
+        Assert.Null(OpenMods.ParseList(json).Mods[0].TypeLabelIn(null, null));
+    }
+
+    [Fact]
+    public void The_type_is_known_for_a_single_zip_that_openmods_has_read_in_full()
+    {
+        var mods = OpenMods.ParseList(Entries).Mods;
+
+        Assert.Equal("UE4SS Lua", mods[0].TypeLabelIn("ProjectPBZ", "platform/steam"));
+        Assert.Null(mods[1].TypeLabelIn("ProjectPBZ", "platform/steam")); // not read yet
+        Assert.Null(mods[2].TypeLabelIn("ProjectPBZ", "platform/steam")); // the list of paths was cut
+        Assert.Null(mods[3].TypeLabelIn("ProjectPBZ", "platform/steam")); // two zips, so no single install file
+        Assert.Equal(ModTypes.Other, mods[4].TypeLabelIn("ProjectPBZ", "platform/steam")); // the zip beside the loose .usmap
+        Assert.Null(mods[5].TypeLabelIn("ProjectPBZ", "platform/steam")); // UE4SS itself is no mod
+    }
+
+    [Fact]
+    public void Tools_are_the_mods_tagged_so_in_any_case()
+    {
+        var mods = OpenMods.ParseList(Entries).Mods;
+
+        Assert.Equal(["UE MM", "USMAP File", "UE4SS"], mods.Where(m => m.IsTool).Select(m => m.Name));
+        Assert.False(mods[6].IsTool);
+    }
+
+    [Theory]
+    // The zip layouts of KintaroModding's releases, as openmods lists them.
+    [InlineData("UE4SS Lua", "ue4ss/Mods/witchtime/enabled.txt|ue4ss/Mods/witchtime/Scripts/config.lua|ue4ss/Mods/witchtime/Scripts/main.lua")]
+    [InlineData("UE4SS DLL", "CONTRIBUTORS.md|LICENSE|README.md|ue4ss/Mods/cppbypass/dlls/main.dll|ue4ss/Mods/cppbypass/enabled.txt|UE4SS-SDK-LICENSE.txt")]
+    [InlineData("IoStore", "animationcancel_P.pak|animationcancel_P.utoc|animationcancel_P.ucas|animationcancel.txt")]
+    [InlineData("Other", "UEModManager.exe")]
+    [InlineData("Other", "ProjectPBZ-5.7.4-302256-full.usmap")]
+    // Other authors' layouts.
+    [InlineData("UE4SS Lua + DLL", "Mods/Both/Scripts/main.lua|Mods/Both/dlls/main.dll")]
+    [InlineData("UE4SS Lua", "MyMod/SCRIPTS/Main.LUA|MyMod/enabled.txt")]
+    [InlineData("UE4SS Lua", "Scripts/main.lua|enabled.txt")]
+    [InlineData("UE4SS Lua", "ue4ss/Mods/lua/Scripts/main.lua|Content/Paks/~mods/assets_P.pak")]
+    [InlineData("PAK", "Content/Paks/~mods/a_P.pak|screenshot.png")]
+    [InlineData("Blueprint", "LogicMods/a.pak|LogicMods/a.utoc|LogicMods/a.ucas")]
+    [InlineData("UE4SS files", "ue4ss/Mods/ModConfig/settings.json")]
+    [InlineData("Other", "readme.txt|ue4ss/Mods/mods.txt|ue4ss/Mods/shared/lib/lib.lua|Mods/Scripts/main.lua|ue4ss/Mods/x/Scripts/")]
+    [InlineData("Other", "")]
+    public void The_type_comes_from_the_paths_in_the_zip(string type, string paths)
+    {
+        Assert.Equal(type, CatalogTypes.Label(paths.Split('|', StringSplitOptions.RemoveEmptyEntries)));
+    }
+
+    [Theory]
+    // PBZModLoader's zip: its entry DLL next to the exe and its scripts below the project folder are game files; its
+    // other entries for other DLL names wait in a folder of their own, and an install leaves them out.
+    [InlineData("Game files", "PBZModLoader-Install-Guide.txt|alternative-entries/dsound/dsound.dll|alternative-entries/dxgi/dxgi.dll|alternative-entries/hid/hid.dll|alternative-entries/winmm/winmm.dll|platform/steam/version.dll|platform/wegame/version.dll|ProjectPBZ/PBZModLoader/LICENSES.txt|ProjectPBZ/Content/JavaScript/PBZModLoader/bootstrap.js")]
+    [InlineData("Game files", "ProjectPBZ/Saved/Config/Windows/Input.ini")]
+    // A mod for PBZModLoader, as KintaroModding's Animation Cancel 2.0 zip: its type is the loader it runs in.
+    [InlineData("PBZModLoader", "ProjectPBZ/PBZModLoader/mods/phantombladezero_animationcancel/main.js|ProjectPBZ/PBZModLoader/mods/phantombladezero_animationcancel/phantombladezero_animationcancel.txt")]
+    [InlineData("Exe files", "dxgi.dll|ReShade.ini|reshade-shaders/Shaders/Glow.fx")]
+    [InlineData("IoStore", "ProjectPBZ/Content/Paks/~mods/a_P.pak|ProjectPBZ/Content/Paks/~mods/a_P.utoc|ProjectPBZ/Content/Paks/~mods/a_P.ucas")]
+    [InlineData("Other", "ProjectPBZ-5.7.4-302256-full.usmap")]
+    [InlineData("Other", "UEModManager.exe")]
+    // Paths that would leave the download are left out, never followed.
+    [InlineData("Other", "../outside_P.pak|C:/Windows/evil_P.pak|/rooted_P.pak|a/./b_P.pak")]
+    public void With_the_games_folders_the_type_is_the_one_the_install_gives(string type, string paths)
+    {
+        Assert.Equal(type, CatalogTypes.Label(paths.Split('|', StringSplitOptions.RemoveEmptyEntries), "ProjectPBZ", "platform/steam"));
+    }
+
     [Theory]
     [InlineData("https://github.com/KintaroModding/Repo", "kintaromodding/repo")]
     [InlineData("https://github.com/KintaroModding/repo.git", "kintaromodding/repo")]

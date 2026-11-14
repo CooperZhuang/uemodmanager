@@ -56,13 +56,20 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     /// <summary>The download or folder it was installed from, as the player knows it.</summary>
     public string SourceText => mod.SourceFileName ?? "—";
 
-    /// <summary>The mod's page on the mod site, from the number in its download's file name; null without one and for the card's mods.</summary>
-    public string? ModPageUrl { get; } = mod.Recommended ? null : owner.Profile.ModPage(mod.SourceFileName);
+    /// <summary>The mod's page, on openmods or on the mod site; see <see cref="MainViewModel.ModPageOf"/>.</summary>
+    public string? ModPageUrl { get; } = owner.ModPageOf(mod);
+
+    /// <summary>The page is on openmods: the link reads "openmods.nexus", in orange, as in the mod's row.</summary>
+    public bool IsOpenModsPage { get; } = owner.IsOpenModsPage(mod);
+
+    public string ModPageText => MainViewModel.ModPageText(IsOpenModsPage);
 
     private ModUpdateStatus? Update => ModPageUrl is null ? null : owner.ModUpdateOf(mod);
 
     /// <summary>The mod page has a newer version; see <see cref="ModItemViewModel.IsUpdateAvailable"/>.</summary>
     public bool IsUpdateAvailable => Update?.IsAvailable == true;
+
+    public string UpdateBoxText => MainViewModel.UpdateBoxText(mod);
 
     public bool IsUpToDate => Update is { IsAvailable: false };
 
@@ -81,18 +88,15 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
         }
     }
 
-    public string? UpdateHint => Update switch
-    {
-        { IsAvailable: true } update => L.F($"Version {update.Latest} is on the mod page; you have {update.Installed}. Opens the mod page's files."),
-        { } update => L.F($"The mod page has version {update.Latest}, the one you have."),
-        _ => null,
-    };
+    public string? UpdateHint => MainViewModel.ModUpdateHint(mod, Update);
 
+    /// <summary>The blue box; an update from openmods replaces this mod, so the details close first.</summary>
     [RelayCommand]
-    private void OpenModFiles()
+    private Task OpenModFiles()
     {
-        if (ModPageUrl is not null)
-            owner.OpenPath(ModPageUrl + "?tab=files");
+        if (owner.CatalogModOf(mod) is { InstallFile: not null })
+            owner.CloseModDetails();
+        return owner.OpenModUpdateAsync(mod);
     }
 
     [RelayCommand]
