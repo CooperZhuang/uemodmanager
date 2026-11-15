@@ -832,9 +832,12 @@ UEModManager.exe --cli ue4ss remove --yes
   download is left behind.
 - `--ue4ss-manifest-url <url>` reads a test copy of the UE4SS manifest, as the
   app's own option of that name does.
-- `uninstall` keeps the files a mod wrote itself, such as its logs, and lists them: they are not in the
-  mod's record, so its record cannot remove them with it. `--remove-leftovers` moves them into the
-  manager's backups first, below `leftovers`, so the player can take them out again.
+- `uninstall` lists the files a UE4SS mod wrote itself in its own folder below UE4SS's `Mods` folder,
+  such as its logs (`ModManager.LeftoversOf`), and keeps them: its record does not name them.
+  `--remove-leftovers` moves them into the manager's backups (`<date> <mod> leftovers`), and the
+  emptied folder goes. Only such a folder counts: not UE4SS's own mods, not the shared libraries, not
+  a folder another mod uses, and nothing else in the game, where a file the mod did not place can be
+  the game's or the player's, such as a save. The app asks the same after an uninstall.
 - `UEModManager.exe` is a window program, so a terminal does not wait for it.
   Pipe the output (`... --cli list | more`, in PowerShell `| Out-String`), use
   `start /wait` in cmd or `Start-Process -Wait` in PowerShell. Scripts that wait

@@ -135,7 +135,7 @@ internal static class Program
           enable <mod>                    Enable an installed mod
           disable <mod>                   Disable an installed mod
           uninstall <mod> --yes [--remove-leftovers]
-                                          Uninstall a mod; --remove-leftovers moves the files it left (logs) to the backups
+                                          Uninstall a mod; --remove-leftovers moves what it left in its UE4SS folder to the backups
           backup list                     Save backups with their notes, normal and personal
           backup create [--note <text>] [--keep <n>]
                                           Back up the game's save folder now
@@ -166,7 +166,7 @@ internal static class Program
           --part <index|name>   Select only this part; repeat for more. Cannot be used with --all-parts
           --keep-both           Keep an installed mod the download would replace: install it as another mod
           --staging <folder>    Unpack downloads here, outside the game, instead of the data folder's staging folder
-          --remove-leftovers    uninstall: move the files the mod left in the game into the manager's backups
+          --remove-leftovers    uninstall: move the files a UE4SS mod left in its own folder into the manager's backups
           --yes                 Confirm a change; install, uninstall, ue4ss remove, backup restore and backup delete need it
           --check               With ue4ss status: read the manifest too, to tell whether a newer release exists
           --package <file>      With ue4ss install: a UE4SS release zip, 7z file or folder, instead of the manifest's

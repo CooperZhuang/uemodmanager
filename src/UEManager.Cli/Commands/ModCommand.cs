@@ -103,13 +103,13 @@ internal static class ModCommand
         if (payload.Leftovers.Count == 0)
             return;
         var files = payload.Leftovers.Sum(leftover => leftover.SizeBytes);
-        Output.Line($"It also left {payload.Leftovers.Count} file(s) of its own in the game ({Output.Size(files)}):");
+        Output.Line($"It also left {payload.Leftovers.Count} file(s) of its own in its UE4SS folder ({Output.Size(files)}):");
         foreach (var leftover in payload.Leftovers.Take(5))
             Output.Line($"  {leftover.RelativePath}" + (leftover.IsLog ? "  (log)" : ""));
         if (payload.Leftovers.Count > 5)
             Output.Line($"  and {payload.Leftovers.Count - 5} more");
         Output.Line(removeLeftovers
             ? "They will be moved into the manager's backups."
-            : "They stay in the game; --remove-leftovers moves them into the manager's backups.");
+            : "They stay in its folder; --remove-leftovers moves them into the manager's backups.");
     }
 }

@@ -836,7 +836,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 L.Join(L.F($"Remove \"{item.Name}\" from the game and from the manager's library? The original download is not touched."),
                     item.HasSettings ? L.T("Settings you changed are backed up first.") : null,
                     leftovers.Count > 0
-                        ? L.F($"It also left {leftovers.Count} file(s) of its own in the game ({Format.Size(leftovers.Sum(leftover => leftover.Size))}): {LeftoverNames(leftovers)}. They stay unless you move them into the backups.")
+                        ? L.F($"It also left {leftovers.Count} file(s) of its own in its UE4SS folder ({Format.Size(leftovers.Sum(leftover => leftover.Size))}): {LeftoverNames(leftovers)}. They stay unless you move them into the backups.")
                         : null),
                 L.T("Uninstall")))
             return;
@@ -849,7 +849,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         if (result.Leftovers.Count > 0 && result.LeftoverBackup is null)
         {
             if (await AskAsync(L.T("Files left behind"),
-                    L.F($"\"{item.Name}\" left {result.Leftovers.Count} file(s) of its own in the game ({Format.Size(result.Leftovers.Sum(leftover => leftover.Size))}): {LeftoverNames(result.Leftovers)}. Move them into the manager's backups?"),
+                    L.F($"\"{item.Name}\" left {result.Leftovers.Count} file(s) of its own in its UE4SS folder ({Format.Size(result.Leftovers.Sum(leftover => leftover.Size))}): {LeftoverNames(result.Leftovers)}. Move them into the manager's backups? Its empty folder then goes too."),
                     L.T("Move to backups")))
             {
                 string? moved = null;
@@ -865,9 +865,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>The first few names of what a mod left behind, for a question: its files' paths below the game, and a count.</summary>
-    private static string LeftoverNames(IReadOnlyList<ModLeftover> leftovers) =>
-        string.Join(", ", leftovers.Take(3).Select(leftover => leftover.RelativePath))
-        + (leftovers.Count > 3 ? $" and {leftovers.Count - 3} more" : "");
+    private static string LeftoverNames(IReadOnlyList<ModLeftover> leftovers)
+    {
+        var names = string.Join(", ", leftovers.Take(3).Select(leftover => leftover.RelativePath));
+        return leftovers.Count > 3 ? L.F($"{names} and {leftovers.Count - 3} more") : names;
+    }
 
     /// <summary>Opens the mod's settings files in the game in the app's own settings editor.</summary>
     internal void EditSettings(ModItemViewModel item)

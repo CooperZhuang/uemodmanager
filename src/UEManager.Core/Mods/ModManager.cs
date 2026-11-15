@@ -740,12 +740,13 @@ public sealed class ModManager
         });
     }
 
-    /// <summary>The files a mod left in the game that its record does not own, such as logs it wrote while running.</summary>
-    /// <remarks>
-    /// A file counts as left behind when it sits in a folder of this mod, that is a folder below a target that holds no
-    /// file of another mod, and no mod's record names it. Files in a shared folder such as ~mods are never counted: the
-    /// player put them there.
-    /// </remarks>
+    /// <summary>
+    /// The files a UE4SS mod left in its own folder that no mod's record names, such as a log it wrote while the game ran:
+    /// the C++ BYPASS's compatibility.log, or an older Quest Guide's bridge.log. Only a UE4SS mod's own folder counts,
+    /// the one right below UE4SS's Mods folder (see <see cref="OwnUe4ssFolders"/>): a UE4SS mod lives in a folder of its
+    /// own, and a player who removes one by hand deletes that folder. Nowhere else in the game: there a file the mod did
+    /// not place can be the game's or the player's, such as the game's exe, a save or a script loader.
+    /// </summary>
     /// <exception cref="ModException">No mod has that id.</exception>
     public IReadOnlyList<ModLeftover> LeftoversOf(string id)
     {
@@ -755,14 +756,13 @@ public sealed class ModManager
 
     private IReadOnlyList<ModLeftover> LeftoversOf(ModRecord mod)
     {
-        var leftovers = new List<ModLeftover>();
-        var managed = mods.SelectMany(record => record.Files)
-            .Where(file => file.DeployedPath is { Length: > 0 })
-            .Select(file => Path.GetFullPath(file.DeployedPath!))
+        // Every file a mod's record names, on or off: none of them is left behind.
+        var placed = mods.SelectMany(record => record.Files.Select(file => FullPathOf(file.Target, file.FileName)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var folder in OwnedFolders(mod))
+        var leftovers = new List<ModLeftover>();
+        foreach (var folder in OwnUe4ssFolders(mod))
         {
-            IEnumerable<string> files;
+            List<string> files;
             try
             {
                 if (!Directory.Exists(folder))
@@ -777,7 +777,7 @@ public sealed class ModManager
             foreach (var file in files)
             {
                 var path = Path.GetFullPath(file);
-                if (managed.Contains(path) || file.EndsWith(RemovingSuffix, StringComparison.OrdinalIgnoreCase))
+                if (placed.Contains(path) || path.EndsWith(RemovingSuffix, StringComparison.OrdinalIgnoreCase))
                     continue;
                 long size;
                 try
@@ -788,71 +788,84 @@ public sealed class ModManager
                 {
                     size = 0;
                 }
-                leftovers.Add(new ModLeftover(path, BelowGame(path), size));
+                leftovers.Add(new ModLeftover(path, Path.GetRelativePath(Game.RootPath, path), size));
             }
         }
         return leftovers.OrderBy(leftover => leftover.RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>
-    /// The folders a mod has to itself: the parent of each of its deployed files that is below a target and has no file
-    /// of another mod anywhere below it. A folder already under one of these is not listed again.
+    /// The UE4SS mod folders that are this mod's alone: each folder right below UE4SS's Mods folder that holds files of
+    /// the mod, when no other mod has a file in it, UE4SS has none in it (its own mods, such as BPModLoaderMod, by the
+    /// manager's record of UE4SS and by their names, for a UE4SS put in by hand), and it is not the shared libraries'.
     /// </summary>
-    private IReadOnlyList<string> OwnedFolders(ModRecord mod)
+    private List<string> OwnUe4ssFolders(ModRecord mod)
     {
+        var root = TargetFolder(DeployTarget.Ue4ssMods);
         var others = mods.Where(record => record != mod).SelectMany(record => record.Files)
-            .Where(file => file.DeployedPath is { Length: > 0 })
-            .Select(file => Path.GetFullPath(file.DeployedPath!))
-            .ToList();
+            .Where(file => file.Target == DeployTarget.Ue4ssMods).Select(file => file.FileName).ToList();
+        var ue4ssFiles = (ReadUe4ssRecord()?.Files?.Keys ?? Enumerable.Empty<string>())
+            .Select(key => FullPathOf(DeployTarget.ExeFolder, key)).ToList();
         var folders = new List<string>();
-        foreach (var file in mod.Files.Where(file => file.DeployedPath is { Length: > 0 }))
+        foreach (var name in mod.Files.Where(file => file.Target == DeployTarget.Ue4ssMods && file.FileName.Contains('/'))
+                     .Select(file => file.FileName[..file.FileName.IndexOf('/')]).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var path = Path.GetFullPath(file.DeployedPath!);
-            var root = Path.GetFullPath(TargetFolder(file.Target));
-            var chain = new List<string>();
-            for (var folder = Path.GetDirectoryName(path); folder is not null && IsUnder(folder, root); folder = Path.GetDirectoryName(folder))
-                chain.Insert(0, folder);
-            // The shallowest folder of this file that no other mod has a file in: the mod's own folder, not a shared one.
-            var owned = chain.FirstOrDefault(folder => !others.Any(other => IsUnder(other, folder)));
-            if (owned is not null)
-                folders.Add(owned);
+            if (Ue4ssOwnMods.Contains(name, StringComparer.OrdinalIgnoreCase)
+                || others.Any(other => other.StartsWith(name + "/", StringComparison.OrdinalIgnoreCase)))
+                continue;
+            var folder = Path.GetFullPath(Path.Combine(root, name));
+            if (!ue4ssFiles.Any(file => IsUnder(file, folder)))
+                folders.Add(folder);
         }
-        var candidates = folders.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        return candidates.Where(folder => !candidates.Any(other => !IsSame(other, folder) && IsUnder(folder, other))).ToList();
+        return folders;
     }
-    private bool IsSame(string a, string b) => string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The folders below UE4SS's Mods folder that UE4SS brings itself, and the shared libraries': never a mod's own,
+    /// also when UE4SS was put in by hand and the manager has no record of its files.
+    /// </summary>
+    private static readonly string[] Ue4ssOwnMods =
+    [
+        SharedFiles.Folder, "ActorDumperMod", "BPML_GenericFunctions", "BPModLoaderMod", "CheatManagerEnablerMod",
+        "ConsoleCommandsMod", "ConsoleEnablerMod", "jsbLuaProfilerMod", "Keybinds", "LineTraceMod", "SplitScreenMod",
+    ];
+
+    /// <summary>Where a file of a target is in the game: its target folder and its path below it.</summary>
+    private string FullPathOf(DeployTarget target, string fileName) =>
+        Path.GetFullPath(Path.Combine(TargetFolder(target), Local(fileName)));
 
     private static bool IsUnder(string path, string folder) =>
         path.Length > folder.Length
         && path.StartsWith(Path.TrimEndingDirectorySeparator(folder) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
-    private string BelowGame(string path) => Path.GetRelativePath(Game.RootPath, path);
-
     /// <summary>
-    /// Moves the files a mod left behind into the manager's backups, under "leftovers", and returns that folder; null
-    /// when there was nothing to move. The files are moved, not deleted, so the player can take them back out.
+    /// Moves the files a mod left behind into the manager's backups, under "&lt;date&gt; &lt;mod&gt; leftovers", by their path
+    /// below the game, and removes the mod's folder once it is empty; returns that backup folder, or null when nothing
+    /// was moved. Only files in a mod folder below UE4SS's Mods folder move, whatever the list holds. They are moved,
+    /// not deleted, so the player can take them back out.
     /// </summary>
     public string? MoveLeftoversToBackups(IReadOnlyList<ModLeftover> leftovers, string modName)
     {
         lock (gate)
         {
             EnsureCanChange();
-            var moving = leftovers.Where(leftover => File.Exists(leftover.Path)).ToList();
+            var root = TargetFolder(DeployTarget.Ue4ssMods);
+            var moving = leftovers.Where(leftover => File.Exists(leftover.Path)
+                && Path.GetDirectoryName(Path.GetFullPath(leftover.Path)) is { } parent && IsUnder(parent, root)).ToList();
             if (moving.Count == 0)
                 return null;
             var folder = Path.Combine(paths.BackupDir(Game.Profile.Id),
-                $"{DateTime.Now:yyyyMMdd-HHmmss} {FileSystem.SafeName(modName, "leftovers")} leftovers");
+                $"{DateTime.Now:yyyyMMdd-HHmmss} {FileSystem.SafeName(modName, "Mod")} leftovers");
             var moved = 0;
             foreach (var leftover in moving)
             {
-                var below = Path.IsPathRooted(leftover.RelativePath) ? Path.GetFileName(leftover.Path) : leftover.RelativePath;
-                var destination = Path.Combine(folder, below.Replace('/', Path.DirectorySeparatorChar));
+                var destination = Path.Combine(folder, Path.GetRelativePath(Game.RootPath, Path.GetFullPath(leftover.Path)));
                 try
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                     File.Move(leftover.Path, destination);
                     moved++;
-                    RemoveEmptyFolders(leftover.Path);
+                    RemoveEmptyModFolders(leftover.Path, root);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
@@ -869,11 +882,11 @@ public sealed class ModManager
         }
     }
 
-    /// <summary>Removes the folders a removed file leaves empty, up to the target folder, and stops at the game's folder.</summary>
-    private void RemoveEmptyFolders(string removedPath)
+    /// <summary>Removes the folders a moved file leaves empty, up to the mod's own folder; UE4SS's Mods folder stays.</summary>
+    private static void RemoveEmptyModFolders(string movedPath, string modsRoot)
     {
-        var root = Path.GetFullPath(Game.RootPath);
-        for (var folder = Path.GetDirectoryName(Path.GetFullPath(removedPath)); folder is not null && IsUnder(folder, root); folder = Path.GetDirectoryName(folder))
+        for (var folder = Path.GetDirectoryName(Path.GetFullPath(movedPath)); folder is not null && IsUnder(folder, modsRoot);
+             folder = Path.GetDirectoryName(folder))
         {
             try
             {
@@ -883,6 +896,7 @@ public sealed class ModManager
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
+                Log.Warn($"Folder '{folder}' could not be removed: {ex.Message}");
                 return;
             }
         }
