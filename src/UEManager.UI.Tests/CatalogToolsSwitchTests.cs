@@ -91,6 +91,26 @@ public sealed class CatalogToolsSwitchTests : IDisposable
     private static string[] Shown(CatalogViewModel catalog) => catalog.ItemsView.Cast<CatalogItemViewModel>().Select(item => item.Name).ToArray();
 
     [Fact]
+    public void A_card_without_an_action_shows_its_status_in_the_row_of_the_buttons() => UiThread.Run(() =>
+    {
+        var cards = Load(Mods).Items.ToDictionary(item => item.Name);
+
+        // No download: no action, so the status takes its place in the full view's row.
+        var loader = cards["PBZModLoader"];
+        Assert.False(loader.HasAction);
+        Assert.Equal("No download yet", loader.StatusText);
+        Assert.True(loader.ShowsStatusInRow);
+        Assert.False(loader.ShowsStatusBelow);
+
+        // An action and no status: neither.
+        var witchTime = cards["Witch Time"];
+        Assert.True(witchTime.HasAction);
+        Assert.Null(witchTime.StatusText);
+        Assert.False(witchTime.ShowsStatusInRow);
+        Assert.False(witchTime.ShowsStatusBelow);
+    });
+
+    [Fact]
     public void The_page_shows_the_mods_or_the_tools() => UiThread.Run(() =>
     {
         var catalog = Load(Mods);

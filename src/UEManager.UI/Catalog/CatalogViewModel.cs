@@ -576,11 +576,22 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
     private string? actionText;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsStatusInRow), nameof(ShowsStatusBelow))]
     private bool hasAction;
 
     /// <summary>What is installed, or why there is nothing to install.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsStatusInRow), nameof(ShowsStatusBelow))]
     private string? statusText;
+
+    /// <summary>
+    /// The full view's card shows the status in the row of the buttons, in place of an action it does not have, such as
+    /// "Installed · 1.2": no empty space beside the icons, and no line of its own.
+    /// </summary>
+    public bool ShowsStatusInRow => !HasAction && StatusText is not null;
+
+    /// <summary>The full view's card has an action and a status: the status gets a line of its own below.</summary>
+    public bool ShowsStatusBelow => HasAction && StatusText is not null;
 
     [ObservableProperty]
     private string statusTone = "muted";

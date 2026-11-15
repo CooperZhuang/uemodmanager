@@ -141,23 +141,22 @@
                                 <TextBlock Margin="0,6,0,0" FontSize="12.5" LineHeight="18" TextWrapping="Wrap"
                                            Foreground="{StaticResource Brush.TextMuted}" Text="{Binding Summary}"
                                            Visibility="{Binding Summary, Converter={StaticResource VisibleIfSet}}" />
-                                <WrapPanel Margin="0,10,0,0">
-                                    <ItemsControl ItemsSource="{Binding Tags}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Margin="0,0,6,0" Style="{StaticResource Badge}">
-                                                    <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding}" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                    <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding MetaText}" />
-                                </WrapPanel>
+                                <!-- The tags, then the version, date and license on a line of their own, as in the full view. -->
+                                <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding Tags}" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,6,0" Style="{StaticResource Badge}">
+                                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" Text="{Binding}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding MetaText}" />
                             </StackPanel>
 
                             <!-- As wide as Page, Source and Changelog with their words. -->

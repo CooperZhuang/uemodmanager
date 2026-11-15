@@ -157,19 +157,11 @@
                                         <!--
                                             The same actions as on the page, at the bottom of every card: the action, and the Page,
                                             Source and Changelog buttons as icons alone (the user's choice: the list view names them in
-                                            words). The status gets a line of its own below.
+                                            words). The status takes the action's place when there is none, else a line of its own below.
                                         -->
                                         <StackPanel Grid.Row="2" Margin="18,14,18,16">
-                                            <Grid x:Name="ActionRow">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Button x:Name="Action" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
-                                                        Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
-                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
-                                                <StackPanel Grid.Column="1" Margin="4,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                            Orientation="Horizontal">
+                                            <DockPanel x:Name="ActionRow">
+                                                <StackPanel DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
                                                     <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
                                                             Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
                                                             ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
@@ -180,8 +172,22 @@
                                                             CommandParameter="{Binding}" Visibility="{Binding HasChangelog, Converter={StaticResource Visible}}"
                                                             ToolTip="{ui:Loc 'What changed in each version, from the mod\'s releases on GitHub'}" />
                                                 </StackPanel>
-                                            </Grid>
-                                            <DockPanel Margin="0,6,0,0" Visibility="{Binding StatusText, Converter={StaticResource VisibleIfSet}}">
+                                                <Grid>
+                                                    <Button x:Name="Action" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                                                            Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
+                                                            Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
+                                                    <!-- Without an action, as for an installed mod: the status in its place (the user's wish: no
+                                                         empty space beside the icons). -->
+                                                    <DockPanel VerticalAlignment="Center" Visibility="{Binding ShowsStatusInRow, Converter={StaticResource Visible}}">
+                                                        <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
+                                                                   Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />
+                                                        <TextBlock FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusText}"
+                                                                   ToolTip="{Binding StatusText}" />
+                                                    </DockPanel>
+                                                </Grid>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,6,0,0" Visibility="{Binding ShowsStatusBelow, Converter={StaticResource Visible}}">
                                                 <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
                                                            Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />
                                                 <TextBlock FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
