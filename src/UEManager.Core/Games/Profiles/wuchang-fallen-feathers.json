@@ -10,8 +10,6 @@
   "displayName": "WUCHANG: Fallen Feathers",
   "developer": "Leenzee",
   "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
-  // Experimental until real mods are checked with the app; the folder report confirmed the layout.
-  "experimental": true,
   // From the store page: store.steampowered.com/app/2277560; the report found the same id in Steam's list.
   "steamAppId": "2277560",
 

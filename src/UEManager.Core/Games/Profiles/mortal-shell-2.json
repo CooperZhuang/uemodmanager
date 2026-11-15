@@ -9,8 +9,6 @@
   "displayName": "Mortal Shell II",
   "developer": "Cold Symmetry",
   "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
-  // Experimental until the layout is checked on a real install: the game's exe, the exe Launch game starts, the save folder.
-  "experimental": true,
   // Offered again since 2026-11-15, in the game picker's All games list only: it is not one of the three highlight cards
   // ("featured"). From 2026-11-11 to then it was hidden, as a fourth card wrapped the picker to a second row.
 

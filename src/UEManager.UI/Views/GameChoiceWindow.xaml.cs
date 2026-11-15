@@ -12,16 +12,45 @@ namespace UEManager.UI.Views;
 /// </summary>
 public partial class GameChoiceWindow : Window
 {
-    /// <param name="backdrop">The picture behind the picker; without one, the window's own background shows.</param>
+    /// <summary>How much darker than the dialog the plain background is, as the strength of a black veil.</summary>
+    private const double PlainShade = 0.25;
+
+    /// <param name="backdrop">
+    /// The picture behind the picker, blurred; null for none, as for a served game (see <see cref="ServedGame"/>): then a
+    /// plain dark anthracite in the game's look, and the picker shows the game's logo instead (the user's choice, 2026-11-15).
+    /// </param>
     /// <param name="placement">Where the app's window was when it last closed; null opens this one centred.</param>
-    public GameChoiceWindow(GamePickerViewModel picker, ImageSource? backdrop, WindowPlacement? placement)
+    /// <param name="servedArt">
+    /// A served game's art on the plain background: its cover art top right, as on the game's pages, and its logo top left.
+    /// Null for none.
+    /// </param>
+    public GameChoiceWindow(GamePickerViewModel picker, ImageSource? backdrop, WindowPlacement? placement, ArtSet? servedArt = null)
     {
         InitializeComponent();
         WindowFrame.Attach(this);
         Title = AppInfo.Name;
         AppName.Text = AppInfo.Name;
         DataContext = picker;
-        Backdrop.Source = backdrop;
+        if (backdrop is null)
+        {
+            // A tiny bit darker than the picker's dialog (the user's word, 2026-11-15): the dialog's own colour of the
+            // game's look under a light black veil.
+            Stage.SetResourceReference(System.Windows.Controls.Panel.BackgroundProperty, "Brush.PanelSolid");
+            Veil.Fill = Brushes.Black;
+            Veil.Opacity = PlainShade;
+            if (servedArt?.Background is { } cover)
+            {
+                ServedArtImage.Source = cover;
+                ServedArt.Visibility = Visibility.Visible;
+            }
+            if (servedArt?.Logo is { } logo)
+            {
+                ServedLogo.Source = logo;
+                ServedLogo.Visibility = Visibility.Visible;
+            }
+        }
+        else
+            Backdrop.Source = backdrop;
         // As the app's window: the start size is also the smallest.
         var smallest = MainWindow.Smallest(new Size(Width, Height), SystemParameters.WorkArea);
         MinWidth = Width = smallest.Width;

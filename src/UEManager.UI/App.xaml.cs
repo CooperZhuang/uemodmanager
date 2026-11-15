@@ -131,7 +131,10 @@ public partial class App : Application
         var named = ArgumentAfter(e.Args, "--game");
         var profile = GameChoice.Resolve(GameChoice.Playable(games, named, AppInfo.CanChooseComingGames),
             named, settings.Game, settings.AskForGameAtStart);
-        GameTheme.Apply(Resources, profile?.Id);
+        // A download made for one game names it in Data\serve.json: while no game is chosen, the picker shows it in the
+        // middle of its highlights, and in the game's look.
+        var served = profile is null ? GameChoice.Served(games, ServedGame.Read(paths), settings.Game, AppInfo.CanChooseComingGames) : null;
+        GameTheme.Apply(Resources, profile?.Id ?? served?.Id);
         LanguageFonts.Follow(Resources);
         try
         {
@@ -157,6 +160,7 @@ public partial class App : Application
         Log.Info($"Starting {AppInfo.Version} from '{AppContext.BaseDirectory}'.");
         DispatcherUnhandledException += OnUnhandledException;
         CleanUpAfterUpdate();
+        NoteServedGame(paths, settings, profile, served);
         instance.Listen(downloads => Dispatcher.BeginInvoke(() => receive?.Invoke(downloads)));
 
         if (startError is not null || games.Count == 0)
@@ -169,7 +173,7 @@ public partial class App : Application
         }
         if (profile is null)
         {
-            ChooseGame(games.Where(game => !game.Hidden).ToList(), paths, settings, DownloadArguments(e.Args));
+            ChooseGame(games.Where(game => !game.Hidden).ToList(), paths, settings, DownloadArguments(e.Args), served);
             return;
         }
         Log.Info($"Game: '{profile.Id}'.");
@@ -196,15 +200,37 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// Data\serve.json (see <see cref="ServedGame"/>) at a start: logged when it serves a game, and removed when a game is
+    /// chosen already, so it never changes the picker of a player who has one.
+    /// </summary>
+    private static void NoteServedGame(AppPaths paths, AppSettings settings, GameProfile? profile, GameProfile? served)
+    {
+        if (!ServedGame.Exists(paths))
+            return;
+        if (served is not null)
+            Log.Info($"Serving '{served.Id}' (serve.json): the picker shows it in the middle of the highlights, in its look.");
+        else if (!string.IsNullOrWhiteSpace(settings.Game))
+        {
+            if (ServedGame.Remove(paths))
+                Log.Info("serve.json removed: a game is chosen already.");
+        }
+        else if (profile is null)
+            Log.Warn($"serve.json names no game the picker offers ('{ServedGame.Read(paths)}'); the picker shows as usual.");
+    }
+
+    /// <summary>
     /// A start without a chosen game, such as the very first: the game picker over a blurred picture. The choice is
     /// saved, and the app starts again with that game. Downloads handed over meanwhile go along to the new start.
     /// </summary>
-    private void ChooseGame(IReadOnlyList<GameProfile> games, AppPaths paths, AppSettings settings, IReadOnlyList<string> downloads)
+    /// <param name="served">The game a download made for one game serves (see <see cref="ServedGame"/>); null for none.</param>
+    private void ChooseGame(IReadOnlyList<GameProfile> games, AppPaths paths, AppSettings settings, IReadOnlyList<string> downloads,
+        GameProfile? served)
     {
         Log.Info(settings.AskForGameAtStart && settings.Game is not null ? "The player chooses the game at every start; asking." : "No game chosen yet; asking.");
         var pending = downloads.ToList();
         GameChoiceWindow? window = null;
         var chosen = false;
+        var servedArt = served is null ? null : ArtSet.Load(served.Id);
         // Taken here: the cards look their games up away from the window's thread.
         var saved = new Dictionary<string, string>(settings.GamePaths, StringComparer.OrdinalIgnoreCase);
         // The game chosen last has the accent frame, for a player who chooses at every start.
@@ -227,6 +253,9 @@ public partial class App : Application
                 MessageBox.Show(L.F($"Settings could not be saved: {ex.Message}"), AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            // Any choice ends the serving: from now on the picker shows the highlights as usual.
+            if (ServedGame.Exists(paths) && ServedGame.Remove(paths))
+                Log.Info("serve.json removed: the player chose a game.");
             Log.Info($"Chosen: '{game.Id}'; starting again.");
             chosen = Restart(game: game.Id, downloads: pending);
             if (!chosen)
@@ -245,7 +274,7 @@ public partial class App : Application
                 // The choice of a game saves the settings again.
                 Log.Warn($"The language could not be saved: {ex.Message}");
             }
-        }, lookUp: game => GameOnPc.Look(game, saved.GetValueOrDefault(game.Id), paths));
+        }, lookUp: game => GameOnPc.Look(game, saved.GetValueOrDefault(game.Id), paths), servedId: served?.Id);
         // The developer's message opens by itself a single time, at the very first start; it is saved at once, so it stays
         // closed from then on, even when the player closes the window without a choice.
         if (!settings.DeveloperMessageShown)
@@ -266,7 +295,9 @@ public partial class App : Application
         // and the developer's message then show in the language chosen.
         if (settings.Language is null && L.Current.Offer() is { } offered)
             _ = picker.OfferLanguageAsync(offered);
-        window = new GameChoiceWindow(picker, ArtSet.Backdrop(), settings.Window);
+        // A served game: a plain background with its cover art top right, as on its pages, and its logo top left (the
+        // user's choice, 2026-11-15).
+        window = new GameChoiceWindow(picker, served is null ? ArtSet.Backdrop() : null, settings.Window, servedArt);
         MainWindow = window;
         receive = handed =>
         {

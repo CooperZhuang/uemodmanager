@@ -47,7 +47,7 @@ public class GameSwitchTests : IDisposable
         picker.ShowAllGamesCommand.Execute(null);
         Assert.True(picker.IsAllGamesOpen);
         Assert.True(picker.ChooseCommand.CanExecute(picker.AllCards.Single(card => card.Name == "Mortal Shell II")));
-        Assert.True(picker.AllCards.Single(card => card.Name == "WUCHANG: Fallen Feathers").IsExperimental);
+        Assert.False(picker.AllCards.Single(card => card.Name == "WUCHANG: Fallen Feathers").IsExperimental);
         picker.HideAllGamesCommand.Execute(null);
         Assert.False(picker.IsAllGamesOpen);
     });

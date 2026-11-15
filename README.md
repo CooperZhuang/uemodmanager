@@ -1,11 +1,10 @@
 # UE MM
 
-A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom
-Blade Zero**, **Mortal Shell II** and **WUCHANG: Fallen Feathers** as
-experimental, and **Stellar Blade: Blood Rain** as a preview of its look until
-the game is out. One app serves every game: the player picks the game, and the
-interface takes that game's look. The executable keeps the file name
-`UEModManager.exe`.
+A mod manager for Unreal Engine games: **Black Myth: Wukong**, **Mortal Shell
+II**, **Phantom Blade Zero** and **WUCHANG: Fallen Feathers**, and **Stellar
+Blade: Blood Rain** as a preview of its look until the game is out. One app
+serves every game: the player picks the game, and the interface takes that
+game's look. The executable keeps the file name `UEModManager.exe`.
 
 It keeps its own copy of every mod and records a SHA-256 checksum for every
 file it places. A file it did not place is never overwritten or removed.
@@ -78,6 +77,19 @@ backups in `Data/games/<id>/`, and has its own look: colours, art and card
 A game that is not out yet, such as Stellar Blade: Blood Rain, has a **Peek**
 label on its card: it can be chosen to see its look, and Home says that mod
 support comes with the game.
+
+A download made for one game can serve it: `Data/serve.json` next to the exe,
+such as `{"gameToServe": "phantom-blade-zero"}` (the id of a game profile).
+While no game is chosen, **Choose your game** then shows that game in the
+middle of the highlights with the accent frame, the other two dimmed but still
+a choice, all in the game's look: a plain dark background with the game's cover
+art at the top right, as on its pages, and the game's logo at the top left. A game
+that is not a highlight takes the third highlight's place, which stays in
+**See all games**. The first choice of any game removes the file, and so does a
+start that finds a game chosen already (such a download unpacked over an app in
+use), so the picker is as usual from then on. A file of its own, not a key in
+`settings.json`, so unpacking such a download never replaces anyone's settings.
+An unknown, hidden or not yet released game is ignored (the log says so).
 
 **Missing your game? Tell us on Discord** opens **Scan a game folder…**. The app
 reads the folder's tree with file sizes and sums it up: the Unreal project

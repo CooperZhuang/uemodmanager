@@ -28,6 +28,15 @@ public static class GameChoice
                 && (!game.Hidden || game.Id.Equals(named?.Trim(), StringComparison.OrdinalIgnoreCase)))
             .ToList();
 
+    /// <summary>
+    /// The game a download made for one game serves (see <see cref="Storage.ServedGame"/>): only while no game is chosen,
+    /// and only a game the picker offers and the player can choose. Null for an unknown, hidden or not yet released game.
+    /// </summary>
+    /// <param name="served">The game id the download names.</param>
+    /// <param name="chosen">The game the player chose before, if any: then nothing is served.</param>
+    public static GameProfile? Served(IReadOnlyList<GameProfile> games, string? served, string? chosen, bool comingSoonAllowed) =>
+        string.IsNullOrWhiteSpace(chosen) ? Find(Playable(games, named: null, comingSoonAllowed), served) : null;
+
     private static GameProfile? Find(IReadOnlyList<GameProfile> games, string? id) =>
         string.IsNullOrWhiteSpace(id) ? null : games.FirstOrDefault(g => g.Id.Equals(id.Trim(), StringComparison.OrdinalIgnoreCase));
 }

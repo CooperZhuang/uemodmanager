@@ -26,7 +26,8 @@ public sealed record GameOnPc(GameStore? Store, int Mods)
 }
 
 /// <summary>A game in the picker: its picture above its name.</summary>
-public sealed class GameCardViewModel(GameProfile game, ImageSource? picture, bool isCurrent) : LocalizedObservableObject
+/// <param name="servedId">The game a download made for one game serves (see <see cref="ServedGame"/>); null for none.</param>
+public sealed class GameCardViewModel(GameProfile game, ImageSource? picture, bool isCurrent, string? servedId = null) : LocalizedObservableObject
 {
     public GameProfile Game => game;
 
@@ -38,6 +39,12 @@ public sealed class GameCardViewModel(GameProfile game, ImageSource? picture, bo
 
     /// <summary>The game the app runs for now; no game is, while the app asks at the start.</summary>
     public bool IsCurrent => isCurrent;
+
+    /// <summary>The game the download serves: in the middle of the highlights, with the accent frame.</summary>
+    public bool IsServed => servedId is not null && game.Id.Equals(servedId, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Another game while one is served: dimmed among the highlights, and still a choice.</summary>
+    public bool IsDimmed => servedId is not null && !IsServed;
 
     /// <summary>The game is not out yet: the card says so.</summary>
     public bool IsComingSoon => game.ComingSoon;
@@ -109,23 +116,47 @@ public sealed partial class GamePickerViewModel : LocalizedObservableObject
     /// Shows and saves a language by its code; null when the picker offers none, as after "Switch game", where Settings has them.
     /// </param>
     /// <param name="lookUp">Where a game is on this PC, for its card; null leaves the cards without it.</param>
+    /// <param name="servedId">
+    /// The game a download made for one game serves (see <see cref="ServedGame"/>), at a start without a chosen game; null
+    /// for none, and ignored when no card has that game.
+    /// </param>
     public GamePickerViewModel(IEnumerable<GameProfile> games, string? currentId, Func<string, ImageSource?> picture,
-        Action<GameProfile> choose, Action? close, Action<string>? chooseLanguage = null, Func<GameProfile, GameOnPc?>? lookUp = null)
+        Action<GameProfile> choose, Action? close, Action<string>? chooseLanguage = null, Func<GameProfile, GameOnPc?>? lookUp = null,
+        string? servedId = null)
     {
         this.choose = choose;
         this.close = close;
         this.chooseLanguage = chooseLanguage;
+        var gameList = games.ToList();
+        if (servedId is not null && !gameList.Any(game => game.Id.Equals(servedId, StringComparison.OrdinalIgnoreCase)))
+            servedId = null;
         // By name, a game that is not out yet too (the user's word, 2026-11-15).
-        AllCards = games
+        AllCards = gameList
             .OrderBy(game => game.DisplayName, StringComparer.OrdinalIgnoreCase)
             .Select(game => new GameCardViewModel(game, picture(game.Id),
-                game.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase)))
+                game.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase), servedId))
             .ToList();
         // The highlights; with none marked, as in tests with games of their own, every game is one.
         var featured = AllCards.Where(card => card.Game.Featured).ToList();
-        Cards = featured.Count > 0 ? featured : AllCards;
+        var highlights = featured.Count > 0 ? featured : AllCards;
+        Cards = AllCards.FirstOrDefault(card => card.IsServed) is { } served ? AroundServed(served, highlights) : highlights;
         LookedUp = lookUp is null ? Task.CompletedTask : LookUpAsync(lookUp);
     }
+
+    /// <summary>
+    /// The served game in the middle, between the first two other highlights by name (the user's choice, 2026-11-15). A
+    /// served game that is no highlight, such as one from All games, takes the third highlight's place; that one stays in
+    /// All games.
+    /// </summary>
+    private static List<GameCardViewModel> AroundServed(GameCardViewModel served, IReadOnlyList<GameCardViewModel> highlights)
+    {
+        var cards = highlights.Where(card => card != served).Take(2).ToList();
+        cards.Insert(Math.Min(1, cards.Count), served);
+        return cards;
+    }
+
+    /// <summary>A game is served: its card is in the middle of the highlights, the others are dimmed.</summary>
+    public bool IsServing => AllCards.Any(card => card.IsServed);
 
     /// <summary>The highlight cards at the top of the picker: the featured games (see <see cref="GameProfile.Featured"/>).</summary>
     public IReadOnlyList<GameCardViewModel> Cards { get; }

@@ -35,6 +35,11 @@
                     <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
                     <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
                 </DataTrigger>
+                <!-- The game a download made for one game serves (see ServedGame). -->
+                <DataTrigger Binding="{Binding IsServed}" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                </DataTrigger>
                 <Trigger Property="IsKeyboardFocused" Value="True">
                     <Setter Property="BorderBrush" Value="{StaticResource Brush.AccentBright}" />
                     <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
@@ -295,6 +300,24 @@
                         <WrapPanel MaxWidth="1030" HorizontalAlignment="Center" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
+                <!-- While a download serves one game, the other highlights are dimmed (the user's wish: "greyed out a bit, but
+                     still clickable"): at full strength under the mouse and with the keyboard's focus. Only here: All games
+                     shows every card as it is. -->
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDimmed}" Value="True">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter Property="Opacity" Value="1" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
             </ItemsControl>
         </StackPanel>
     </Border>

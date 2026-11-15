@@ -32,6 +32,9 @@ public sealed class AppPaths
 
     public string SettingsFile => Path.Combine(Root, "settings.json");
 
+    /// <summary>The game a download made for one game serves; see <see cref="ServedGame"/>.</summary>
+    public string ServeFile => Path.Combine(Root, "serve.json");
+
     /// <summary>The data folder's lock; see <see cref="DataFolderLock"/>.</summary>
     public string LockFile => Path.Combine(Root, "instance.lock");
 

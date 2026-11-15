@@ -29,14 +29,38 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" ClipToBounds="True">
-            <!-- Theme\Art\backdrop.jpg, a little larger than its place: a blur fades out at its edges. -->
+        <Grid x:Name="Stage" Grid.Row="1" ClipToBounds="True">
+            <!-- Theme\Art\backdrop.jpg, a little larger than its place: a blur fades out at its edges. A served game (see
+                 ServedGame) has none: a plain dark anthracite, set in the code. -->
             <Image x:Name="Backdrop" Margin="-40" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality">
                 <Image.Effect>
                     <BlurEffect Radius="8" KernelType="Gaussian" />
                 </Image.Effect>
             </Image>
-            <Rectangle Fill="{StaticResource Brush.BlurVeil}" />
+            <Rectangle x:Name="Veil" Fill="{StaticResource Brush.BlurVeil}" />
+            <!-- A served game's cover art, as on the game's pages (the user's choice, 2026-11-15): anchored top right, fading
+                 toward the lower left. The fades are masks, not ink layers, so the art fades into the plain background. -->
+            <Grid x:Name="ServedArt" HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False" Visibility="Collapsed">
+                <Grid.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="{StaticResource Color.Ink}" Offset="0.55" />
+                        <GradientStop Color="{StaticResource Color.InkClear}" Offset="1" />
+                    </LinearGradientBrush>
+                </Grid.OpacityMask>
+                <Image x:Name="ServedArtImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.OpacityMask>
+                        <RadialGradientBrush Center="1,0" GradientOrigin="1,0" RadiusX="0.95" RadiusY="1.5">
+                            <GradientStop Color="{StaticResource Color.Ink}" Offset="0" />
+                            <GradientStop Color="{StaticResource Color.Ink}" Offset="0.4" />
+                            <GradientStop Color="{StaticResource Color.InkClear}" Offset="1" />
+                        </RadialGradientBrush>
+                    </Image.OpacityMask>
+                </Image>
+            </Grid>
+            <!-- The served game's logo, top left on the same layer as its art (the user's choice, 2026-11-15): behind the
+                 picker, so it never makes the picker taller. -->
+            <Image x:Name="ServedLogo" Width="110" Height="110" Margin="22,18,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                   Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" IsHitTestVisible="False" Visibility="Collapsed" />
             <!-- At a start without a chosen language, the question that offers the language of Windows comes first; the
                  picker shows once it is answered, in the language chosen. -->
             <views:GamePicker Visibility="{Binding Question, Converter={StaticResource VisibleIfNull}}" />

@@ -27,7 +27,8 @@ public class ProfileTests
         string[] all = ["black-myth-wukong", "mortal-shell-2", "phantom-blade-zero", "stellar-blade-blood-rain", "wuchang-fallen-feathers"];
         Assert.Equal(all, GameProfile.BuiltIn().Select(p => p.Id));
         Assert.Equal(["stellar-blade-blood-rain"], GameProfile.BuiltIn().Where(p => p.ComingSoon).Select(p => p.Id));
-        Assert.Equal(["mortal-shell-2", "wuchang-fallen-feathers"], GameProfile.BuiltIn().Where(p => p.Experimental).Select(p => p.Id));
+        // Mortal Shell II and WUCHANG were experimental until players' feedback cleared them (2026-11-15).
+        Assert.Empty(GameProfile.BuiltIn().Where(p => p.Experimental));
         // Every game is offered; none is hidden (Mortal Shell II was, from 2.0.0 to 2026-11-15).
         Assert.DoesNotContain(GameProfile.BuiltIn(), p => p.Hidden);
         Assert.Equal(all, GameProfile.Offered().Select(p => p.Id));
