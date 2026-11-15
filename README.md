@@ -1,10 +1,11 @@
 # UE MM
 
 A mod manager for Unreal Engine games: **Black Myth: Wukong**, **Mortal Shell
-II**, **Phantom Blade Zero** and **WUCHANG: Fallen Feathers**, and **Stellar
-Blade: Blood Rain** as a preview of its look until the game is out. One app
-serves every game: the player picks the game, and the interface takes that
-game's look. The executable keeps the file name `UEModManager.exe`.
+II**, **Phantom Blade Zero** and **WUCHANG: Fallen Feathers**, **Stellar Blade**
+as experimental, and **Stellar Blade: Blood Rain** as a preview of its look
+until the game is out. One app serves every game: the player picks the game, and
+the interface takes that game's look. The executable keeps the file name
+`UEModManager.exe`.
 
 It keeps its own copy of every mod and records a SHA-256 checksum for every
 file it places. A file it did not place is never overwritten or removed.
@@ -252,7 +253,9 @@ exe, it installs nothing:
 
 - **Download and install** fetches the release named by the online manifest
   (below), or else the fixed `ue4ssPackageUrl` of the game profile, and refuses
-  a file that does not match the given SHA-256.
+  a file that does not match the given SHA-256. That fixed release's version is
+  read from its file name (`..._v4.0.0.zip`), or given as
+  `ue4ssPackageVersion` when the name has none, so it matches the manifest.
 - **Install from file…** takes a release zip the user downloaded from
   `ue4ssDownloadUrl`. It always works, also offline. Dropping that zip on the
   window does the same after a confirmation.

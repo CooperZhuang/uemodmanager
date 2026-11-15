@@ -2,6 +2,10 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.3.1 (2026-11-15)
+- Stellar Blade, thử nghiệm: giao diện riêng, cài UE4SS bằng một cú nhấp (bản dựng của chúng tôi cho game) và sao lưu bản lưu
+- Mortal Shell II và WUCHANG: Fallen Feathers không còn là thử nghiệm
+
 ## 2.3.0 (2026-11-15)
 - openmods: nhấp vào ảnh bìa của thẻ để xem ảnh bìa và ảnh chụp màn hình của mod; một ô nhỏ trên ảnh bìa cho biết có bao nhiêu hình ảnh
 - openmods: hình ảnh được giữ trong thư mục Data, nên trang không còn tải mọi ảnh bìa mỗi lần khởi động; Cài đặt ▸ Xóa bộ nhớ đệm hình ảnh sẽ dọn sạch chúng

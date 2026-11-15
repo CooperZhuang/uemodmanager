@@ -35,10 +35,11 @@ public class GameSwitchTests : IDisposable
         model.SwitchGameCommand.Execute(null);
         var picker = model.GamePicker!;
 
-        // Mortal Shell II and WUCHANG are offered, but not as highlight cards.
+        // Mortal Shell II, Stellar Blade and WUCHANG are offered, but not as highlight cards.
         Assert.True(picker.HasMoreGames);
-        Assert.Equal("See all games (5)", picker.AllGamesText);
-        Assert.Equal(["Black Myth: Wukong", "Mortal Shell II", "Phantom Blade Zero", "Stellar Blade: Blood Rain", "WUCHANG: Fallen Feathers"],
+        Assert.Equal("See all games (6)", picker.AllGamesText);
+        Assert.Equal(["Black Myth: Wukong", "Mortal Shell II", "Phantom Blade Zero", "Stellar Blade", "Stellar Blade: Blood Rain",
+                "WUCHANG: Fallen Feathers"],
             picker.AllCards.Select(card => card.Name));
         // The same cards, so a look-up of where a game is fills both.
         Assert.All(picker.Cards, card => Assert.Contains(card, picker.AllCards));
@@ -48,6 +49,8 @@ public class GameSwitchTests : IDisposable
         Assert.True(picker.IsAllGamesOpen);
         Assert.True(picker.ChooseCommand.CanExecute(picker.AllCards.Single(card => card.Name == "Mortal Shell II")));
         Assert.False(picker.AllCards.Single(card => card.Name == "WUCHANG: Fallen Feathers").IsExperimental);
+        Assert.True(picker.AllCards.Single(card => card.Name == "Stellar Blade").IsExperimental);
+        Assert.False(picker.AllCards.Single(card => card.Name == "Stellar Blade: Blood Rain").IsExperimental);
         picker.HideAllGamesCommand.Execute(null);
         Assert.False(picker.IsAllGamesOpen);
     });

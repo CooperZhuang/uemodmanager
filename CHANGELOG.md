@@ -4,6 +4,10 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.3.1 (2026-11-15)
+- Stellar Blade, experimental: its own look, UE4SS with one click (our build for the game) and save backups
+- Mortal Shell II and WUCHANG: Fallen Feathers are no longer experimental
+
 ## 2.3.0 (2026-11-15)
 - openmods: click a card's cover to see the mod's cover and screenshots; a box on the cover shows how many images there are
 - openmods: the pictures are kept in the Data folder, so the page no longer downloads every cover at each start; Settings ▸ Clear picture cache empties it

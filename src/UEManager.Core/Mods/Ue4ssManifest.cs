@@ -313,7 +313,8 @@ public static partial class Ue4ssManifest
     public static Ue4ssRelease? FixedRelease(Games.GameProfile profile) =>
         string.IsNullOrWhiteSpace(profile.Ue4ssPackageUrl)
             ? null
-            : new Ue4ssRelease(VersionFromFileName(profile.Ue4ssPackageUrl) ?? "", profile.Ue4ssPackageUrl, profile.Ue4ssPackageSha256);
+            : new Ue4ssRelease(profile.Ue4ssPackageVersion ?? VersionFromFileName(profile.Ue4ssPackageUrl) ?? "", profile.Ue4ssPackageUrl,
+                profile.Ue4ssPackageSha256);
 
     /// <summary>The version in a release file name, such as "v3.0.1-1181-g83330635" in "mortalshell2_ue4ss_v3.0.1-1181-g83330635.zip".</summary>
     public static string? VersionFromFileName(string path)

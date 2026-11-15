@@ -1,0 +1,51 @@
+// Game profile for Stellar Blade (the 2025 game; Stellar Blade: Blood Rain has a profile of its own). Built into the
+// exe: change it here and rebuild.
+//
+// Layout from a folder report of a real Steam install (made 2026-11-16 by the player's clock): the project folder SB,
+// paks in SB\Content\Paks (6 .pak with 7 .utoc and .ucas: IoStore), no ~mods folder yet, Unreal's usual exe
+// SB\Binaries\Win64\SB-Win64-Shipping.exe, the launcher SB.exe in the main folder, no anti-cheat and no UE4SS yet.
+// No Saved folder in the install: the saves are in %LOCALAPPDATA%, in a folder per Steam account (see saveFolder).
+// Pak mods load from ~mods as they are, UE4SS mods as usual (the user's word, 2026-11-15): no bypass, no launch argument.
+// UE4SS: the user's build for this game, sb-ue4ss-1.3 (see below).
+{
+  "id": "stellar-blade",
+  "displayName": "Stellar Blade",
+  "developer": "SHIFT UP",
+  "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
+  // Support is new: the picker and Home say Experimental (the user's word, 2026-11-15).
+  "experimental": true,
+  // From the store page: store.steampowered.com/app/3489700; the report found the same id in Steam's list.
+  "steamAppId": "3489700",
+
+  "projectFolder": "SB",
+  "paksPath": "{Project}/Content/Paks",
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  // From the user (2026-11-15): the saves are in %LOCALAPPDATA%\SB\Saved\SaveGames\<Steam ID>. The * stands for the Steam
+  // ID's folder; with several, the one with the newest save.
+  "saveFolder": "%LOCALAPPDATA%/SB/Saved/SaveGames/*",
+
+  // Started by "Launch game" when the game was not found through Steam, as for a folder chosen by hand: the launcher in
+  // the main folder, which starts SB\Binaries\Win64\SB-Win64-Shipping.exe.
+  "executable": "SB.exe",
+
+  // Where "How to install UE4SS" sends the user: our UE4SS releases, with a build for this game.
+  "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ],
+  // Fallback when the manifest cannot be reached: the user's build for this game (fork release v4.0.0, a v4.0.0-rc1
+  // UE4SS by its changelog) and its SHA-256 from SHA256SUMS.txt there.
+  "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v4.0.0/stellarblade_ue4ss_sb-ue4ss-1.3.zip",
+  "ue4ssPackageSha256": "C4D814FB55482C45656F4D0E010813F21919B1C875D3D191D416394DA207CFB8",
+  // The manifest's version text: the file name has no "v" version to read it from.
+  "ue4ssPackageVersion": "sb-ue4ss-1.3",
+
+  // "Open mod page" and the update check: the game's pages and its number on the mod site, from the site's API
+  // (game(domainName: "stellarblade") { id }, asked 2026-11-15).
+  "modPageUrl": "https://www.nexusmods.com/stellarblade/mods/{id}",
+  "modSiteApiUrl": "https://api.nexusmods.com/v2/graphql",
+  "modSiteGameId": "7804"
+}

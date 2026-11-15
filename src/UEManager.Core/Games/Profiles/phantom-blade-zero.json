@@ -43,10 +43,10 @@
     "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
     "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
   ],
-  // Optional fallback when the manifest cannot be reached: a fixed release file and its SHA-256
-  // (Get-FileHash <file>). Without either, the user picks the downloaded file.
-  // "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/<tag>/<file>.zip",
-  // "ue4ssPackageSha256": "<sha-256 of that file>",
+  // Fallback when the manifest cannot be reached: the manifest's build for this game (fork release v4.0.0, proven in the
+  // game, the user's word 2026-11-15) and its SHA-256 from SHA256SUMS.txt there.
+  "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v4.0.0/phantombladezero_ue4ss_v4.0.0.zip",
+  "ue4ssPackageSha256": "7D7FAE124C8C0E26861382E084A663702BEA3F401B3BA8D90BD970B0381ABF48",
 
   // "Open mod page" for a mod whose download kept the mod site's file name: {id} is the mod's number in that name.
   "modPageUrl": "https://www.nexusmods.com/phantombladezero/mods/{id}",

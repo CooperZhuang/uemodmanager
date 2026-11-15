@@ -277,6 +277,17 @@ public class SaveBackupTests : IDisposable
     }
 
     [Fact]
+    public void Stellar_Blade_keeps_its_saves_in_local_app_data_in_a_folder_per_Steam_account()
+    {
+        var profile = GameProfile.BuiltIn().Single(p => p.Id == "stellar-blade");
+
+        // Outside the install, the Steam ID's folder last: matched, or kept as * before a save.
+        var saves = SaveBackups.Folder(profile, null, null)!;
+        Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SB", "Saved", "SaveGames"),
+            Path.GetDirectoryName(saves));
+    }
+
+    [Fact]
     public void WUCHANG_keeps_its_saves_in_local_app_data_in_a_folder_per_account()
     {
         var profile = GameProfile.BuiltIn().Single(p => p.Id == "wuchang-fallen-feathers");

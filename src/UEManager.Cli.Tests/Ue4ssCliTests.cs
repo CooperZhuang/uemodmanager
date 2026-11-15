@@ -183,15 +183,23 @@ public sealed class Ue4ssCliTests : IDisposable
     [Fact]
     public void Update_says_why_it_cannot_check_without_a_manifest_and_changes_nothing()
     {
-        Write(Path.Combine(Ue4ssFolder, "UE4SS.dll"), "runtime");
+        // A game whose profile names no fixed release to fall back on: Stellar Blade: Blood Rain, in Unreal's usual places.
+        // Phantom Blade Zero falls back on its fixed release on GitHub since 2026-11-15, which no test may download.
+        var game = Path.Combine(root, "BloodRain");
+        Directory.CreateDirectory(Path.Combine(game, "Engine"));
+        Directory.CreateDirectory(Path.Combine(game, "SB2", "Content", "Paks"));
+        var win64 = Path.Combine(game, "SB2", "Binaries", "Win64");
+        Write(Path.Combine(win64, "SB2-Win64-Shipping.exe"), "the game");
+        Write(Path.Combine(win64, "ue4ss", "UE4SS.dll"), "runtime");
 
         // A loopback address nothing listens on: no internet, and the failure arrives at once.
-        var (code, _, error) = Run("ue4ss", "update", "--ue4ss-manifest-url", "http://127.0.0.1:1/manifest.json", "--json");
+        var (code, _, error) = Raw("ue4ss", "update", "--ue4ss-manifest-url", "http://127.0.0.1:1/manifest.json", "--json",
+            "--data-dir", Data, "--game", "stellar-blade-blood-rain", "--game-root", game);
 
         Assert.Equal(1, code);
         Assert.Contains("manifest", error);
         Assert.Contains("\"code\": \"manifest-unreachable\"", error);
-        Assert.False(File.Exists(Path.Combine(Win64, "dwmapi.dll")));
+        Assert.False(File.Exists(Path.Combine(win64, "dwmapi.dll")));
     }
 
     [Fact]

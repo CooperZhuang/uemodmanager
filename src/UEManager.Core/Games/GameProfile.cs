@@ -108,6 +108,13 @@ public sealed class GameProfile
     /// <summary>SHA-256 of that file. A download that does not match is refused.</summary>
     public string? Ue4ssPackageSha256 { get; init; }
 
+    /// <summary>
+    /// The version of that file as the manifest names it; null to read it from the file name ("v3.0.1-1181-g…"). Needed
+    /// for a name without a "v" version, such as "stellarblade_ue4ss_sb-ue4ss-1.3.zip": a fallback install then records
+    /// the manifest's version, so the manifest does not offer the same release again as an update.
+    /// </summary>
+    public string? Ue4ssPackageVersion { get; init; }
+
     /// <summary>Started by "Launch game" when no store launcher is known, relative to the install folder.</summary>
     public string? Executable { get; init; }
 

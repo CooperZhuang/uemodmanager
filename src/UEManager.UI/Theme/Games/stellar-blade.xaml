@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Stellar Blade, "Orbital blue": a blue-black night ink, silver-white text and the electric blue of the cover's
+         orbital light. A light accent: text on it is dark (Brush.OnAccent). Separate from Stellar Blade: Blood Rain.
+         This file holds every key of Theme\Palette.xaml that a game can change. A key that is left out keeps the
+         shared value. A brush here must name its colour again: the brushes of Palette.xaml keep that file's colours. -->
+    <Color x:Key="Color.Ink">#0B0D19</Color>
+    <Color x:Key="Color.InkClear">#000B0D19</Color>
+    <Color x:Key="Color.Accent">#72A7FF</Color>
+    <Color x:Key="Color.AccentBright">#B1CEFF</Color>
+    <Color x:Key="Color.AccentBloom">#3072A7FF</Color>
+    <Color x:Key="Color.AccentBloomSoft">#0C72A7FF</Color>
+    <Color x:Key="Color.AccentClear">#0072A7FF</Color>
+
+    <!-- The window, the title bar and the sidebar. -->
+    <SolidColorBrush x:Key="Brush.Ink" Color="{StaticResource Color.Ink}" />
+    <SolidColorBrush x:Key="Brush.TitleBar" Color="#070911" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#E00D1019" />
+
+    <!-- Boxes, dialogs, fields, buttons and lines. -->
+    <SolidColorBrush x:Key="Brush.Panel" Color="#E6191E2B" />
+    <SolidColorBrush x:Key="Brush.PanelSolid" Color="#191E2B" />
+    <SolidColorBrush x:Key="Brush.PanelRaised" Color="#252C3C" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="#14EDF2FA" />
+    <SolidColorBrush x:Key="Brush.Field" Color="#0E121E" />
+    <SolidColorBrush x:Key="Brush.ButtonFill" Color="#D90E121E" />
+    <SolidColorBrush x:Key="Brush.Line" Color="#303A50" />
+    <SolidColorBrush x:Key="Brush.LineStrong" Color="#4A5872" />
+
+    <!-- Veils over the window. -->
+    <SolidColorBrush x:Key="Brush.Overlay" Color="#D9070911" />
+    <SolidColorBrush x:Key="Brush.InkVeil" Color="#E00B0D19" />
+    <SolidColorBrush x:Key="Brush.Busy" Color="#B0070911" />
+    <SolidColorBrush x:Key="Brush.BlurVeil" Color="#8C070911" />
+
+    <!-- Text. -->
+    <SolidColorBrush x:Key="Brush.Text" Color="#EDF2FA" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#B4C0D4" />
+    <SolidColorBrush x:Key="Brush.TextDim" Color="#8C9AB2" />
+    <SolidColorBrush x:Key="Brush.TextMutedWash" Color="#0FB4C0D4" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="#0B1425" />
+
+    <!-- The accent. -->
+    <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.AccentBright" Color="{StaticResource Color.AccentBright}" />
+    <SolidColorBrush x:Key="Brush.AccentDeep" Color="#263F6C" />
+    <SolidColorBrush x:Key="Brush.AccentWash" Color="#2672A7FF" />
+    <LinearGradientBrush x:Key="Brush.Stroke" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#E072A7FF" Offset="0" />
+        <GradientStop Color="#0072A7FF" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- The settings editor: pale blue keys, warm sand text, lilac values; each readable on Brush.Field (6.9:1 or more). -->
+    <Color x:Key="Color.Syntax.Comment">#929EB4</Color>
+    <Color x:Key="Color.Syntax.Key">#B1CEFF</Color>
+    <Color x:Key="Color.Syntax.String">#E8C8A2</Color>
+    <Color x:Key="Color.Syntax.Value">#C8B5EF</Color>
+    <SolidColorBrush x:Key="Brush.Selection" Color="#6672A7FF" />
+
+</ResourceDictionary>

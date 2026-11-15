@@ -9,6 +9,26 @@ namespace UEManager.Core.Tests;
 
 public class Ue4ssManifestTests : IDisposable
 {
+    /// <summary>
+    /// The fixed release of a game's profile, taken when no manifest answers: its version as the manifest names it, so
+    /// the manifest does not offer the same release again as an update.
+    /// </summary>
+    [Fact]
+    public void The_fixed_releases_name_their_version_as_the_manifest_does()
+    {
+        var profiles = GameProfile.BuiltIn().ToDictionary(p => p.Id);
+        Assert.Equal("v4.0.0", Ue4ssManifest.FixedRelease(profiles["phantom-blade-zero"])!.Version);
+        Assert.Equal("v3.0.1-934-gcac01ee2", Ue4ssManifest.FixedRelease(profiles["wuchang-fallen-feathers"])!.Version);
+        // A file name without a "v" version: the profile names it.
+        Assert.Equal("sb-ue4ss-1.3", Ue4ssManifest.FixedRelease(profiles["stellar-blade"])!.Version);
+        Assert.Null(Ue4ssManifest.FixedRelease(profiles["stellar-blade-blood-rain"]));
+        Assert.All(profiles.Values.Select(Ue4ssManifest.FixedRelease).OfType<Ue4ssRelease>(), release =>
+        {
+            Assert.NotEmpty(release.Version);
+            Assert.Equal(64, release.Sha256!.Length);
+        });
+    }
+
     private const string Manifest = """
         {
           "ue4ss": {
