@@ -4,6 +4,13 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.2.1 (2026-11-15)
+- WUCHANG: Fallen Feathers, experimental: its own look, UE4SS with one click, save backups, and on the Mods page bitfix, which its pak mods need
+- Choose your game: See all games shows every game as cards over the whole window, Mortal Shell II (experimental) among them
+- The update check of mods with a mod page compares each mod with its own file, so an optional file no longer shows a false update (thanks, CooperZhuang, and HumanMus1c for the idea)
+- Uninstalling a UE4SS mod names the files it wrote into its own folder, such as logs, and can move them into the backups (thanks, CooperZhuang)
+- The mod details and Show files keep Close in view, also for a mod with many files
+
 ## 2.2.0 (2026-11-14)
 - The openmods page: the open-source mods listed for your game on openmods.nexus, with search, sort and a one-click install or update
 - openmods: a Mods | Tools switch, the type on every card with a type filter, and Hide installed to leave out what you already have

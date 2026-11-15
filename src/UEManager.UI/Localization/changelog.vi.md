@@ -2,6 +2,13 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.2.1 (2026-11-15)
+- WUCHANG: Fallen Feathers, thử nghiệm: giao diện riêng, cài UE4SS bằng một cú nhấp, sao lưu bản lưu, và bitfix ở trang Mod, thứ mà mod pak của game cần
+- Chọn game của bạn: Xem tất cả game hiện mọi game dưới dạng thẻ trên cả cửa sổ, trong đó có Mortal Shell II (thử nghiệm)
+- Kiểm tra cập nhật của mod có trang mod so sánh từng mod với chính tệp của nó, nên tệp tùy chọn không còn báo cập nhật sai (cảm ơn CooperZhuang, và HumanMus1c đã đưa ra ý tưởng)
+- Khi gỡ một mod UE4SS, ứng dụng nêu các tệp mà mod đã ghi vào thư mục của chính nó, như nhật ký, và có thể chuyển chúng vào bản sao lưu (cảm ơn CooperZhuang)
+- Chi tiết mod và Xem tệp luôn giữ nút Đóng trong tầm nhìn, kể cả với mod có nhiều tệp
+
 ## 2.2.0 (2026-11-14)
 - Trang openmods: các mod mã nguồn mở được liệt kê cho game của bạn trên openmods.nexus, có tìm kiếm, sắp xếp và cài đặt hoặc cập nhật bằng một cú nhấp
 - openmods: nút chuyển Mod | Công cụ, loại trên mỗi thẻ cùng bộ lọc theo loại, và Ẩn mục đã cài để bỏ qua những gì bạn đã có
