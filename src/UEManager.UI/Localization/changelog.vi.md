@@ -2,6 +2,13 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.3.0 (2026-11-15)
+- openmods: nhấp vào ảnh bìa của thẻ để xem ảnh bìa và ảnh chụp màn hình của mod; một ô nhỏ trên ảnh bìa cho biết có bao nhiêu hình ảnh
+- openmods: hình ảnh được giữ trong thư mục Data, nên trang không còn tải mọi ảnh bìa mỗi lần khởi động; Cài đặt ▸ Xóa bộ nhớ đệm hình ảnh sẽ dọn sạch chúng
+- openmods: nút Nhật ký thay đổi trên mỗi thẻ cho biết những gì đã thay đổi ở từng phiên bản, lấy từ các bản phát hành của mod trên GitHub
+- openmods: mỗi thẻ hiện số lượt tải của mod, và danh sách cũng sắp xếp được theo lượt tải
+- openmods: thẻ gọn gàng hơn, và các thẻ ở chế độ Toàn màn hình dùng hết chiều rộng
+
 ## 2.2.1 (2026-11-15)
 - WUCHANG: Fallen Feathers, thử nghiệm: giao diện riêng, cài UE4SS bằng một cú nhấp, sao lưu bản lưu, và bitfix ở trang Mod, thứ mà mod pak của game cần
 - Chọn game của bạn: Xem tất cả game hiện mọi game dưới dạng thẻ trên cả cửa sổ, trong đó có Mortal Shell II (thử nghiệm)

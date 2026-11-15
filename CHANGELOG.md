@@ -4,6 +4,13 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.3.0 (2026-11-15)
+- openmods: click a card's cover to see the mod's cover and screenshots; a box on the cover shows how many images there are
+- openmods: the pictures are kept in the Data folder, so the page no longer downloads every cover at each start; Settings ▸ Clear picture cache empties it
+- openmods: a Changelog button on each card shows what changed in each version, from the mod's releases on GitHub
+- openmods: each card shows how often the mod was downloaded, and the list sorts by downloads too
+- openmods: tidier cards, and the full view's cards use the whole width
+
 ## 2.2.1 (2026-11-15)
 - WUCHANG: Fallen Feathers, experimental: its own look, UE4SS with one click, save backups, and on the Mods page bitfix, which its pak mods need
 - Choose your game: See all games shows every game as cards over the whole window, Mortal Shell II (experimental) among them
