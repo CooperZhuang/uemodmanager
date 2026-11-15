@@ -24,12 +24,16 @@ public class ProfileTests
     [Fact]
     public void The_app_contains_every_game_ordered_by_name()
     {
-        Assert.Equal(["black-myth-wukong", "mortal-shell-2", "phantom-blade-zero", "stellar-blade-blood-rain"], GameProfile.BuiltIn().Select(p => p.Id));
+        string[] all = ["black-myth-wukong", "mortal-shell-2", "phantom-blade-zero", "stellar-blade-blood-rain", "wuchang-fallen-feathers"];
+        Assert.Equal(all, GameProfile.BuiltIn().Select(p => p.Id));
         Assert.Equal(["stellar-blade-blood-rain"], GameProfile.BuiltIn().Where(p => p.ComingSoon).Select(p => p.Id));
-        Assert.Equal(["mortal-shell-2"], GameProfile.BuiltIn().Where(p => p.Experimental).Select(p => p.Id));
-        // Mortal Shell II stays in the app but is not offered for 2.0.0.
-        Assert.Equal(["mortal-shell-2"], GameProfile.BuiltIn().Where(p => p.Hidden).Select(p => p.Id));
-        Assert.Equal(["black-myth-wukong", "phantom-blade-zero", "stellar-blade-blood-rain"], GameProfile.Offered().Select(p => p.Id));
+        Assert.Equal(["mortal-shell-2", "wuchang-fallen-feathers"], GameProfile.BuiltIn().Where(p => p.Experimental).Select(p => p.Id));
+        // Every game is offered; none is hidden (Mortal Shell II was, from 2.0.0 to 2026-11-15).
+        Assert.DoesNotContain(GameProfile.BuiltIn(), p => p.Hidden);
+        Assert.Equal(all, GameProfile.Offered().Select(p => p.Id));
+        // The picker's three highlight cards; the other games are in its All games list only.
+        Assert.Equal(["black-myth-wukong", "phantom-blade-zero", "stellar-blade-blood-rain"],
+            GameProfile.BuiltIn().Where(p => p.Featured).Select(p => p.Id));
     }
 
     [Fact]

@@ -277,6 +277,42 @@ public class SaveBackupTests : IDisposable
     }
 
     [Fact]
+    public void WUCHANG_keeps_its_saves_in_local_app_data_in_a_folder_per_account()
+    {
+        var profile = GameProfile.BuiltIn().Single(p => p.Id == "wuchang-fallen-feathers");
+
+        // Outside the install: known without the game. The account's folder is matched, or kept as * before a save.
+        var saves = SaveBackups.Folder(profile, null, null)!;
+        Assert.StartsWith(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Project_Plague", "Saved") + @"\", saves);
+        Assert.Equal("GameSlots", Path.GetFileName(saves));
+    }
+
+    [Fact]
+    public void A_star_in_the_save_folder_takes_the_folder_with_the_newest_save()
+    {
+        var pattern = Path.Combine(folder.Combine("Saved"), "*", "GameSlots");
+        var profile = new GameProfile { Id = "g", DisplayName = "G", SaveFolder = pattern };
+
+        // Before the first save: the path as written, which does not exist yet.
+        Assert.Equal(pattern, SaveBackups.Folder(profile, null, null));
+
+        // The game's other folders beside the account's do not match: they have no GameSlots.
+        folder.File(@"Saved\Config\Game.ini", "settings");
+        folder.File(@"Saved\111\GameSlots\Slot1.sav", "one");
+        Assert.Equal(folder.Combine(@"Saved\111\GameSlots"), SaveBackups.Folder(profile, null, null));
+
+        // A second account on the same PC: the one played last wins.
+        folder.File(@"Saved\222\GameSlots\Slot1.sav", "two");
+        File.SetLastWriteTimeUtc(folder.Combine(@"Saved\111\GameSlots\Slot1.sav"), DateTime.UtcNow.AddDays(-1));
+        Assert.Equal(folder.Combine(@"Saved\222\GameSlots"), SaveBackups.Folder(profile, null, null));
+        File.SetLastWriteTimeUtc(folder.Combine(@"Saved\111\GameSlots\Slot1.sav"), DateTime.UtcNow.AddDays(1));
+        Assert.Equal(folder.Combine(@"Saved\111\GameSlots"), SaveBackups.Folder(profile, null, null));
+
+        // The player's own choice still wins.
+        Assert.Equal(@"D:\Saves", SaveBackups.Folder(profile, null, @"D:\Saves"));
+    }
+
+    [Fact]
     public void A_save_folder_in_the_install_folder_is_found_once_the_game_is()
     {
         var profile = new GameProfile { Id = "g", DisplayName = "G", ProjectFolder = "TestGame", SaveFolder = "{Project}/Saved/SaveGames" };

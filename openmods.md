@@ -1,8 +1,8 @@
 # UE MM
 
-A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom Blade Zero**, and **Stellar Blade: Blood
-Rain** as a preview of its look until the game is out. One app for every game: you pick the game, and the app takes its
-look.
+A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom Blade Zero**, **Mortal Shell II** and
+**WUCHANG: Fallen Feathers** as experimental, and **Stellar Blade: Blood Rain** as a preview of its look until the game
+is out. One app for every game: you pick the game, and the app takes its look.
 
 ## What it does
 
@@ -62,6 +62,8 @@ For scripts, the same exe is a command line tool: `UEModManager.exe --cli --help
 
 - Black Myth: Wukong and Phantom Blade Zero, on Steam, on the Epic Games Store where the game is sold there, or in a
   folder chosen by hand. Stellar Blade: Blood Rain shows its look only, until the game is out.
+- Mortal Shell II and WUCHANG: Fallen Feathers are experimental: their support is new and not fully checked yet. Both
+  are in **See all games** in the game picker.
 - Your game is missing? In the game picker, **Missing your game? Tell us on Discord** scans its folder and makes a
   report to share.
 - Windows 10 or 11, 64-bit.

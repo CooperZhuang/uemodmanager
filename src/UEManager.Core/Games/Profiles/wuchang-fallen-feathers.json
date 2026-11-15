@@ -1,0 +1,48 @@
+// Game profile for WUCHANG: Fallen Feathers. Built into the exe: change it here and rebuild.
+//
+// Layout from a folder report of a real Steam install (2026-11-15): the project folder Project_Plague, paks in
+// Project_Plague\Content\Paks (3 .pak, no IoStore), a ~mods folder already in use, Unreal's usual exe
+// Project_Plague\Binaries\Win64\Project_Plague-Win64-Shipping.exe (a -Deck-Shipping exe beside it), and the launcher
+// Project_Plague.exe in the main folder. No Saved folder in the install: the saves are in %LOCALAPPDATA%, in a
+// folder per account (see saveFolder). UE4SS: our fork's 3.0.1-934 build for this game (see below).
+{
+  "id": "wuchang-fallen-feathers",
+  "displayName": "WUCHANG: Fallen Feathers",
+  "developer": "Leenzee",
+  "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
+  // Experimental until real mods are checked with the app; the folder report confirmed the layout.
+  "experimental": true,
+  // From the store page: store.steampowered.com/app/2277560; the report found the same id in Steam's list.
+  "steamAppId": "2277560",
+
+  "projectFolder": "Project_Plague",
+  "paksPath": "{Project}/Content/Paks",
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  // From a player's PC (2026-11-15): the saves are in %LOCALAPPDATA%\Project_Plague\Saved\<account number>\GameSlots.
+  // The * stands for the account's folder; with several, the one with the newest save. Saved also holds Config,
+  // Crashes, Logs and Steam, which the backups leave out.
+  "saveFolder": "%LOCALAPPDATA%/Project_Plague/Saved/*/GameSlots",
+
+  // Started by "Launch game" when the game was not found through Steam, as for a folder chosen by hand: the launcher in
+  // the main folder, which starts Project_Plague\Binaries\Win64\Project_Plague-Win64-Shipping.exe.
+  "executable": "Project_Plague.exe",
+
+  // Where "How to install UE4SS" sends the user: our UE4SS releases, with a build for this game.
+  "ue4ssDownloadUrl": "https://github.com/KintaroModding/ue4ss/releases",
+  "ue4ssManifestUrls": [
+    "https://metadata.openmods.nexus/uemodmanager/manifest.json",
+    "https://uemm-metadata.pages.dev/uemodmanager/manifest.json",
+    "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
+  ],
+  // Fallback when the manifest cannot be reached: the WUCHANG build and its SHA-256 from SHA256SUMS.txt (fork release
+  // v4.0.0, 2026-11-15): the generic 3.0.1-934 build with HookInitGameState = 0 in UE4SS-settings.ini.
+  "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v4.0.0/wuchang_ue4ss_v3.0.1-934-gcac01ee2.zip",
+  "ue4ssPackageSha256": "09C7A3F0ACCB5C97F74F8E4EB9420193693980A44575733F22DE030F1E2A8141",
+
+  // "Open mod page" and the update check: the game's pages and its number on the mod site, from the site's API
+  // (game(domainName: "wuchangfallenfeathers") { id }, asked 2026-11-15).
+  "modPageUrl": "https://www.nexusmods.com/wuchangfallenfeathers/mods/{id}",
+  "modSiteApiUrl": "https://api.nexusmods.com/v2/graphql",
+  "modSiteGameId": "7976"
+}

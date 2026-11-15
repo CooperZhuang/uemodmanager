@@ -1,7 +1,8 @@
 # UE MM
 
 A mod manager for Unreal Engine games: **Black Myth: Wukong** and **Phantom
-Blade Zero**, and **Stellar Blade: Blood Rain** as a preview of its look until
+Blade Zero**, **Mortal Shell II** and **WUCHANG: Fallen Feathers** as
+experimental, and **Stellar Blade: Blood Rain** as a preview of its look until
 the game is out. One app serves every game: the player picks the game, and the
 interface takes that game's look. The executable keeps the file name
 `UEModManager.exe`.
@@ -63,9 +64,11 @@ after a change to an English text, update every language file too.
 
 ## Games
 
-At the first start the app shows **Choose your game**: one card per game, with
-where the game is on this PC (Steam, Epic, a folder chosen by hand, or Game not
-found) and how many mods it has. A click saves the choice (`game` in
+At the first start the app shows **Choose your game**: a card for each of the
+highlighted games, with where the game is on this PC (Steam, Epic, a folder
+chosen by hand, or Game not found) and how many mods it has. **See all games**
+at its top left shows every game the app knows as cards, over the whole window;
+**Back** or Esc leads back to the highlights. A click saves the choice (`game` in
 `settings.json`) and starts the app again with that game. **Switch game** in the
 title bar opens the same picker at any time, and **Settings → Ask for the game
 at every start** shows it at each start. Each game keeps its own mods and
@@ -994,17 +997,21 @@ A folder chosen by hand inside a Steam library or an Epic install still starts
 through that store; otherwise **Launch game** starts the profile's `executable`
 directly. An Epic install is matched by its folder here, so it works even when
 `epicDisplayName` is wrong; the log then names the store's real name for the
-profile. `saveFolder` names the save folder for save backups. Set it only when
-the folder is known for sure: without it, the app offers no save backups.
+profile. `saveFolder` names the save folder for save backups. A `*` in it
+stands for any folder there, such as the player's account folder; with several,
+the one with the newest save wins. Set it only when the folder is known for
+sure: without it, the app offers no save backups.
 
 A profile also holds the game's name and `motto` (the line above it on Home,
 "Ready to mod" by default), `launchArguments` (see Launch options), the UE4SS
-download and manifest addresses, the mod site's addresses, and three flags:
-`comingSoon` (a game not out yet: a Peek card and a note on Home),
-`experimental` (a tag on its card and on Home while its layout is not confirmed)
-and `hidden` (no card in the picker or the tray menu, as Mortal Shell II for
-now). `--game <id>` starts the app with any profile, a hidden one too, for test
-runs; it does not change the saved choice.
+download and manifest addresses, the mod site's addresses, and four flags:
+`featured` (one of the highlight cards of the picker and a row in the tray
+menu; every game is in **See all games**, and the tray menu also lists the game
+the app runs for), `comingSoon` (a game not out yet: a Peek card and a note on
+Home), `experimental` (a tag on its card and on Home while its layout is not
+confirmed) and `hidden` (no card in the picker, not even in See all games, and
+no row in the tray menu). `--game <id>` starts the app with any profile, a
+hidden one too, for test runs; it does not change the saved choice.
 
 ## Data
 

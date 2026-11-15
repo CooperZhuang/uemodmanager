@@ -47,8 +47,8 @@ public static class SaveBackups
 
     /// <summary>
     /// The save folder of a game: the player's choice, else the profile's, with %LOCALAPPDATA% and the like
-    /// expanded. Null when save backups are not available for the game, or when the profile's folder is
-    /// inside the install folder and the game was not found.
+    /// expanded, and a * in it matched (see <see cref="Match"/>). Null when save backups are not available for the
+    /// game, or when the profile's folder is inside the install folder and the game was not found.
     /// </summary>
     public static string? Folder(GameProfile profile, GameInstall? game, string? chosen)
     {
@@ -57,9 +57,61 @@ public static class SaveBackups
         if (!string.IsNullOrWhiteSpace(chosen))
             return chosen;
         var folder = Environment.ExpandEnvironmentVariables(profile.SaveFolder!);
+        string path;
         if (Path.IsPathFullyQualified(folder))
-            return Path.GetFullPath(folder);
-        return game is null ? null : GameProfile.ResolvePath(game.RootPath, folder, game.ProjectFolder);
+            path = Path.GetFullPath(folder);
+        else if (game is null)
+            return null;
+        else
+            path = GameProfile.ResolvePath(game.RootPath, folder, game.ProjectFolder);
+        return path.Contains('*') ? Match(path) : path;
+    }
+
+    /// <summary>
+    /// A save folder with a * in a part of its path, such as a folder per player account (WUCHANG: Fallen Feathers:
+    /// Saved\&lt;account&gt;\GameSlots): the matching folder with the newest save, so with several accounts on one PC,
+    /// the one played last. While none matches, as before the game's first save, the path as written.
+    /// </summary>
+    private static string Match(string pattern)
+    {
+        var root = Path.GetPathRoot(pattern)!;
+        IEnumerable<string> folders = [root];
+        foreach (var part in pattern[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+            folders = part.Contains('*')
+                ? folders.SelectMany(folder => SubFolders(folder, part))
+                : folders.Select(folder => Path.Combine(folder, part));
+        return folders
+            .Where(Directory.Exists)
+            .OrderByDescending(NewestWrite)
+            .ThenBy(folder => folder, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault() ?? pattern;
+
+        static string[] SubFolders(string folder, string part)
+        {
+            try
+            {
+                return Directory.Exists(folder) ? Directory.GetDirectories(folder, part) : [];
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return [];
+            }
+        }
+
+        static DateTime NewestWrite(string folder)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                    .Select(File.GetLastWriteTimeUtc)
+                    .DefaultIfEmpty(Directory.GetLastWriteTimeUtc(folder))
+                    .Max();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return DateTime.MinValue;
+            }
+        }
     }
 
     /// <summary>Whether the save folder holds any file. A new player has none: the game makes the folder at its first save.</summary>

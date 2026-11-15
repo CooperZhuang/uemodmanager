@@ -124,11 +124,79 @@
             </Setter>
         </Style>
 
+        <!-- A game's card: its picture with its labels, and its name below. The highlights and the All games view show
+             the same cards. -->
+        <DataTemplate x:Key="GameCardTemplate">
+            <Button Style="{StaticResource GameCard}" CommandParameter="{Binding}"
+                    Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <StackPanel Width="320">
+                    <Grid Height="180" Background="{StaticResource Brush.Ink}">
+                        <Image Source="{Binding Picture}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <!-- A game without a picture yet: the app's own mark. -->
+                        <ContentControl Width="64" Height="64" Style="{StaticResource BrandMark}"
+                                        Visibility="{Binding HasPicture, Converter={StaticResource Hidden}}" />
+                        <StackPanel Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
+                            <Border Padding="8,3,8,4" CornerRadius="2"
+                                    Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                    Visibility="{Binding IsComingSoon, Converter={StaticResource Visible}}">
+                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Coming soon', Tracked=True}" />
+                            </Border>
+                            <!-- Support for the game is new: in the warning colour, as on its Home page. -->
+                            <Border Padding="8,3,8,4" CornerRadius="2"
+                                    Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Warning}" BorderThickness="1"
+                                    Visibility="{Binding IsExperimental, Converter={StaticResource Visible}}">
+                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Warning}" Text="{ui:Loc 'Experimental', Tracked=True}" />
+                            </Border>
+                        </StackPanel>
+                        <!-- Where the game is on this PC, and how many mods the app manages for it: on the picture,
+                             so the card stays as tall as it was. -->
+                        <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
+                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                Visibility="{Binding HasStatus, Converter={StaticResource Visible}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Margin="0,1,7,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource Brush.TextDim}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFound}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource Brush.Success}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text}" Text="{Binding StatusText}" />
+                            </StackPanel>
+                        </Border>
+                        <!-- A game that is not out yet, in the same corner: an invitation to click and see the app in its
+                             look. -->
+                        <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
+                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Accent}" BorderThickness="1"
+                                Visibility="{Binding InvitesPeek, Converter={StaticResource Visible}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="11"
+                                           Foreground="{StaticResource Brush.AccentBright}" Text="&#xE890;" />
+                                <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Peek'}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <TextBlock Margin="12,11,12,12" HorizontalAlignment="Center" FontFamily="{DynamicResource Font.Heading}"
+                               FontSize="15" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
     </UserControl.Resources>
 
     <Grid>
     <!-- Held at the top, not centred: when the developer's message opens, the link stays where it was clicked and the
          message shows below it. On a screen too small for the open message, the picker scrolls. -->
+    <Grid Visibility="{Binding IsAllGamesOpen, Converter={StaticResource Hidden}}">
     <ScrollViewer Margin="40" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Visibility="{Binding Scan.IsReportOpen, Converter={StaticResource Hidden}}">
     <Border Style="{StaticResource Dialog}" Padding="18,22,18,20" VerticalAlignment="Top" Margin="0,16,0,0">
@@ -136,6 +204,10 @@
             <Grid Margin="10,0">
                 <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
                            Text="{ui:Loc 'Choose your game'}" />
+                <!-- Every game the app knows, as cards over the whole area; the highlights stay the picker's own. -->
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Content="{Binding AllGamesText}" ui:Icon.Glyph="&#xE8A9;"
+                        Command="{Binding ShowAllGamesCommand}"
+                        Visibility="{Binding HasMoreGames, Converter={StaticResource Visible}}" />
                 <!-- Only after "Switch game": at a start without a game, the app cannot go on without a choice. -->
                 <Button HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Icon}" Content="&#xE711;"
                         FontFamily="{StaticResource Font.Icons}" FontSize="10" Width="28" Height="28"
@@ -217,82 +289,43 @@
             </Border>
             <!-- The cards show at 320 x 180; the pictures are 480 x 270, so they stay sharp on a scaled screen.
                  Three fit in a row; more wrap into the next row. -->
-            <ItemsControl Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding Cards}">
+            <ItemsControl Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource GameCardTemplate}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel MaxWidth="1030" HorizontalAlignment="Center" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource GameCard}" CommandParameter="{Binding}"
-                                Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                            <StackPanel Width="320">
-                                <Grid Height="180" Background="{StaticResource Brush.Ink}">
-                                    <Image Source="{Binding Picture}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
-                                    <!-- A game without a picture yet: the app's own mark. -->
-                                    <ContentControl Width="64" Height="64" Style="{StaticResource BrandMark}"
-                                                    Visibility="{Binding HasPicture, Converter={StaticResource Hidden}}" />
-                                    <StackPanel Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
-                                        <Border Padding="8,3,8,4" CornerRadius="2"
-                                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
-                                                Visibility="{Binding IsComingSoon, Converter={StaticResource Visible}}">
-                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Coming soon', Tracked=True}" />
-                                        </Border>
-                                        <!-- Support for the game is new: in the warning colour, as on its Home page. -->
-                                        <Border Padding="8,3,8,4" CornerRadius="2"
-                                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Warning}" BorderThickness="1"
-                                                Visibility="{Binding IsExperimental, Converter={StaticResource Visible}}">
-                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="10.5" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Brush.Warning}" Text="{ui:Loc 'Experimental', Tracked=True}" />
-                                        </Border>
-                                    </StackPanel>
-                                    <!-- Where the game is on this PC, and how many mods the app manages for it: on the picture,
-                                         so the card stays as tall as it was. -->
-                                    <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
-                                            Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
-                                            Visibility="{Binding HasStatus, Converter={StaticResource Visible}}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Ellipse Width="6" Height="6" Margin="0,1,7,0" VerticalAlignment="Center">
-                                                <Ellipse.Style>
-                                                    <Style TargetType="Ellipse">
-                                                        <Setter Property="Fill" Value="{StaticResource Brush.TextDim}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFound}" Value="True">
-                                                                <Setter Property="Fill" Value="{StaticResource Brush.Success}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Ellipse.Style>
-                                            </Ellipse>
-                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Brush.Text}" Text="{Binding StatusText}" />
-                                        </StackPanel>
-                                    </Border>
-                                    <!-- A game that is not out yet, in the same corner: an invitation to click and see the app in its
-                                         look. -->
-                                    <Border Margin="10" Padding="8,3,8,4" HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="2"
-                                            Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.Accent}" BorderThickness="1"
-                                            Visibility="{Binding InvitesPeek, Converter={StaticResource Visible}}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="11"
-                                                       Foreground="{StaticResource Brush.AccentBright}" Text="&#xE890;" />
-                                            <TextBlock FontFamily="{DynamicResource Font.Label}" FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Peek'}" />
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                                <TextBlock Margin="12,11,12,12" HorizontalAlignment="Center" FontFamily="{DynamicResource Font.Heading}"
-                                           FontSize="15" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
     </Border>
     </ScrollViewer>
+    </Grid>
+    <!--
+        All games: every game the app knows as a card, over the whole area below the title bar, in place of the picker's
+        dialog, as the openmods full view. Back or Esc leads back to the picker; a card chooses its game as in the picker.
+    -->
+    <Grid Background="{StaticResource Brush.Ink}" Visibility="{Binding IsAllGamesOpen, Converter={StaticResource Visible}}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="36,22,36,0">
+            <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="{ui:Loc 'Back'}" ui:Icon.Glyph="&#xE72B;"
+                    Command="{Binding HideAllGamesCommand}" IsCancel="True" ToolTip="Esc" />
+            <!-- Only the count as the header, such as "5 GAMES" (the user's word, 2026-11-15). -->
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Overline}" FontSize="18"
+                       Text="{Binding AllGamesCountText, Converter={StaticResource Tracked}}" />
+        </DockPanel>
+        <ScrollViewer Grid.Row="1" Margin="0,16,0,0" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Margin="26,0,26,26" Focusable="False" ItemsSource="{Binding AllCards}" ItemTemplate="{StaticResource GameCardTemplate}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
     <!-- After a scan: the report, over the whole area, in place of the picker. -->
     <views:FolderReportView DataContext="{Binding Scan}" Visibility="{Binding IsReportOpen, Converter={StaticResource Visible}}" />
     </Grid>

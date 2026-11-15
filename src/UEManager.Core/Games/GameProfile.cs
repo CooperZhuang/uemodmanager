@@ -45,6 +45,12 @@ public sealed class GameProfile
     /// </summary>
     public bool Hidden { get; init; }
 
+    /// <summary>
+    /// One of the highlight cards at the top of the game picker. A game without it is offered too, but only in the
+    /// picker's full list, All games, and in the tray menu while it is the game the app runs for.
+    /// </summary>
+    public bool Featured { get; init; }
+
     /// <summary>Steam application id, used to find the install through Steam's library manifests.</summary>
     public string? SteamAppId { get; init; }
 
@@ -114,7 +120,8 @@ public sealed class GameProfile
 
     /// <summary>
     /// The folder holding the game's save files, for save backups: relative to the install folder, or a
-    /// full path in which environment variables such as %LOCALAPPDATA% are expanded. Set it only when the
+    /// full path in which environment variables such as %LOCALAPPDATA% are expanded. A * in a part of it matches any
+    /// folder there, such as a folder per player account; the one with the newest save wins. Set it only when the
     /// folder is known for sure: without it, save backups are not offered for the game.
     /// </summary>
     public string? SaveFolder { get; init; }

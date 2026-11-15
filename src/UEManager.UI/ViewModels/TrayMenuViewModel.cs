@@ -30,9 +30,10 @@ public sealed partial class TrayMenuViewModel : LocalizedObservableObject
         this.open = open;
         this.exit = exit;
         CanSwitch = canSwitch;
-        // The picker's cards, with their pictures and the look-up of their mods.
+        // The picker's cards, with their pictures and the look-up of their mods: every game given, as the caller chose
+        // them (the highlights and the game of this run), not only the picker's highlights.
         var picker = new GamePickerViewModel(games, currentId, picture, _ => { }, close: null, lookUp: lookUp);
-        Cards = picker.Cards;
+        Cards = picker.AllCards;
         LookedUp = picker.LookedUp;
     }
 

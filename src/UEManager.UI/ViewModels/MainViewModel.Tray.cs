@@ -91,7 +91,12 @@ public sealed partial class MainViewModel
     {
         // Taken here: the rows look their games up away from the window's thread.
         var saved = new Dictionary<string, string>(settings.GamePaths, StringComparer.OrdinalIgnoreCase);
-        return new TrayMenuViewModel(GameProfile.Offered(), Profile.Id, GameCard,
+        // The picker's highlight cards, and the game the app runs for, also when it is in the All games list only.
+        var offered = GameProfile.Offered();
+        var games = offered.Any(game => game.Featured)
+            ? offered.Where(game => game.Featured || game.Id.Equals(Profile.Id, StringComparison.OrdinalIgnoreCase)).ToList()
+            : offered;
+        return new TrayMenuViewModel(games, Profile.Id, GameCard,
             LookUpGame ?? (game => GameOnPc.Look(game, saved.GetValueOrDefault(game.Id), paths)),
             CanSwitchGame, ChooseGame, () => _ = LaunchFromTrayAsync(open), open, exit);
     }

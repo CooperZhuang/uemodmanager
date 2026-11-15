@@ -115,15 +115,43 @@ public sealed partial class GamePickerViewModel : LocalizedObservableObject
         this.choose = choose;
         this.close = close;
         this.chooseLanguage = chooseLanguage;
-        Cards = games
-            .OrderBy(game => game.ComingSoon)
+        // By name, a game that is not out yet too (the user's word, 2026-11-15).
+        AllCards = games
+            .OrderBy(game => game.DisplayName, StringComparer.OrdinalIgnoreCase)
             .Select(game => new GameCardViewModel(game, picture(game.Id),
                 game.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase)))
             .ToList();
+        // The highlights; with none marked, as in tests with games of their own, every game is one.
+        var featured = AllCards.Where(card => card.Game.Featured).ToList();
+        Cards = featured.Count > 0 ? featured : AllCards;
         LookedUp = lookUp is null ? Task.CompletedTask : LookUpAsync(lookUp);
     }
 
+    /// <summary>The highlight cards at the top of the picker: the featured games (see <see cref="GameProfile.Featured"/>).</summary>
     public IReadOnlyList<GameCardViewModel> Cards { get; }
+
+    /// <summary>Every game the app offers, in the same order: the All games view. The same cards as the highlights, so a look-up fills both.</summary>
+    public IReadOnlyList<GameCardViewModel> AllCards { get; }
+
+    /// <summary>The All games link shows when the list holds more games than the highlights.</summary>
+    public bool HasMoreGames => AllCards.Count > Cards.Count;
+
+    public string AllGamesText => L.F($"See all games ({AllCards.Count})");
+
+    public string AllGamesCountText => L.Plural(AllCards.Count, "{0} game", "{0} games");
+
+    /// <summary>
+    /// The All games view: every game as a card over the whole area of the picker, below the title bar, in place of the
+    /// picker's dialog, as the openmods full view. Closed at every opening of the picker.
+    /// </summary>
+    [ObservableProperty]
+    private bool isAllGamesOpen;
+
+    [RelayCommand]
+    private void ShowAllGames() => IsAllGamesOpen = true;
+
+    [RelayCommand]
+    private void HideAllGames() => IsAllGamesOpen = false;
 
     /// <summary>The look-up of the cards' games on this PC; done at once without one. Tests wait for it.</summary>
     internal Task LookedUp { get; }
@@ -134,7 +162,7 @@ public sealed partial class GamePickerViewModel : LocalizedObservableObject
     /// </summary>
     private async Task LookUpAsync(Func<GameProfile, GameOnPc?> lookUp)
     {
-        var cards = Cards.Where(card => !card.IsComingSoon).ToList();
+        var cards = AllCards.Where(card => !card.IsComingSoon).ToList();
         var found = await Task.Run(() => cards.Select(card => LookUp(lookUp, card.Game)).ToList());
         for (var i = 0; i < cards.Count; i++)
             cards[i].OnPc = found[i];

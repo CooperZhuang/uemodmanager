@@ -10,6 +10,8 @@
 {
   "id": "phantom-blade-zero",
   "displayName": "Phantom Blade Zero",
+  // One of the three highlight cards of the game picker (the user's word, 2026-11-15); every game is in its All games list.
+  "featured": true,
   "developer": "S-GAME",
   "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
   "motto": "Ready your blade",

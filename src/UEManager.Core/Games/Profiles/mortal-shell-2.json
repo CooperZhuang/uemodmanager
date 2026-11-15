@@ -11,9 +11,8 @@
   "tagline": "Install, enable and remove packaged mods safely. Every file placed in the game is tracked, and files the manager did not place are never touched.",
   // Experimental until the layout is checked on a real install: the game's exe, the exe Launch game starts, the save folder.
   "experimental": true,
-  // Not offered for 2.0.0 (the user's word, 2026-11-11): no card in the game picker or the tray menu. The support stays;
-  // a test run starts it with --game mortal-shell-2. Remove this line to offer the game again.
-  "hidden": true,
+  // Offered again since 2026-11-15, in the game picker's All games list only: it is not one of the three highlight cards
+  // ("featured"). From 2026-11-11 to then it was hidden, as a fourth card wrapped the picker to a second row.
 
   "steamAppId": "2584270",
 

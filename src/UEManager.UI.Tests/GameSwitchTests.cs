@@ -30,6 +30,29 @@ public class GameSwitchTests : IDisposable
     });
 
     [Fact]
+    public void All_games_lists_every_game_beside_the_three_highlights() => WithApp((model, _) =>
+    {
+        model.SwitchGameCommand.Execute(null);
+        var picker = model.GamePicker!;
+
+        // Mortal Shell II and WUCHANG are offered, but not as highlight cards.
+        Assert.True(picker.HasMoreGames);
+        Assert.Equal("See all games (5)", picker.AllGamesText);
+        Assert.Equal(["Black Myth: Wukong", "Mortal Shell II", "Phantom Blade Zero", "Stellar Blade: Blood Rain", "WUCHANG: Fallen Feathers"],
+            picker.AllCards.Select(card => card.Name));
+        // The same cards, so a look-up of where a game is fills both.
+        Assert.All(picker.Cards, card => Assert.Contains(card, picker.AllCards));
+
+        Assert.False(picker.IsAllGamesOpen);
+        picker.ShowAllGamesCommand.Execute(null);
+        Assert.True(picker.IsAllGamesOpen);
+        Assert.True(picker.ChooseCommand.CanExecute(picker.AllCards.Single(card => card.Name == "Mortal Shell II")));
+        Assert.True(picker.AllCards.Single(card => card.Name == "WUCHANG: Fallen Feathers").IsExperimental);
+        picker.HideAllGamesCommand.Execute(null);
+        Assert.False(picker.IsAllGamesOpen);
+    });
+
+    [Fact]
     public void The_picker_shows_every_game_by_name_and_marks_the_one_of_this_run() => WithApp((model, _) =>
     {
         model.SwitchGameCommand.Execute(null);
@@ -51,25 +74,26 @@ public class GameSwitchTests : IDisposable
     });
 
     [Fact]
-    public void A_game_that_is_not_out_yet_comes_last_and_says_so()
+    public void A_game_that_is_not_out_yet_keeps_its_place_by_name_and_says_so()
     {
         var games = new GameProfile[]
         {
-            new() { Id = "a-coming", DisplayName = "A Coming Game", ComingSoon = true },
-            new() { Id = "b-game", DisplayName = "B Game" },
             new() { Id = "c-game", DisplayName = "C Game" },
+            new() { Id = "b-coming", DisplayName = "B Coming Game", ComingSoon = true },
+            new() { Id = "a-game", DisplayName = "a Game" },
         };
         var picker = new GamePickerViewModel(games, null, _ => null, _ => { }, null);
 
-        Assert.Equal(["B Game", "C Game", "A Coming Game"], picker.Cards.Select(card => card.Name));
-        Assert.Equal([false, false, true], picker.Cards.Select(card => card.IsComingSoon));
+        // By name, whatever the case of its letters; a game that is not out yet too.
+        Assert.Equal(["a Game", "B Coming Game", "C Game"], picker.Cards.Select(card => card.Name));
+        Assert.Equal([false, true, false], picker.Cards.Select(card => card.IsComingSoon));
         Assert.False(picker.CanClose);
         // While the games are being tested, its card can be chosen, to try the app's look for it.
-        Assert.Equal(AppInfo.CanChooseComingGames, picker.ChooseCommand.CanExecute(picker.Cards[^1]));
+        Assert.Equal(AppInfo.CanChooseComingGames, picker.ChooseCommand.CanExecute(picker.Cards[1]));
         Assert.True(picker.ChooseCommand.CanExecute(picker.Cards[0]));
         // Its card invites a click to take a peek, but not while the app shows that game already.
-        Assert.Equal([false, false, AppInfo.CanChooseComingGames], picker.Cards.Select(card => card.InvitesPeek));
-        Assert.False(new GamePickerViewModel(games, "a-coming", _ => null, _ => { }, () => { }).Cards[^1].InvitesPeek);
+        Assert.Equal([false, AppInfo.CanChooseComingGames, false], picker.Cards.Select(card => card.InvitesPeek));
+        Assert.False(new GamePickerViewModel(games, "b-coming", _ => null, _ => { }, () => { }).Cards[1].InvitesPeek);
     }
 
     [Fact]

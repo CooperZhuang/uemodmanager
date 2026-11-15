@@ -136,6 +136,22 @@ public sealed class TrayTests : IDisposable
     });
 
     [Fact]
+    public void The_menu_has_the_highlights_and_the_game_of_this_run() => UiThread.Run(() =>
+    {
+        var paths = new AppPaths(Path.Combine(folder, "Data"));
+        paths.EnsureWritable();
+        var shell = GameProfile.BuiltIn().Single(game => game.Id == "mortal-shell-2");
+        var model = new MainViewModel(shell, paths, new ArtSet(null, null)) { GameCard = _ => null, LookUpGame = _ => null };
+
+        var menu = model.TrayMenu(() => { }, () => { });
+
+        // Mortal Shell II is in the picker's All games list only, but it is the game of this run.
+        Assert.Equal(["Black Myth: Wukong", "Mortal Shell II", "Phantom Blade Zero", "Stellar Blade: Blood Rain"],
+            menu.Cards.Select(card => card.Name));
+        Assert.True(menu.Cards.Single(card => card.Name == "Mortal Shell II").IsCurrent);
+    });
+
+    [Fact]
     public void While_a_dialog_is_open_the_menu_does_not_switch() => WithApp((model, _) =>
     {
         // The picker is a dialog over the app.
