@@ -691,6 +691,20 @@
 
     <!-- A table column header that sorts the list. Tag holds the glyph: a red arrow on the sorted
          column, a grey dash (E738) on a column that can be sorted but is not. -->
+    <!-- A picture that opens more of it, such as the cover of an openmods card: the picture alone, a hand over it.
+         Without the keyboard focus, as the card's own buttons take it. -->
+    <Style x:Key="Button.Cover" TargetType="Button">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <ContentPresenter />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- A name that opens more about it, such as a mod's name in the Mods list: underlined on hover. -->
     <Style x:Key="Button.Name" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />

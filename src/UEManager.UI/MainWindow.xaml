@@ -483,6 +483,10 @@
              catalog is switched on; its view hides itself until the box is clicked. ===== -->
         <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogAbout}" />
         <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogTypesInfo}" />
+        <!-- A mod's pictures, from a click on a card's cover, also over the full view. -->
+        <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogPictures}" />
+        <!-- A mod's changelog, from a card's Changelog button, also over the full view. -->
+        <ContentControl Grid.Row="1" Focusable="False" Content="{DynamicResource CatalogChangelog}" />
 
         <!-- ===== A thank-you of a recommended mod ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"

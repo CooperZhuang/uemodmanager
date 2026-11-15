@@ -32,26 +32,6 @@ public sealed class NullToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
-/// Shows an element when a row has room for it beside another one: the values are the row's width and the other
-/// element's width, the parameter the width the element needs, in device-independent pixels. Invert shows its smaller
-/// stand-in when there is no room. Before the first layout (a width of 0) there counts as room.
-/// </summary>
-public sealed class RoomConverter : IMultiValueConverter
-{
-    public bool Invert { get; set; }
-
-    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-    {
-        var needed = double.Parse((string)parameter, CultureInfo.InvariantCulture);
-        var room = values is not [double row, double used, ..] || row <= 0 || row - used >= needed;
-        return room ^ Invert ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
-}
-
-/// <summary>
 /// Compares the selected page with the parameter. Gives a Visibility for page
 /// hosts and a bool for navigation buttons, and selects the page when checked.
 /// </summary>

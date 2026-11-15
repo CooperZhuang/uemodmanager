@@ -49,7 +49,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         this.http = http;
         this.gamesUrl = gamesUrl;
         this.steamAppId = steamAppId;
-        images = new RemoteImages(http);
+        images = new RemoteImages(http, owner.PictureCacheDir);
         this.isTest = isTest;
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = item => item is CatalogItemViewModel mod && mod.IsTool == ShowTools && mod.HasType(ShownType)
@@ -336,6 +336,47 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
     [RelayCommand]
     private void ExitFullView() => IsFullView = false;
 
+    /// <summary>
+    /// The picture viewer over the whole window, from a click on a card's cover: the mod's cover and its screenshots
+    /// from openmods. Null while it is closed.
+    /// </summary>
+    [ObservableProperty]
+    private CatalogPicturesViewModel? pictures;
+
+    [RelayCommand]
+    private void ShowPictures(CatalogItemViewModel? item)
+    {
+        if (item?.Mod.Pictures is not { Count: > 0 } shown)
+            return;
+        Pictures = new CatalogPicturesViewModel(item.Name, shown, images.LoadAsync, () => Pictures = null);
+    }
+
+    /// <summary>
+    /// The changelog over the whole window, from a card's Changelog button: the texts of the mod's newest releases on
+    /// GitHub, read on the click. Null while it is closed.
+    /// </summary>
+    [ObservableProperty]
+    private CatalogChangelogViewModel? changelog;
+
+    /// <summary>The answers GitHub gave in this run, by repository: a mod opened again is not asked twice.</summary>
+    private readonly Dictionary<string, Task<IReadOnlyList<ReleaseNote>>> releaseNotes = new(StringComparer.OrdinalIgnoreCase);
+
+    [RelayCommand]
+    private void ShowChangelog(CatalogItemViewModel? item)
+    {
+        if (item?.ChangelogRepo is not { } repo)
+            return;
+        Changelog = new CatalogChangelogViewModel(item.Name, repo, () => ReleasesOf(repo), owner.OpenPath, () => Changelog = null);
+    }
+
+    /// <summary>The releases of a repository: the run's answer, or a new question when there is none or it failed.</summary>
+    private Task<IReadOnlyList<ReleaseNote>> ReleasesOf(string repo)
+    {
+        if (!releaseNotes.TryGetValue(repo, out var known) || known.IsFaulted || known.IsCanceled)
+            releaseNotes[repo] = known = ModReleases.FetchAsync(http, repo);
+        return known;
+    }
+
     /// <summary>What the type boxes in front of the mods' names mean, over the whole window.</summary>
     [ObservableProperty]
     private bool isTypesInfoOpen;
@@ -512,6 +553,21 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
     public bool HasPage => mod.Page is not null;
 
     public bool HasSource => mod.Source is not null;
+
+    /// <summary>
+    /// A click on the cover opens the picture viewer: the mod has a cover or screenshots, not only the game's picture. A
+    /// box on the cover then says how many images it has, so the player sees that the cover opens something.
+    /// </summary>
+    public bool HasPictures => mod.Pictures.Count > 0;
+
+    /// <summary>The number in the box on the cover, next to its image icon: the icon says what it counts.</summary>
+    public int PictureCount => mod.Pictures.Count;
+
+    /// <summary>"owner/repo" of the mod's source on GitHub, whose releases are its changelog; null for another source.</summary>
+    public string? ChangelogRepo => ModReleases.RepoOf(mod.Source);
+
+    /// <summary>The card offers the changelog: the source is on GitHub.</summary>
+    public bool HasChangelog => ChangelogRepo is not null;
 
     [ObservableProperty]
     private ImageSource? cover;

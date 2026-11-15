@@ -40,6 +40,9 @@ public sealed class AppPaths
     /// <summary>Scratch space for unpacked downloads. Emptied at start-up.</summary>
     public string StagingDir => Path.Combine(Root, "staging");
 
+    /// <summary>Copies of the openmods page's pictures, so each is downloaded once; see <see cref="Catalog.PictureCache"/>.</summary>
+    public string PictureCacheDir => Path.Combine(Root, "cache", "pictures");
+
     public string GameDir(string gameId) => Path.Combine(Root, "games", gameId);
 
     /// <summary>Manager-owned copies of every installed mod, one folder per mod.</summary>

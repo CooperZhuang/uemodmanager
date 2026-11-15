@@ -109,8 +109,30 @@
                                  taller). As high as a card with a two-line description, so the cover does not make
                                  the card taller. The game's picture when the mod has none. -->
                             <Border Width="216" MinHeight="122" Margin="1" ClipToBounds="True" Background="{StaticResource Brush.Field}">
-                                <Image Source="{Binding Cover}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                <!-- A click opens the picture viewer, when the mod has its own cover or screenshots. -->
+                                <Button Style="{StaticResource Button.Cover}" IsEnabled="{Binding HasPictures}"
+                                        Command="{Binding DataContext.ShowPicturesCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" ToolTip="{ui:Loc 'Show the images'}">
+                                    <Grid>
+                                        <Image Source="{Binding Cover}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <!-- The image icon and the number, bottom left: the cover opens the viewer (the user's wish: a hint to click). -->
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" Padding="6,2,7,3" CornerRadius="2"
+                                                Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                                Visibility="{Binding HasPictures, Converter={StaticResource Visible}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Foreground="{StaticResource Brush.Text}" Text="&#xE8B9;" />
+                                                <TextBlock Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource Brush.Text}" Text="{Binding PictureCount}">
+                                                    <!-- The digits are 2 px lower than the icon is high: 1 px up centers them on it. -->
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform Y="-1" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Button>
                             </Border>
 
                             <StackPanel Grid.Column="1" Margin="22,14,16,14">
@@ -138,7 +160,8 @@
                                 </WrapPanel>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Width="190" Margin="0,14,22,14">
+                            <!-- As wide as Page, Source and Changelog with their words. -->
+                            <StackPanel Grid.Column="2" Width="264" Margin="0,14,22,14">
                                 <Button Style="{StaticResource Button.Primary}" Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
                                         Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
                                 <StackPanel Margin="0,6,0,0" HorizontalAlignment="Center" Orientation="Horizontal"
@@ -155,6 +178,11 @@
                                     <Button Margin="6,0,0,0" Padding="8,3" FontSize="12" Content="{ui:Loc 'Source'}" ui:Icon.Glyph="&#xE943;"
                                             Command="{Binding OpenSourceCommand}" Visibility="{Binding HasSource, Converter={StaticResource Visible}}"
                                             ToolTip="{Binding Mod.Source}" />
+                                    <!-- The texts of the mod's newest releases on GitHub, read on the click. -->
+                                    <Button Margin="6,0,0,0" Padding="8,3" FontSize="12" Content="{ui:Loc 'Changelog'}" ui:Icon.Glyph="&#xE8FD;"
+                                            Command="{Binding DataContext.ShowChangelogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" Visibility="{Binding HasChangelog, Converter={StaticResource Visible}}"
+                                            ToolTip="{ui:Loc 'What changed in each version, from the mod\'s releases on GitHub'}" />
                                 </StackPanel>
                                 <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource Text.Small}"
                                            Text="{Binding AuthorText}" ToolTip="{Binding AuthorText}" />

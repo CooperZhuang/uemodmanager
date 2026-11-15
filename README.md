@@ -422,6 +422,21 @@ are used.
   description and the same actions, with the same type filter, search, sort
   and switch. It leaves the window's size alone. **Exit full view** or Esc goes
   back. It is off at every start.
+- A click on a card's cover opens the **picture viewer** over the whole window:
+  the cover first, then the mod's screenshots from the list's `screenshots` field
+  (`url` and an optional `alt`, from the mod's `openmods.md`; pictures from other
+  sites count too), one at a time, with arrows, the alt text, a counter and
+  thumbnails. Left, Right and Esc work. A box at the bottom left of each cover
+  shows the image icon and the number of pictures. A picture that does not load
+  gets a placeholder.
+- **Changelog** (beside Page and Source, for a source on GitHub) shows the texts
+  of the mod's 10 newest releases, read from GitHub's API on the click and kept
+  for the run: version, date, a Pre-release mark, and the text as headings, list
+  items, paragraphs and code (Markdown marks, links and pictures left out). It
+  says why when GitHub cannot be reached, refuses (60 questions an hour from one
+  PC without a login) or has no releases. In the full view, Page, Source and
+  Changelog are icons alone, with their names as tooltips: the page's own list
+  names them in words.
 - The **Mods | Tools** switch is two plain buttons: the app shows the open side on
   them, and a click runs a command. Radio buttons bound both ways to the two
   sides could write each other back without end (a stack overflow at the start
@@ -479,7 +494,9 @@ Network accesses: the UE4SS manifest and the update check at start, the mod
 update check at start (unless turned off) and on its button (see
 [Mod pages and updates](#mod-pages-and-updates)), the openmods lists and cover
 pictures when the openmods page opens (only while the catalog is switched on),
-and the downloads the user starts. Pictures are kept in memory only.
+the screenshots when the picture viewer opens, a mod's releases on GitHub when
+its Changelog is opened, and the downloads the user starts. Pictures are kept in the data folder's picture cache (see Data), so each
+is downloaded once.
 
 ### Removing UE4SS
 
@@ -1026,6 +1043,9 @@ Data/
   instance.lock                    held while the app runs
   logs/app-YYYYMMDD.log
   staging/                         unpacked downloads, emptied at every start
+  cache/pictures/                  the openmods page's covers and screenshots, each downloaded once; checked
+                                   with the site's ETag after an hour, at most 200 MB (the oldest used go
+                                   first), Settings ▸ Clear picture cache empties it
   games/<id>/mods.json             installed mods, files, checksums, mod sets
   games/<id>/library/<mod id>/     the manager's copy of each mod (.defaults: settings files as shipped)
   games/<id>/backups/              settings the player changed, saved before an update, uninstall or reset

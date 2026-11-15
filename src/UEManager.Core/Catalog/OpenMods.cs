@@ -21,6 +21,9 @@ public sealed record CatalogGameInfo(string Name, string? Art, string? Page);
 public sealed record CatalogFile(string Name, long Size, string Url, string? Sha256,
     IReadOnlyList<string>? Entries = null, bool EntriesTruncated = false);
 
+/// <summary>A picture of a mod: an https address, and its alt text from the mod's openmods.md when it has one.</summary>
+public sealed record CatalogPicture(string Url, string? Alt);
+
 /// <summary>The newest release of a mod.</summary>
 /// <param name="LatestUrl">The newest release page on GitHub.</param>
 public sealed record CatalogRelease(string Tag, DateTimeOffset? Date, string? LatestUrl, IReadOnlyList<CatalogFile> Files)
@@ -46,6 +49,15 @@ public sealed record CatalogMod(
     DateTimeOffset? Updated,
     CatalogRelease? Release)
 {
+    /// <summary>
+    /// The screenshots openmods found in the mod's openmods.md, in its order, without the cover; empty when it lists none.
+    /// They may come from the mod's repository or from another site, such as Imgur.
+    /// </summary>
+    public IReadOnlyList<CatalogPicture> Screenshots { get; init; } = [];
+
+    /// <summary>What the picture viewer shows: the cover first, then the screenshots. Empty when the mod has neither.</summary>
+    public IReadOnlyList<CatalogPicture> Pictures => Cover is null ? Screenshots : [new CatalogPicture(Cover, null), .. Screenshots];
+
     /// <summary>The file a one-click install uses: the release's only zip, 7z or rar file. Null when there is none or several.</summary>
     public CatalogFile? InstallFile => Release?.Files.Where(f => FileSystem.HasExtension(f.Name, FileSystem.ArchiveExtensions)).ToList() is [var file]
         ? file
@@ -133,19 +145,23 @@ public static class OpenMods
             var source = Link(mod, "source");
             if (name is null || source is null)
                 continue;
+            var cover = Link(mod, "cover");
             mods.Add(new CatalogMod(
                 IdFromSource(source),
                 name,
                 Text(mod, "summary"),
                 Text(mod, "author"),
                 Text(mod, "listedBy"),
-                Link(mod, "cover"),
+                cover,
                 Items(mod, "tags").Where(t => t.ValueKind == JsonValueKind.String).Select(t => t.GetString()!).ToList(),
                 Text(mod, "license"),
                 Link(mod, "page"),
                 source,
                 Date(mod, "updated"),
-                ReadRelease(mod)));
+                ReadRelease(mod))
+            {
+                Screenshots = ReadScreenshots(mod, cover),
+            });
         }
         return new CatalogList(info, mods);
     }
@@ -243,6 +259,33 @@ public static class OpenMods
         return new CatalogRelease(tag, Date(release, "date"), Link(release, "latest"), files);
     }
 
+    /// <summary>openmods lists at most this many screenshots of a mod; a longer list is cut here too.</summary>
+    internal const int MaxScreenshots = 20;
+
+    /// <summary>
+    /// A mod's screenshots: objects with "url" and an optional "alt", as openmods lists them (a plain address is read
+    /// too). Only https addresses; the cover and a picture that comes twice are left out.
+    /// </summary>
+    private static IReadOnlyList<CatalogPicture> ReadScreenshots(JsonElement mod, string? cover)
+    {
+        var pictures = new List<CatalogPicture>();
+        foreach (var item in Items(mod, "screenshots"))
+        {
+            var (url, alt) = item.ValueKind switch
+            {
+                JsonValueKind.Object => (Link(item, "url"), Text(item, "alt")),
+                JsonValueKind.String => (AsLink(item.GetString()), null),
+                _ => (null, null),
+            };
+            if (url is null || url == cover || pictures.Any(picture => picture.Url == url))
+                continue;
+            pictures.Add(new CatalogPicture(url, alt));
+            if (pictures.Count == MaxScreenshots)
+                break;
+        }
+        return pictures;
+    }
+
     /// <summary>openmods lists at most this many paths of a zip; a longer list is cut here too.</summary>
     internal const int MaxEntries = 2000;
 
@@ -275,8 +318,10 @@ public static class OpenMods
     /// An absolute https URL, else null. The links of a list are opened in the browser or downloaded,
     /// so nothing else, such as a file path or another protocol, is let through.
     /// </summary>
-    private static string? Link(JsonElement element, string name) =>
-        Text(element, name) is { } text && Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+    private static string? Link(JsonElement element, string name) => AsLink(Text(element, name));
+
+    private static string? AsLink(string? text) =>
+        !string.IsNullOrWhiteSpace(text) && Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
             ? uri.AbsoluteUri
             : null;
 

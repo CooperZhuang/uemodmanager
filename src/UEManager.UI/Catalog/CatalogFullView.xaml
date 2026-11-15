@@ -12,11 +12,6 @@
     <UserControl.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding ExitFullViewCommand}" />
     </UserControl.InputBindings>
-    <UserControl.Resources>
-        <!-- A card's Page and Source buttons: with their words when the action leaves room, else icons alone. -->
-        <ui:RoomConverter x:Key="RoomForWords" />
-        <ui:RoomConverter x:Key="NoRoomForWords" Invert="True" />
-    </UserControl.Resources>
 
     <!-- The openmods page over the whole window: the menu and the page stay below, out of sight. -->
     <Grid Background="{StaticResource Brush.Ink}">
@@ -98,14 +93,34 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
 
-                                        <!-- Cover, 16:9 over the card's width. -->
-                                        <Grid Margin="1,1,1,0" ClipToBounds="True" Background="{StaticResource Brush.Field}">
-                                            <Viewbox Stretch="UniformToFill">
-                                                <Grid Width="480" Height="270">
-                                                    <Image Source="{Binding Cover}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
-                                                </Grid>
-                                            </Viewbox>
-                                        </Grid>
+                                        <!-- Cover, 16:9 over the card's width. A click opens the picture viewer, when the mod
+                                             has its own cover or screenshots. -->
+                                        <Button Margin="1,1,1,0" Style="{StaticResource Button.Cover}" IsEnabled="{Binding HasPictures}"
+                                                Command="{Binding DataContext.ShowPicturesCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" ToolTip="{ui:Loc 'Show the images'}">
+                                            <Grid ClipToBounds="True" Background="{StaticResource Brush.Field}">
+                                                <Viewbox Stretch="UniformToFill">
+                                                    <Grid Width="480" Height="270">
+                                                        <Image Source="{Binding Cover}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                    </Grid>
+                                                </Viewbox>
+                                                <!-- The image icon and the number, bottom left: the cover opens the viewer (the user's wish: a hint to click). -->
+                                                <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8" Padding="6,2,7,3" CornerRadius="2"
+                                                        Background="{StaticResource Brush.Overlay}" BorderBrush="{StaticResource Brush.LineStrong}" BorderThickness="1"
+                                                        Visibility="{Binding HasPictures, Converter={StaticResource Visible}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Foreground="{StaticResource Brush.Text}" Text="&#xE8B9;" />
+                                                        <TextBlock Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Brush.Text}" Text="{Binding PictureCount}">
+                                                            <!-- The digits are 2 px lower than the icon is high: 1 px up centers them on it. -->
+                                                            <TextBlock.RenderTransform>
+                                                                <TranslateTransform Y="-1" />
+                                                            </TextBlock.RenderTransform>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                        </Button>
 
                                         <StackPanel Grid.Row="1" Margin="18,14,18,0">
                                             <!-- The name at the card's full width, and the type below it (the user's choice):
@@ -140,43 +155,32 @@
                                         </StackPanel>
 
                                         <!--
-                                            The same actions as on the page, at the bottom of every card: the action, and the page's Page
-                                            and Source buttons. A long action on a narrow card, such as "Update to v4.0.0", leaves no room
-                                            for their words: then they are icons alone. The status gets a line of its own below.
+                                            The same actions as on the page, at the bottom of every card: the action, and the Page,
+                                            Source and Changelog buttons as icons alone (the user's choice: the list view names them in
+                                            words). The status gets a line of its own below.
                                         -->
                                         <StackPanel Grid.Row="2" Margin="18,14,18,16">
-                                            <DockPanel x:Name="ActionRow">
-                                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
-                                                    <StackPanel.Visibility>
-                                                        <MultiBinding Converter="{StaticResource RoomForWords}" ConverterParameter="160">
-                                                            <Binding ElementName="ActionRow" Path="ActualWidth" />
-                                                            <Binding ElementName="Action" Path="ActualWidth" />
-                                                        </MultiBinding>
-                                                    </StackPanel.Visibility>
-                                                    <Button Padding="8,3" FontSize="12" Content="{ui:Loc 'Page'}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
-                                                            Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
-                                                            ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
-                                                    <Button Margin="6,0,0,0" Padding="8,3" FontSize="12" Content="{ui:Loc 'Source'}" ui:Icon.Glyph="&#xE943;"
-                                                            Command="{Binding OpenSourceCommand}" Visibility="{Binding HasSource, Converter={StaticResource Visible}}"
-                                                            ToolTip="{Binding Mod.Source}" />
-                                                </StackPanel>
-                                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
-                                                    <StackPanel.Visibility>
-                                                        <MultiBinding Converter="{StaticResource NoRoomForWords}" ConverterParameter="160">
-                                                            <Binding ElementName="ActionRow" Path="ActualWidth" />
-                                                            <Binding ElementName="Action" Path="ActualWidth" />
-                                                        </MultiBinding>
-                                                    </StackPanel.Visibility>
+                                            <Grid x:Name="ActionRow">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="Action" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                                                        Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
+                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
+                                                <StackPanel Grid.Column="1" Margin="4,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                            Orientation="Horizontal">
                                                     <Button Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE774;" Command="{Binding OpenPageCommand}"
                                                             Visibility="{Binding HasPage, Converter={StaticResource Visible}}"
                                                             ToolTip="{ui:Loc 'The mod\'s page on openmods, with its full description'}" />
                                                     <Button Margin="4,0,0,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE943;" Command="{Binding OpenSourceCommand}"
                                                             Visibility="{Binding HasSource, Converter={StaticResource Visible}}" ToolTip="{Binding Mod.Source}" />
+                                                    <Button Margin="4,0,0,0" Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE8FD;"
+                                                            Command="{Binding DataContext.ShowChangelogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}" Visibility="{Binding HasChangelog, Converter={StaticResource Visible}}"
+                                                            ToolTip="{ui:Loc 'What changed in each version, from the mod\'s releases on GitHub'}" />
                                                 </StackPanel>
-                                                <Button x:Name="Action" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
-                                                        Content="{Binding ActionText}" ui:Icon.Glyph="&#xE896;"
-                                                        Command="{Binding ActCommand}" Visibility="{Binding HasAction, Converter={StaticResource Visible}}" />
-                                            </DockPanel>
+                                            </Grid>
                                             <DockPanel Margin="0,6,0,0" Visibility="{Binding StatusText, Converter={StaticResource VisibleIfSet}}">
                                                 <TextBlock Margin="0,0,6,0" Style="{StaticResource Text.Icon}" FontSize="12"
                                                            Foreground="{Binding StatusTone, Converter={StaticResource Tone}}" Text="{Binding StatusGlyph}" />

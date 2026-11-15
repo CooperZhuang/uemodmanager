@@ -49,7 +49,8 @@ folder.
   before anything reaches the game.
 - **Mods:** turn mods on and off, update or uninstall them, and edit or reset a mod's settings.
 - **openmods:** the open-source mods for your game, with a type on every card, search, sort and **Hide installed**.
-  One click installs or updates a mod. **Full view** shows them over the whole window.
+  One click installs or updates a mod. **Full view** shows them over the whole window. A click on a mod's cover shows
+  its cover and screenshots, one at a time. **Changelog** shows what changed in its newest releases.
 - **UE4SS:** install or update UE4SS, open its folder, and read its log.
 - **Backups:** back up your saves, choose how many the app keeps, keep some for good in **Personal**, and restore one.
 - **Settings:** the game folder, the tray icon, and the manager's data, logs and backups. **Reset modding…** removes every mod and

@@ -385,26 +385,6 @@ public sealed class CatalogToolsSwitchTests : IDisposable
         Assert.Equal(columns, CatalogFullView.ColumnsFor(width));
     }
 
-    /// <summary>
-    /// A card's Page and Source buttons keep their words beside Install, and are icons alone beside a long action on
-    /// the narrowest card, such as UE4SS's "Update to v4.0.0" (sizes from the screen at 1360 wide).
-    /// </summary>
-    [Theory]
-    [InlineData(266, 87, true)]
-    [InlineData(266, 150, false)]
-    [InlineData(266, 0, true)]
-    [InlineData(0, 150, true)]
-    public void A_cards_buttons_keep_their_words_while_the_action_leaves_room(double row, double action, bool words)
-    {
-        object[] values = [row, action];
-
-        var shown = new UEManager.UI.RoomConverter().Convert(values, typeof(System.Windows.Visibility), "160", null!);
-        var standIn = new UEManager.UI.RoomConverter { Invert = true }.Convert(values, typeof(System.Windows.Visibility), "160", null!);
-
-        Assert.Equal(words ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed, shown);
-        Assert.Equal(words ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible, standIn);
-    }
-
     private static void WaitFor(Task task)
     {
         var frame = new DispatcherFrame();

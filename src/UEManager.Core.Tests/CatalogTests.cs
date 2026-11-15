@@ -118,6 +118,61 @@ public class CatalogTests
         Assert.Null(noRelease.Cover);
     }
 
+    private const string Screenshots = """
+        {
+          "openmods": 1,
+          "mods": [
+            { "name": "Map", "source": "https://github.com/A/map", "cover": "https://raw.githubusercontent.com/A/map/main/docs/cover.png",
+              "screenshots": [
+                { "url": "https://raw.githubusercontent.com/A/map/main/docs/shot-1.png", "alt": "  The map  " },
+                { "url": "https://i.imgur.com/abcd123.png" },
+                { "url": "https://raw.githubusercontent.com/A/map/main/docs/cover.png", "alt": "The cover again" },
+                { "url": "https://i.imgur.com/abcd123.png", "alt": "Twice" },
+                { "url": "http://example.test/plain.png" },
+                { "alt": "No address" },
+                "https://example.test/plain-address.png",
+                42
+              ] },
+            { "name": "No cover", "source": "https://github.com/A/nocover",
+              "screenshots": [ { "url": "https://example.test/only.png" } ] },
+            { "name": "Cover only", "source": "https://github.com/A/coveronly", "cover": "https://example.test/cover.png" },
+            { "name": "Nothing", "source": "https://github.com/A/nothing" },
+            { "name": "Many", "source": "https://github.com/A/many", "screenshots": [
+              { "url": "https://e.test/1.png" }, { "url": "https://e.test/2.png" }, { "url": "https://e.test/3.png" },
+              { "url": "https://e.test/4.png" }, { "url": "https://e.test/5.png" }, { "url": "https://e.test/6.png" },
+              { "url": "https://e.test/7.png" }, { "url": "https://e.test/8.png" }, { "url": "https://e.test/9.png" },
+              { "url": "https://e.test/10.png" }, { "url": "https://e.test/11.png" }, { "url": "https://e.test/12.png" },
+              { "url": "https://e.test/13.png" }, { "url": "https://e.test/14.png" }, { "url": "https://e.test/15.png" },
+              { "url": "https://e.test/16.png" }, { "url": "https://e.test/17.png" }, { "url": "https://e.test/18.png" },
+              { "url": "https://e.test/19.png" }, { "url": "https://e.test/20.png" }, { "url": "https://e.test/21.png" } ] }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void Reads_the_screenshots_with_the_cover_first_in_the_viewer()
+    {
+        var mods = OpenMods.ParseList(Screenshots).Mods;
+
+        // https only, in the list's order; the cover and a picture that comes twice are left out; alt texts trimmed.
+        var map = mods[0];
+        Assert.Equal(["https://raw.githubusercontent.com/A/map/main/docs/shot-1.png", "https://i.imgur.com/abcd123.png",
+            "https://example.test/plain-address.png"], map.Screenshots.Select(p => p.Url));
+        Assert.Equal(["The map", null, null], map.Screenshots.Select(p => p.Alt));
+        Assert.Equal("https://raw.githubusercontent.com/A/map/main/docs/cover.png", map.Pictures[0].Url);
+        Assert.Equal(4, map.Pictures.Count);
+
+        // Without a cover the viewer starts with the first screenshot; with neither it has nothing to show.
+        Assert.Equal(["https://example.test/only.png"], mods[1].Pictures.Select(p => p.Url));
+        Assert.Equal(["https://example.test/cover.png"], mods[2].Pictures.Select(p => p.Url));
+        Assert.Empty(mods[2].Screenshots);
+        Assert.Empty(mods[3].Pictures);
+
+        // At most 20, the first 20, as openmods lists them.
+        Assert.Equal(20, mods[4].Screenshots.Count);
+        Assert.Equal("https://e.test/20.png", mods[4].Screenshots[^1].Url);
+    }
+
     [Fact]
     public void Another_authors_project_keeps_its_own_id_and_file()
     {

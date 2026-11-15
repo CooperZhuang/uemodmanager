@@ -151,6 +151,9 @@
                     <Button Margin="8,0,0,0" Content="{ui:Loc 'Open logs'}" ui:Icon.Glyph="&#xE8A5;" Command="{Binding OpenLogsCommand}" />
                     <Button Margin="8,0,0,0" Content="{ui:Loc 'Open settings backups'}" ui:Icon.Glyph="&#xE81C;" Command="{Binding OpenBackupsCommand}"
                             ToolTip="{ui:Loc 'Mod settings you changed, saved before an update or an uninstall replaced them'}" />
+                    <!-- One click, then a message: cleared, empty already, or why not (the user's wish). -->
+                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Clear picture cache'}" ui:Icon.Glyph="&#xE74D;" Command="{Binding ClearPictureCacheCommand}"
+                            ToolTip="{ui:Loc 'The openmods page keeps its pictures in the Data folder, so they are not downloaded at every start. Cleared pictures are downloaded again when the page shows them.'}" />
                 </WrapPanel>
             </StackPanel>
         </Border>

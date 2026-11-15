@@ -36,9 +36,10 @@
     "https://raw.githubusercontent.com/KintaroModding/metadata/main/uemodmanager/manifest.json"
   ],
   // Fallback when the manifest cannot be reached: the WUCHANG build and its SHA-256 from SHA256SUMS.txt (fork release
-  // v4.0.0, 2026-11-15): the generic 3.0.1-934 build with HookInitGameState = 0 in UE4SS-settings.ini.
+  // v4.0.0): the generic 3.0.1-934 DLLs with a settings file and mods tuned for this game. The zip was replaced on
+  // 2026-11-15 under the same name (a small fix, same DLLs); 2.2.1 still names the first zip's SHA-256 here.
   "ue4ssPackageUrl": "https://github.com/KintaroModding/ue4ss/releases/download/v4.0.0/wuchang_ue4ss_v3.0.1-934-gcac01ee2.zip",
-  "ue4ssPackageSha256": "09C7A3F0ACCB5C97F74F8E4EB9420193693980A44575733F22DE030F1E2A8141",
+  "ue4ssPackageSha256": "C4DE5CD0E378E3D47B27DCD4A1FA6AB8FFD5071E3DF63CB6B74AC924BF956657",
 
   // "Open mod page" and the update check: the game's pages and its number on the mod site, from the site's API
   // (game(domainName: "wuchangfallenfeathers") { id }, asked 2026-11-15).

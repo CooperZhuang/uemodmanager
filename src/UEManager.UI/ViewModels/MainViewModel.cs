@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using UEManager.Core;
+using UEManager.Core.Catalog;
 using UEManager.Core.Games;
 using UEManager.Core.Mods;
 using UEManager.Core.Storage;
@@ -1606,6 +1607,27 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         Directory.CreateDirectory(paths.LogsDir);
         TryOpen(paths.LogsDir);
+    }
+
+    /// <summary>The openmods page's pictures in the data folder (see <see cref="PictureCache"/>).</summary>
+    internal string PictureCacheDir => paths.PictureCacheDir;
+
+    /// <summary>Settings ▸ Manager data: removes the openmods page's pictures from the data folder, with a message either way.</summary>
+    [RelayCommand]
+    private void ClearPictureCache()
+    {
+        try
+        {
+            var (pictures, bytes) = PictureCache.Clear(paths.PictureCacheDir);
+            ShowToast(pictures == 0
+                ? L.T("The picture cache is empty.")
+                : L.Plural(pictures, "Picture cache cleared: {0} picture, {1}.", "Picture cache cleared: {0} pictures, {1}.", Format.Size(bytes)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"The picture cache could not be cleared: {ex.Message}");
+            ShowToast(L.F($"The picture cache could not be cleared: {ex.Message}"), isError: true);
+        }
     }
 
     /// <summary>Opens "Report a problem" with the facts about the game, UE4SS and the mods.</summary>
