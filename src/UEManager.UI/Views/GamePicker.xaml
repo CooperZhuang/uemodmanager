@@ -202,7 +202,7 @@
     <!-- Held at the top, not centred: when the developer's message opens, the link stays where it was clicked and the
          message shows below it. On a screen too small for the open message, the picker scrolls. -->
     <Grid Visibility="{Binding IsAllGamesOpen, Converter={StaticResource Hidden}}">
-    <ScrollViewer Margin="40" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+    <ScrollViewer Margin="40" Style="{StaticResource ScrollViewer.Overlay}" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Visibility="{Binding Scan.IsReportOpen, Converter={StaticResource Hidden}}">
     <Border Style="{StaticResource Dialog}" Padding="18,22,18,20" VerticalAlignment="Top" Margin="0,16,0,0">
         <StackPanel>
@@ -339,7 +339,7 @@
             <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Overline}" FontSize="18"
                        Text="{Binding AllGamesCountText, Converter={StaticResource Tracked}}" />
         </DockPanel>
-        <ScrollViewer Grid.Row="1" Margin="0,16,0,0" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource ScrollViewer.Overlay}" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl Margin="26,0,26,26" Focusable="False" ItemsSource="{Binding AllCards}" ItemTemplate="{StaticResource GameCardTemplate}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

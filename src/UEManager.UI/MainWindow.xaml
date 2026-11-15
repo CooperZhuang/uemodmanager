@@ -253,7 +253,7 @@
                         </Rectangle.Fill>
                     </Rectangle>
                 </Grid>
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="1" Style="{StaticResource ScrollViewer.Overlay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid MaxWidth="1120" Margin="48,0,48,28">
                         <views:HomeView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
                         <views:ModsView x:Name="ModsPage" Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />

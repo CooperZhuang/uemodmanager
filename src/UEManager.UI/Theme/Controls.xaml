@@ -1276,18 +1276,44 @@
         </Setter>
     </Style>
 
+    <!-- A scroll bar's thumb (the user's wish, 2026-11-16: the old 4 px line was hard to hit). The whole width of the bar
+         takes the mouse; the thumb shows 6 px wide, grows to 10 px and lightens while the mouse is on the bar, and lightens
+         more under the mouse and while dragged. -->
     <Style x:Key="ScrollThumb" TargetType="Thumb">
         <Setter Property="Background" Value="{StaticResource Brush.LineStrong}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="3" />
+                    <Grid Background="Transparent">
+                        <Border x:Name="Bar" Width="6" HorizontalAlignment="Center" CornerRadius="3" Background="{TemplateBinding Background}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Width" To="10" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Width" To="6" Duration="0:0:0.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="True">
                 <Setter Property="Background" Value="{StaticResource Brush.TextDim}" />
+            </DataTrigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
             </Trigger>
             <Trigger Property="IsDragging" Value="True">
                 <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
@@ -1295,16 +1321,72 @@
         </Style.Triggers>
     </Style>
 
+    <!-- The same thumb for a horizontal bar: it grows in height. -->
+    <Style x:Key="ScrollThumbHorizontal" TargetType="Thumb" BasedOn="{StaticResource ScrollThumb}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid Background="Transparent">
+                        <Border x:Name="Bar" Height="6" VerticalAlignment="Center" CornerRadius="3" Background="{TemplateBinding Background}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Height" To="10" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Height" To="6" Duration="0:0:0.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- The square where both scroll bars meet takes the Windows control colour, a light grey, unless told otherwise. -->
+    <!-- Every scroll area glides on the mouse wheel (see SmoothScroll). -->
     <Style TargetType="ScrollViewer">
+        <Setter Property="ui:SmoothScroll.IsEnabled" Value="True" />
         <Style.Resources>
             <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />
         </Style.Resources>
     </Style>
 
+    <!-- A page's scroll area: the bar floats over the page's right margin instead of taking a column of its own, so the
+         page keeps its place whether the bar shows or not (the user's wish, 2026-11-16). Only where the content keeps a
+         margin of at least the bar's width on the right, such as the pages (48 px) and the openmods full view (36 px). -->
+    <Style x:Key="ScrollViewer.Overlay" TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollViewer">
+                    <Grid Background="{TemplateBinding Background}">
+                        <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Margin="{TemplateBinding Padding}"
+                                                CanContentScroll="{TemplateBinding CanContentScroll}" CanHorizontallyScroll="False" CanVerticallyScroll="False"
+                                                Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        <ScrollBar x:Name="PART_VerticalScrollBar" HorizontalAlignment="Right" Cursor="Arrow"
+                                   AutomationProperties.AutomationId="VerticalScrollBar" Minimum="0"
+                                   Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
+                                   Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 14 px wide (10 until 2026-11-16), all of it to grab; a faint track shows while the mouse is on it. -->
     <Style TargetType="ScrollBar">
-        <Setter Property="Width" Value="10" />
-        <Setter Property="MinWidth" Value="10" />
+        <Setter Property="Width" Value="14" />
+        <Setter Property="MinWidth" Value="14" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
@@ -1315,7 +1397,7 @@
                                 <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageUpCommand" />
                             </Track.DecreaseRepeatButton>
                             <Track.Thumb>
-                                <Thumb Style="{StaticResource ScrollThumb}" Margin="3,2" />
+                                <Thumb Style="{StaticResource ScrollThumb}" Margin="0,2" />
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageDownCommand" />
@@ -1326,11 +1408,14 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.Hover}" />
+            </Trigger>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
                 <Setter Property="MinWidth" Value="0" />
-                <Setter Property="Height" Value="10" />
-                <Setter Property="MinHeight" Value="10" />
+                <Setter Property="Height" Value="14" />
+                <Setter Property="MinHeight" Value="14" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ScrollBar">
@@ -1340,7 +1425,7 @@
                                         <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageLeftCommand" />
                                     </Track.DecreaseRepeatButton>
                                     <Track.Thumb>
-                                        <Thumb Style="{StaticResource ScrollThumb}" Margin="2,3" />
+                                        <Thumb Style="{StaticResource ScrollThumbHorizontal}" Margin="2,0" />
                                     </Track.Thumb>
                                     <Track.IncreaseRepeatButton>
                                         <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageRightCommand" />

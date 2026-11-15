@@ -64,21 +64,11 @@
                 <vm:CatalogToolbar Margin="0,18,0,0" Visibility="{Binding HasItems, Converter={StaticResource Visible}}" />
             </StackPanel>
 
-            <ScrollViewer Grid.Row="1" Margin="0,16,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <!-- The cards end where the toolbar ends: the scroll bar (10 wide, see Theme/Controls.xaml) takes its width
-                     from the right margin, so the cards keep their width whether it shows or not. -->
-                <StackPanel>
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Margin" Value="36,0,36,28" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding ComputedVerticalScrollBarVisibility, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
-                                             Value="{x:Static Visibility.Visible}">
-                                    <Setter Property="Margin" Value="36,0,26,28" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
+            <!-- The cards end where the toolbar ends: the scroll bar floats over the right margin (ScrollViewer.Overlay), so
+                 the cards keep their place and width whether it shows or not. -->
+            <ScrollViewer Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource ScrollViewer.Overlay}" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="36,0,36,28">
                     <TextBlock Margin="0,52" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" Text="{ui:Loc 'Loading the openmods list…'}"
                                Visibility="{Binding IsLoading, Converter={StaticResource Visible}}" />
                     <TextBlock Margin="0,52" HorizontalAlignment="Center" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Accent}"
