@@ -174,6 +174,23 @@ public class CatalogTests
     }
 
     [Fact]
+    public void Reads_the_download_count_when_the_list_gives_one()
+    {
+        var mods = OpenMods.ParseList("""
+            { "openmods": 1, "mods": [
+              { "name": "Popular", "source": "https://github.com/A/a", "downloads": 12345678901 },
+              { "name": "New", "source": "https://github.com/A/b", "downloads": 0 },
+              { "name": "Older list", "source": "https://github.com/A/c" },
+              { "name": "Broken", "source": "https://github.com/A/d", "downloads": -3 },
+              { "name": "Text", "source": "https://github.com/A/e", "downloads": "12" },
+              { "name": "Half", "source": "https://github.com/A/f", "downloads": 1.5 }
+            ] }
+            """).Mods;
+
+        Assert.Equal([12345678901, 0, null, null, null, null], mods.Select(m => m.Downloads));
+    }
+
+    [Fact]
     public void Another_authors_project_keeps_its_own_id_and_file()
     {
         var repack = OpenMods.ParseList(List).Mods[4];

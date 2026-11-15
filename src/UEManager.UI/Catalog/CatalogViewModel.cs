@@ -78,16 +78,24 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
     private string searchText = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(UpdatedSortGlyph))]
+    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(UpdatedSortGlyph), nameof(DownloadsSortGlyph))]
     private CatalogSortField sortField;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(UpdatedSortGlyph))]
+    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(UpdatedSortGlyph), nameof(DownloadsSortGlyph))]
     private bool sortDescending;
 
     public string NameSortGlyph => SortGlyph(CatalogSortField.Name);
 
     public string UpdatedSortGlyph => SortGlyph(CatalogSortField.Updated);
+
+    public string DownloadsSortGlyph => SortGlyph(CatalogSortField.Downloads);
+
+    /// <summary>
+    /// The list gives download counts: the sort by downloads shows. Lists from before openmods counted them have none,
+    /// and a sort by nothing would only look broken.
+    /// </summary>
+    public bool HasDownloads => Items.Any(item => item.Mod.Downloads is not null);
 
     public bool HasItems => Items.Count > 0;
 
@@ -292,7 +300,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
 
     /// <summary>
     /// A click on the field the page is already sorted by reverses the order. A new field
-    /// starts with names A to Z, or with the newest release first.
+    /// starts with names A to Z, with the newest release first, or with the most downloads first.
     /// </summary>
     [RelayCommand]
     private void SortBy(CatalogSortField field)
@@ -304,7 +312,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         else
         {
             SortField = field;
-            SortDescending = field == CatalogSortField.Updated;
+            SortDescending = field != CatalogSortField.Name;
         }
         ApplySort();
         owner.SaveCatalogSort(SortField, SortDescending);
@@ -458,6 +466,7 @@ public sealed partial class CatalogViewModel : LocalizedObservableObject
         ItemsView.Refresh();
         OnPropertyChanged(nameof(ShowEmpty));
         OnPropertyChanged(nameof(HasItems));
+        OnPropertyChanged(nameof(HasDownloads));
         OnPropertyChanged(nameof(HasFilters));
         OnPropertyChanged(nameof(ModCount));
         OnPropertyChanged(nameof(ToolCount));
@@ -543,12 +552,29 @@ public sealed partial class CatalogItemViewModel(MainViewModel owner, CatalogMod
 
     public IReadOnlyList<string> Tags => mod.Tags;
 
-    public string MetaText => string.Join("  ·  ", new[]
+    /// <summary>
+    /// "Version 1.2  ·  Updated 15 Nov 2026  ·  MIT". Each part holds together (no-break spaces in it, and before each
+    /// dot), so a narrow card breaks the line only after a dot, never inside "15 Nov 2026".
+    /// </summary>
+    public string MetaText => string.Join($"{NoBreak}{NoBreak}·  ", new[]
     {
         mod.Release is null ? L.T("No release yet") : L.F($"Version {mod.Release.Version}"),
         mod.Updated is { } updated ? L.F($"Updated {updated.LocalDateTime.ToString(L.T("d MMM yyyy"), CultureInfo.CurrentCulture)}") : null,
         mod.License,
-    }.Where(part => part is not null));
+    }.Where(part => part is not null).Select(part => part!.Replace(' ', NoBreak)));
+
+    private const char NoBreak = (char)0xA0;
+
+    /// <summary>The list counts the mod's downloads: a small box with a download icon and the number, before the info line.</summary>
+    public bool HasDownloads => mod.Downloads is not null;
+
+    /// <summary>The number in the box, with the thousands of the player's language: "1,234". The icon says what it counts.</summary>
+    public string? DownloadsText => mod.Downloads?.ToString("N0", CultureInfo.CurrentCulture);
+
+    /// <summary>"1,234 downloads", the box's tooltip.</summary>
+    public string? DownloadsToolTip => mod.Downloads is { } downloads
+        ? L.Plural((int)Math.Min(downloads, int.MaxValue), "{0:N0} download", "{0:N0} downloads")
+        : null;
 
     public bool HasPage => mod.Page is not null;
 

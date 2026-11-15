@@ -156,7 +156,7 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding MetaText}" />
+                                <vm:CatalogMetaLine Margin="0,6,0,0" />
                             </StackPanel>
 
                             <!-- As wide as Page, Source and Changelog with their words. -->

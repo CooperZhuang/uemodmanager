@@ -20,6 +20,11 @@
                 <Button Margin="18,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.SortHeader}"
                         Content="{ui:Loc 'Updated', Tracked=True}" Tag="{Binding UpdatedSortGlyph}" ToolTip="{ui:Loc 'Sort by the date of the latest release'}"
                         Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:CatalogSortField.Updated}" />
+                <!-- Only while the list gives download counts. -->
+                <Button Margin="18,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.SortHeader}"
+                        Content="{ui:Loc 'Downloads', Tracked=True}" Tag="{Binding DownloadsSortGlyph}" ToolTip="{ui:Loc 'Sort by the number of downloads'}"
+                        Command="{Binding SortByCommand}" CommandParameter="{x:Static vm:CatalogSortField.Downloads}"
+                        Visibility="{Binding HasDownloads, Converter={StaticResource Visible}}" />
                 <!-- The mods or the tools, such as UE4SS and this app; the page opens on the mods at every start. Plain buttons:
                      the view model shows the side on them, and a click runs a command (see Segment). -->
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding HasTools, Converter={StaticResource Visible}}">

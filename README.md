@@ -456,8 +456,15 @@ are used.
   stops and names that mod.
 - The UE4SS entry opens the manager's own UE4SS install.
 - A search field filters by name, description, author, tag and type. The list sorts
-  by name or by the date of the latest release (newest first by default); the
-  choice is kept in `settings.json`.
+  by name, by the date of the latest release (newest first by default) or by
+  downloads (most first); the choice is kept in `settings.json`.
+- When the list gives a mod's `downloads` (GitHub's download counts of its
+  release files over the latest 99 releases, counted by openmods; checksum and
+  info files such as `.txt`, `.md` or `.sha256` do not count), a small box with a
+  download icon and the number starts the card's info line ("1,234 downloads"
+  as its tooltip), and the **Downloads** sort shows. openmods recounts about
+  every 2 hours, so a number can be up to about 2.5 hours behind GitHub. The
+  app's own installs count too: they download the file from GitHub.
 - A switch, **Mods (n) | Tools (n)**, shows either the mods or those tagged
   `tools` (such as UE4SS and the manager itself); the page opens on the mods at
   every start, and the switch shows only when the list has tools. When the search

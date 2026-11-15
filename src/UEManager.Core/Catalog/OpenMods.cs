@@ -55,6 +55,13 @@ public sealed record CatalogMod(
     /// </summary>
     public IReadOnlyList<CatalogPicture> Screenshots { get; init; } = [];
 
+    /// <summary>
+    /// How often the mod's release files were downloaded from GitHub, over all its releases, as openmods counts them;
+    /// null when the list gives no number. The app's own installs from the openmods page count too: they download the
+    /// file from GitHub.
+    /// </summary>
+    public long? Downloads { get; init; }
+
     /// <summary>What the picture viewer shows: the cover first, then the screenshots. Empty when the mod has neither.</summary>
     public IReadOnlyList<CatalogPicture> Pictures => Cover is null ? Screenshots : [new CatalogPicture(Cover, null), .. Screenshots];
 
@@ -161,6 +168,8 @@ public static class OpenMods
                 ReadRelease(mod))
             {
                 Screenshots = ReadScreenshots(mod, cover),
+                Downloads = mod.TryGetProperty("downloads", out var downloads) && downloads.ValueKind == JsonValueKind.Number
+                    && downloads.TryGetInt64(out var count) && count >= 0 ? count : null,
             });
         }
         return new CatalogList(info, mods);

@@ -23,6 +23,9 @@ public partial class CatalogFullView : UserControl
     /// <summary>A card's margin, as the view's XAML takes it, so the gap is set in one place.</summary>
     public static Thickness CardMargin { get; } = new(0, 0, CardGap, CardGap);
 
+    /// <summary>The card list's margin: the last column's gap hangs over the right edge, so the cards end where the toolbar ends.</summary>
+    public static Thickness CardsMargin { get; } = new(0, 0, -CardGap, 0);
+
     public static readonly DependencyProperty ColumnsProperty =
         DependencyProperty.Register(nameof(Columns), typeof(int), typeof(CatalogFullView), new PropertyMetadata(3));
 
@@ -36,7 +39,8 @@ public partial class CatalogFullView : UserControl
     public CatalogFullView()
     {
         InitializeComponent();
-        Cards.SizeChanged += (_, e) => Columns = ColumnsFor(e.NewSize.Width);
+        // The list is wider than the room by the gap that hangs over (CardsMargin).
+        Cards.SizeChanged += (_, e) => Columns = ColumnsFor(e.NewSize.Width - CardGap);
         // Esc leaves the view: its key binding needs the focus inside.
         IsVisibleChanged += (_, e) =>
         {

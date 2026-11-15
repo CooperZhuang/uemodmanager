@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -89,6 +90,41 @@ public sealed class CatalogToolsSwitchTests : IDisposable
     }
 
     private static string[] Shown(CatalogViewModel catalog) => catalog.ItemsView.Cast<CatalogItemViewModel>().Select(item => item.Name).ToArray();
+
+    [Fact]
+    public void The_page_shows_and_sorts_by_downloads_when_the_list_counts_them() => UiThread.Run(() =>
+    {
+        var catalog = Load("""
+            { "openmods": 1, "mods": [
+              { "name": "Alpha", "source": "https://github.com/A/alpha", "downloads": 5 },
+              { "name": "Beta", "source": "https://github.com/A/beta", "downloads": 900 },
+              { "name": "Gamma", "source": "https://github.com/A/gamma", "downloads": 1 },
+              { "name": "Delta", "source": "https://github.com/A/delta" }
+            ] }
+            """);
+
+        Assert.True(catalog.HasDownloads);
+        catalog.SortByCommand.Execute(CatalogSortField.Downloads);
+        // The most first; a mod without a count last.
+        Assert.Equal(["Beta", "Alpha", "Gamma", "Delta"], Shown(catalog));
+        Assert.True(catalog.SortDescending);
+        catalog.SortByCommand.Execute(CatalogSortField.Downloads);
+        Assert.Equal(["Delta", "Gamma", "Alpha", "Beta"], Shown(catalog));
+
+        // The count is a box of its own, not in the info line, whose parts hold together (no-break spaces).
+        var cards = catalog.Items.ToDictionary(item => item.Name);
+        Assert.True(cards["Beta"].HasDownloads);
+        Assert.Equal(900.ToString("N0", CultureInfo.CurrentCulture), cards["Beta"].DownloadsText);
+        Assert.Equal("900 downloads", cards["Beta"].DownloadsToolTip);
+        Assert.Equal("1 download", cards["Gamma"].DownloadsToolTip);
+        Assert.False(cards["Delta"].HasDownloads);
+        Assert.Null(cards["Delta"].DownloadsText);
+        Assert.DoesNotContain(' ', cards["Beta"].MetaText);
+        Assert.Equal("No release yet", cards["Beta"].MetaText.Replace((char)0xA0, ' '));
+
+        // A list from before openmods counted them: no sort by downloads to offer.
+        Assert.False(Load(Mods).HasDownloads);
+    });
 
     [Fact]
     public void A_card_without_an_action_shows_its_status_in_the_row_of_the_buttons() => UiThread.Run(() =>

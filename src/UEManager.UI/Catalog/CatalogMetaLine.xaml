@@ -1,0 +1,24 @@
+<UserControl x:Class="UEManager.UI.Catalog.CatalogMetaLine"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UEManager.UI.Catalog"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CatalogItemViewModel}">
+    <!-- A card's info line: the download count in a small box (the user's wish: an icon and the number, quiet, only a
+         thin line around it), then the version, the date and the license. A wrapped line starts below the text, not
+         below the box. -->
+    <DockPanel>
+        <Border DockPanel.Dock="Left" Margin="0,0,8,0" Padding="5,1,6,1" VerticalAlignment="Top" CornerRadius="2"
+                Background="Transparent" BorderBrush="{StaticResource Brush.Line}" BorderThickness="1"
+                ToolTip="{Binding DownloadsToolTip}" Visibility="{Binding HasDownloads, Converter={StaticResource Visible}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource Text.Icon}" FontSize="11" Foreground="{StaticResource Brush.TextMuted}" Text="&#xE896;" />
+                <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="11.5"
+                           Foreground="{StaticResource Brush.TextMuted}" Text="{Binding DownloadsText}" />
+            </StackPanel>
+        </Border>
+        <TextBlock Margin="0,1,0,0" VerticalAlignment="Top" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding MetaText}" />
+    </DockPanel>
+</UserControl>
