@@ -566,18 +566,26 @@
         <!-- ===== The files in ~mods that no mod placed ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsUnmanagedOpen, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource Dialog}" Width="820">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Title}" TextWrapping="Wrap" Text="{Binding UnmanagedText}" />
-                    <TextBlock Margin="0,10,0,14" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'These files are in the mods folder, but no mod in the list placed them. They can be meant to be there, such as a mod you put in by hand. The manager never changes or removes them.'}" />
-                    <views:FileTree MaxHeight="360" DataContext="{Binding UnmanagedRows}" />
-                    <StackPanel Margin="0,20,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <!-- As in the mod details: the tree takes the room that is left and scrolls, so Close stays in view. -->
+            <Border Style="{StaticResource Dialog}" Width="820" Margin="40">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.Title}" TextWrapping="Wrap" Text="{Binding UnmanagedText}" />
+                        <TextBlock Margin="0,10,0,14" Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'These files are in the mods folder, but no mod in the list placed them. They can be meant to be there, such as a mod you put in by hand. The manager never changes or removes them.'}" />
+                    </StackPanel>
+                    <views:FileTree Grid.Row="1" MaxHeight="360" DataContext="{Binding UnmanagedRows}" />
+                    <StackPanel Grid.Row="2" Margin="0,20,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{ui:Loc 'Open mods folder'}" ui:Icon.Glyph="&#xE838;" Command="{Binding OpenModFolderCommand}" />
                         <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                                 Command="{Binding CloseUnmanagedCommand}" IsCancel="True" />
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </Border>
         </Grid>
 

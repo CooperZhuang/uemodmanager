@@ -9,187 +9,196 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:ModDetailsViewModel}">
     <Border Style="{StaticResource Dialog}" Width="820">
-        <StackPanel>
-            <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Mod details', Tracked=True}" />
-            <DockPanel Margin="0,8,0,0" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">
-                <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}"
-                        Command="{Binding RenameCommand}" ToolTip="{ui:Loc 'Change the name, version or tags'}"
-                        Foreground="{StaticResource Brush.Edit}" BorderBrush="{StaticResource Brush.Edit}" Background="{StaticResource Brush.EditWash}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Edit'}" />
-                        <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE70F;" />
-                    </StackPanel>
-                </Button>
-                <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}"
-                        Command="{Binding AddTagCommand}" Visibility="{Binding CanTag, Converter={StaticResource Visible}}"
-                        Foreground="{StaticResource Brush.Edit}" BorderBrush="{StaticResource Brush.Edit}" Background="{StaticResource Brush.EditWash}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Add tag'}" />
-                        <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE8EC;" />
-                    </StackPanel>
-                </Button>
-                <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Title}" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
-            </DockPanel>
-            <TextBlock Margin="0,6,0,16" Style="{StaticResource Text.Body}" Text="{Binding Summary}"
-                       Visibility="{Binding IsShowing, Converter={StaticResource Visible}}" />
+        <!-- The file tree takes the room that is left, up to its own height, and scrolls: Close stays in view however
+             many files a mod has and however small the window is. -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Mod details', Tracked=True}" />
+                <DockPanel Margin="0,8,0,0" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">
+                    <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}"
+                            Command="{Binding RenameCommand}" ToolTip="{ui:Loc 'Change the name, version or tags'}"
+                            Foreground="{StaticResource Brush.Edit}" BorderBrush="{StaticResource Brush.Edit}" Background="{StaticResource Brush.EditWash}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Edit'}" />
+                            <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE70F;" />
+                        </StackPanel>
+                    </Button>
+                    <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.StatusBox}"
+                            Command="{Binding AddTagCommand}" Visibility="{Binding CanTag, Converter={StaticResource Visible}}"
+                            Foreground="{StaticResource Brush.Edit}" BorderBrush="{StaticResource Brush.Edit}" Background="{StaticResource Brush.EditWash}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Add tag'}" />
+                            <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE8EC;" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Title}" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
+                </DockPanel>
+                <TextBlock Margin="0,6,0,16" Style="{StaticResource Text.Body}" Text="{Binding Summary}"
+                           Visibility="{Binding IsShowing, Converter={StaticResource Visible}}" />
 
-            <!-- Rename: the name and version as the install review has them, and the tags; Enter saves, Esc cancels. -->
-            <Grid Margin="0,10,0,16" Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="160" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Name', Tracked=True}" />
-                    <TextBox x:Name="NameBox" Margin="0,6,0,0" Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
-                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Version', Tracked=True}" />
-                    <TextBox Margin="0,6,0,0" Text="{Binding NewVersion, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Optional'}">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
-                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" Visibility="{Binding CanTag, Converter={StaticResource Visible}}">
-                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Tags', Tracked=True}" />
-                    <TextBox x:Name="TagsBox" Margin="0,6,0,0" Text="{Binding NewTags, UpdateSourceTrigger=PropertyChanged, NotifyOnTargetUpdated=True}"
-                             ui:CaretAtEnd.OnUpdate="True" Tag="{ui:Loc 'Separate with commas, such as Combat, UI'}">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
-                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
-                            <KeyBinding Key="Tab" Command="{Binding AcceptSuggestionCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <!-- Tags to pick: the player's own first, then common ones; they narrow as the player types, and Tab takes the first. -->
-                    <DockPanel Margin="0,8,0,0" Visibility="{Binding HasSuggestions, Converter={StaticResource Visible}}">
-                        <TextBlock DockPanel.Dock="Left" Margin="0,4,8,0" VerticalAlignment="Top" Style="{StaticResource Text.Small}" Text="{ui:Loc 'Suggestions:'}" />
-                        <ItemsControl x:Name="TagHints" ItemsSource="{Binding Suggestions}" Focusable="False">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Style="{StaticResource Button.Suggestion}" CommandParameter="{Binding}"
-                                            Command="{Binding DataContext.AddSuggestionCommand, ElementName=TagHints}">
-                                        <TextBlock FontSize="12" Text="{Binding}" />
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                <!-- Rename: the name and version as the install review has them, and the tags; Enter saves, Esc cancels. -->
+                <Grid Margin="0,10,0,16" Visibility="{Binding IsRenaming, Converter={StaticResource Visible}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="160" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Name', Tracked=True}" />
+                        <TextBox x:Name="NameBox" Margin="0,6,0,0" Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
+                                <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Version', Tracked=True}" />
+                        <TextBox Margin="0,6,0,0" Text="{Binding NewVersion, UpdateSourceTrigger=PropertyChanged}" Tag="{ui:Loc 'Optional'}">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
+                                <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" Visibility="{Binding CanTag, Converter={StaticResource Visible}}">
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Tags', Tracked=True}" />
+                        <TextBox x:Name="TagsBox" Margin="0,6,0,0" Text="{Binding NewTags, UpdateSourceTrigger=PropertyChanged, NotifyOnTargetUpdated=True}"
+                                 ui:CaretAtEnd.OnUpdate="True" Tag="{ui:Loc 'Separate with commas, such as Combat, UI'}">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding SaveRenameCommand}" />
+                                <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                                <KeyBinding Key="Tab" Command="{Binding AcceptSuggestionCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <!-- Tags to pick: the player's own first, then common ones; they narrow as the player types, and Tab takes the first. -->
+                        <DockPanel Margin="0,8,0,0" Visibility="{Binding HasSuggestions, Converter={StaticResource Visible}}">
+                            <TextBlock DockPanel.Dock="Left" Margin="0,4,8,0" VerticalAlignment="Top" Style="{StaticResource Text.Small}" Text="{ui:Loc 'Suggestions:'}" />
+                            <ItemsControl x:Name="TagHints" ItemsSource="{Binding Suggestions}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource Button.Suggestion}" CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.AddSuggestionCommand, ElementName=TagHints}">
+                                            <TextBlock FontSize="12" Text="{Binding}" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
+
+                    </StackPanel>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="120" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.Resources>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
+                            <Setter Property="Margin" Value="0,4,16,4" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                        </Style>
+                    </Grid.Resources>
+
+                    <TextBlock Text="{ui:Loc 'Installed on', Tracked=True}" />
+                    <TextBlock Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding InstalledText}" />
+
+                    <TextBlock Grid.Row="1" Text="{ui:Loc 'Installed from', Tracked=True}" />
+                    <DockPanel Grid.Row="1" Grid.Column="1">
+                        <!-- A download that kept the mod site's file name has the mod's number, so its page is known. -->
+                        <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
+                            <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.ModPageIcon}" FontSize="11" />
+                            <!-- As in the mod's row: "openmods.nexus" in orange for a mod from openmods; brighter here otherwise. -->
+                            <Button VerticalAlignment="Center" Content="{Binding ModPageText}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource Button.ModPage}">
+                                        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <!-- The update box, as in the mod's row. -->
+                            <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.UpdateAvailable}" Content="{Binding UpdateBoxText}"
+                                    Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
+                                    Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
+                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                        ToolTip="{Binding UpdateHint}" Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}">
+                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                           Foreground="{StaticResource Brush.Success}" Text="&#xE73E;" />
+                                <!-- The table's own TextBlock style is for its captions. -->
+                                <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
+                                           Foreground="{StaticResource Brush.Success}" Text="Up to date" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
+                                        ToolTip="{ui:Loc 'You keep this version: the update check leaves this mod out. Its details turn the check back on.'}"
+                                        Visibility="{Binding IsNotTracked, Converter={StaticResource Visible}}">
+                                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
+                                           Foreground="{StaticResource Brush.TextDim}" Text="&#xE718;" />
+                                <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
+                                           Foreground="{StaticResource Brush.TextDim}" Text="Not tracked" />
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
                     </DockPanel>
 
-                </StackPanel>
-            </Grid>
+                    <TextBlock Grid.Row="2" Text="{ui:Loc 'Catalog id', Tracked=True}" Visibility="{Binding CatalogId, Converter={StaticResource VisibleIfSet}}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding CatalogId}"
+                               Visibility="{Binding CatalogId, Converter={StaticResource VisibleIfSet}}" />
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" MinWidth="120" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.Resources>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
-                        <Setter Property="Margin" Value="0,4,16,4" />
-                        <Setter Property="VerticalAlignment" Value="Center" />
-                    </Style>
-                </Grid.Resources>
+                    <TextBlock Grid.Row="3" Text="{ui:Loc 'Size', Tracked=True}" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding SizeText}" />
 
-                <TextBlock Text="{ui:Loc 'Installed on', Tracked=True}" />
-                <TextBlock Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding InstalledText}" />
+                    <TextBlock Grid.Row="4" Text="{ui:Loc 'Tags', Tracked=True}" Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Info}" Text="{Binding TagsText}"
+                               Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
 
-                <TextBlock Grid.Row="1" Text="{ui:Loc 'Installed from', Tracked=True}" />
-                <DockPanel Grid.Row="1" Grid.Column="1">
-                    <!-- A download that kept the mod site's file name has the mod's number, so its page is known. -->
-                    <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center"
-                                Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}">
-                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Style="{StaticResource Text.ModPageIcon}" FontSize="11" />
-                        <!-- As in the mod's row: "openmods.nexus" in orange for a mod from openmods; brighter here otherwise. -->
-                        <Button VerticalAlignment="Center" Content="{Binding ModPageText}" Command="{Binding OpenModPageCommand}" ToolTip="{Binding ModPageUrl}">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource Button.ModPage}">
-                                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <!-- The update box, as in the mod's row. -->
-                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.UpdateAvailable}" Content="{Binding UpdateBoxText}"
-                                Command="{Binding OpenModFilesCommand}" ToolTip="{Binding UpdateHint}"
-                                Visibility="{Binding IsUpdateAvailable, Converter={StaticResource Visible}}" />
-                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
-                                    ToolTip="{Binding UpdateHint}" Visibility="{Binding IsUpToDate, Converter={StaticResource Visible}}">
-                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
-                                       Foreground="{StaticResource Brush.Success}" Text="&#xE73E;" />
-                            <!-- The table's own TextBlock style is for its captions. -->
-                            <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
-                                       Foreground="{StaticResource Brush.Success}" Text="Up to date" />
-                        </StackPanel>
-                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Background="Transparent"
-                                    ToolTip="{ui:Loc 'You keep this version: the update check leaves this mod out. Its details turn the check back on.'}"
-                                    Visibility="{Binding IsNotTracked, Converter={StaticResource Visible}}">
-                            <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Style="{StaticResource Text.Icon}" FontSize="10"
-                                       Foreground="{StaticResource Brush.TextDim}" Text="&#xE718;" />
-                            <TextBlock Margin="0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" FontSize="11"
-                                       Foreground="{StaticResource Brush.TextDim}" Text="Not tracked" />
-                        </StackPanel>
-                    </StackPanel>
-                    <TextBlock Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding SourceText}" />
-                </DockPanel>
+                    <!-- Only a mod with a mod page is checked for updates; the player may keep its version. -->
+                    <TextBlock Grid.Row="5" Text="{ui:Loc 'Updates', Tracked=True}" Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
+                    <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,4" Content="{ui:Loc 'Check this mod for updates'}" IsChecked="{Binding TrackUpdates}"
+                              Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
+                </Grid>
 
-                <TextBlock Grid.Row="2" Text="{ui:Loc 'Catalog id', Tracked=True}" Visibility="{Binding CatalogId, Converter={StaticResource VisibleIfSet}}" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Path}" Text="{Binding CatalogId}"
-                           Visibility="{Binding CatalogId, Converter={StaticResource VisibleIfSet}}" />
+                <!-- Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them. -->
+                <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="2" BorderThickness="1"
+                        BorderBrush="{StaticResource Brush.Warning}" Background="{StaticResource Brush.WarningWash}"
+                        Visibility="{Binding HasChangedFiles, Converter={StaticResource Visible}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Content="{ui:Loc 'Keep my version'}"
+                                ui:Icon.Glyph="&#xE73E;" Command="{Binding KeepChangedFilesCommand}"
+                                ToolTip="{ui:Loc 'From then on the manager treats your version like a settings file: it keeps it when the mod is turned off, asks about it on an update and backs it up on an uninstall. Reset settings brings back the mod\'s own version.'}" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
+                                   TextWrapping="Wrap" TextTrimming="None" Text="{Binding ChangedText}" />
+                    </DockPanel>
+                </Border>
 
-                <TextBlock Grid.Row="3" Text="{ui:Loc 'Size', Tracked=True}" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding SizeText}" />
+                <TextBlock Margin="0,14,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Files in the game', Tracked=True}" />
+            </StackPanel>
+            <views:FileTree Grid.Row="1" MaxHeight="360" DataContext="{Binding Rows}" />
 
-                <TextBlock Grid.Row="4" Text="{ui:Loc 'Tags', Tracked=True}" Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,4" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Info}" Text="{Binding TagsText}"
-                           Visibility="{Binding TagsText, Converter={StaticResource VisibleIfSet}}" />
-
-                <!-- Only a mod with a mod page is checked for updates; the player may keep its version. -->
-                <TextBlock Grid.Row="5" Text="{ui:Loc 'Updates', Tracked=True}" Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
-                <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,4" Content="{ui:Loc 'Check this mod for updates'}" IsChecked="{Binding TrackUpdates}"
-                          Visibility="{Binding ModPageUrl, Converter={StaticResource VisibleIfSet}}" />
-            </Grid>
-
-            <!-- Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them. -->
-            <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="2" BorderThickness="1"
-                    BorderBrush="{StaticResource Brush.Warning}" Background="{StaticResource Brush.WarningWash}"
-                    Visibility="{Binding HasChangedFiles, Converter={StaticResource Visible}}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Content="{ui:Loc 'Keep my version'}"
-                            ui:Icon.Glyph="&#xE73E;" Command="{Binding KeepChangedFilesCommand}"
-                            ToolTip="{ui:Loc 'From then on the manager treats your version like a settings file: it keeps it when the mod is turned off, asks about it on an update and backs it up on an uninstall. Reset settings brings back the mod\'s own version.'}" />
-                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
-                               TextWrapping="Wrap" TextTrimming="None" Text="{Binding ChangedText}" />
-                </DockPanel>
-            </Border>
-
-            <TextBlock Margin="0,14,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Files in the game', Tracked=True}" />
-            <views:FileTree MaxHeight="360" DataContext="{Binding Rows}" />
-
-            <Grid Margin="0,20,0,0">
+            <Grid Grid.Row="2" Margin="0,20,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding IsShowing, Converter={StaticResource Visible}}">
                     <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}" Command="{Binding CloseCommand}" IsCancel="True" />
                 </StackPanel>
@@ -200,6 +209,6 @@
                             Command="{Binding SaveRenameCommand}" />
                 </StackPanel>
             </Grid>
-        </StackPanel>
+        </Grid>
     </Border>
 </UserControl>
