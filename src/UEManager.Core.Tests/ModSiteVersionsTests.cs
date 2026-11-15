@@ -171,6 +171,49 @@ public class ModSiteVersionsTests
     }
 
     [Fact]
+    public async Task An_error_beside_the_versions_costs_only_the_files_it_names()
+    {
+        // The files of mod 70 failed, as for a page the site no longer shows; the versions came.
+        var site = new Site(_ => JsonSerializer.Serialize(new
+        {
+            errors = new[] { new { message = "Mod not found", path = new[] { "f70" } } },
+            data = new Dictionary<string, object?>
+            {
+                ["mods"] = new { nodes = new[] { new { modId = 27, version = "0.5.2", status = "published" }, new { modId = 70, version = "1.8.0", status = "published" } } },
+                ["f27"] = new[] { File(2127, "PBZ-SpeakerHighlight-PVLW", "0.5.0", "MAIN", primary: true, date: 100) },
+                ["f70"] = null,
+            },
+        }));
+
+        var pages = await FetchPages(site, "27", "70");
+
+        Assert.NotNull(pages);
+        Assert.Single(pages!["27"].Files);
+        Assert.Equal("1.8.0", pages["70"].Version);
+        Assert.Empty(pages["70"].Files);
+        Assert.Single(site.Requests);
+    }
+
+    [Fact]
+    public async Task An_answer_without_versions_asks_once_more_without_the_files()
+    {
+        // The first answer failed whole; the second request asks for the page versions alone, as the check did before.
+        var site = new Site(count => count == 1
+            ? """{"errors":[{"message":"Cannot query modFiles"}],"data":null}"""
+            : Nodes((27, "0.5.2", "published")));
+
+        var pages = await FetchPages(site, "27");
+
+        Assert.Equal("0.5.2", pages!["27"].Version);
+        Assert.Empty(pages["27"].Files);
+        Assert.Equal(2, site.Requests.Count);
+        using var second = JsonDocument.Parse(site.Requests[1].Body);
+        Assert.DoesNotContain("modFiles", second.RootElement.GetProperty("query").GetString());
+        // The site refuses a variable that the query does not use.
+        Assert.False(second.RootElement.GetProperty("variables").TryGetProperty("gameId", out _));
+    }
+
+    [Fact]
     public async Task A_page_without_files_keeps_its_version()
     {
         var site = new Site(_ => Answer([(2, "1.6.4", "published")]));
@@ -247,8 +290,9 @@ public class ModSiteVersionsTests
     }
 
     [Fact]
-    public void Without_a_matching_name_the_main_file_counts_before_the_page()
+    public void A_name_with_its_version_in_it_matches_the_file_with_the_next_version()
     {
+        // The author puts the version in the file's name; the old file was archived.
         var page = Page("1.1.1",
             SiteFile(1, "PBZ Stutter Fixes 1.1.1", "1.1.1", "MAIN", primary: true, date: 300),
             SiteFile(2, "PBZ Stutter Fixes 1.1.0", "1.1.0", "ARCHIVED", date: 100));
@@ -257,21 +301,76 @@ public class ModSiteVersionsTests
 
         Assert.Equal(ModSiteState.UpdateAvailable, check.State);
         Assert.Equal("1.1.1", check.ComparedVersion);
+        Assert.Equal(ModSiteMatch.File, check.Match);
+    }
+
+    [Fact]
+    public void Without_a_matching_name_the_main_file_counts_before_the_page()
+    {
+        var page = Page("1.2.0",
+            SiteFile(1, "PBZ Stutter Fixes", "1.1.1", "MAIN", primary: true, date: 300),
+            SiteFile(2, "Extra Presets", "1.0.0", "OPTIONAL", date: 100));
+
+        var check = ModSiteVersions.Check("1.1.0", "Renamed by its author 1028 1.1.0 2026-11-11T21-19Z NLbS1fHMm.zip", page);
+
+        Assert.Equal(ModSiteState.UpdateAvailable, check.State);
+        Assert.Equal("1.1.1", check.ComparedVersion);
         Assert.Equal(ModSiteMatch.MainFile, check.Match);
     }
 
     [Fact]
-    public void Files_whose_names_carry_the_version_fall_back_to_the_page()
+    public void Each_variant_whose_name_carries_the_version_keeps_its_own()
     {
-        var page = Page("1.8.6",
-            SiteFile(1, "PBZMapMarkers 1.8.6 Fog", "1.8.6", "OPTIONAL", date: 300),
+        // Two variants of one page, each with the version in its name; Fog is a step ahead of Fog Teleport.
+        var page = Page("1.8.7",
+            SiteFile(1, "PBZMapMarkers 1.8.7 Fog", "1.8.7", "OPTIONAL", date: 500),
             SiteFile(2, "PBZMapMarkers 1.8.6 Fog Teleport", "1.8.6", "OPTIONAL", date: 400));
 
         var check = ModSiteVersions.Check("1.8.4", "PBZMapMarkers 1.8.4 Fog Teleport 134 1.8.4 2026-11-13T06-56Z R1oU2qvzl.zip", page);
 
         Assert.Equal(ModSiteState.UpdateAvailable, check.State);
         Assert.Equal("1.8.6", check.ComparedVersion);
-        Assert.Equal(ModSiteMatch.Page, check.Match);
+        Assert.Equal(ModSiteMatch.File, check.Match);
+    }
+
+    [Fact]
+    public void An_optional_file_with_the_old_version_hides_no_update_of_the_main_one()
+    {
+        // The main file moved on to 1.1; an optional file still has 1.0, the version the player has of the main one.
+        var page = Page("1.1",
+            SiteFile(1, "Mod 1.1", "1.1", "MAIN", primary: true, date: 300),
+            SiteFile(2, "Mod Addon", "1.0", "OPTIONAL", date: 100));
+
+        var check = ModSiteVersions.Check("1.0", "Mod 1.0 55 1.0 2026-11-01T00-00Z abcdefghi.zip", page);
+
+        Assert.Equal(ModSiteState.UpdateAvailable, check.State);
+        Assert.Equal("1.1", check.ComparedVersion);
+        Assert.Equal(ModSiteMatch.File, check.Match);
+    }
+
+    [Fact]
+    public void A_download_name_that_lost_its_brackets_still_finds_its_file()
+    {
+        var page = Page("0.5.2",
+            SiteFile(2127, "PBZ-SpeakerHighlight-PVLW", "0.5.0", "MAIN", primary: true, date: 100),
+            SiteFile(3006, "PBZ-SpeakerHighlight-PVLW (Experimental)", "0.5.2", "OPTIONAL", date: 200));
+
+        var check = ModSiteVersions.Check("0.5.1", "PBZ-SpeakerHighlight-PVLW Experimental 27 0.5.1 2026-11-08T02-19Z AbCdEfGhI.zip", page);
+
+        Assert.Equal(ModSiteState.UpdateAvailable, check.State);
+        Assert.Equal("0.5.2", check.ComparedVersion);
+        Assert.Equal(ModSiteMatch.File, check.Match);
+    }
+
+    [Theory]
+    [InlineData("PBZ Stutter Fixes 1.1.1", "1.1.1", "pbzstutterfixes")]
+    [InlineData("PBZMapMarkers 1.8.6 Fog Teleport", "1.8.6", "pbzmapmarkersfogteleport")]
+    [InlineData("PBZQuestGuide 1.3.0", "1", "pbzquestguide130")]
+    [InlineData("Mod v2.0", "2.0", "mod")]
+    [InlineData("PBZ-SpeakerHighlight-PVLW (Experimental)", null, "pbzspeakerhighlightpvlwexperimental")]
+    public void A_name_is_compared_by_its_letters_and_digits_without_its_version(string name, string? version, string key)
+    {
+        Assert.Equal(key, ModSiteVersions.NameKey(name, version));
     }
 
     [Fact]
