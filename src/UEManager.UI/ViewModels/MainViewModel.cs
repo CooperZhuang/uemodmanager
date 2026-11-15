@@ -1303,12 +1303,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             installedUe4ssVersion is null ? L.T("Start the game once to show its version.") : null));
     }
 
-    private static HttpClient CreateHttpClient()
-    {
-        var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"UEModManager/{AppInfo.Version}");
-        return http;
-    }
+    private static HttpClient CreateHttpClient() => HttpClients.Create($"UEModManager/{AppInfo.Version}", TimeSpan.FromMinutes(3));
 
     internal static void TryDeleteFolder(string folder)
     {

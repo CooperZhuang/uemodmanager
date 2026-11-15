@@ -85,12 +85,7 @@ internal static class Ue4ssOnline
     }
 
     /// <summary>The app's kind of client, so the manifest and GitHub see the same program.</summary>
-    public static HttpClient CreateClient()
-    {
-        var http = new HttpClient { Timeout = Timeout };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd($"UEModManager/{Program.ToolVersion}");
-        return http;
-    }
+    public static HttpClient CreateClient() => HttpClients.Create($"UEModManager/{Program.ToolVersion}", Timeout);
 
     /// <summary>
     /// Runs an async call on one of the thread pool's threads: a command may run while the app's window owns the
