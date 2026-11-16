@@ -30,6 +30,18 @@ the question does not come again. Mod names, paths, downloaded
 descriptions and license texts stay as they are. Logs and help reports are
 always English, so that a helper can read them.
 
+The same box has **Font** and **Interface scale** (thanks to HumanMus1c).
+**Font** offers the theme's fonts (the default), the Windows font, or any
+installed text font; it takes over the body text and the small labels, while
+titles keep each game's own font for their letters and take the chosen font for
+other scripts such as Chinese. The language's fallback font for Chinese,
+Japanese or Korean stays behind it. **Interface scale** enlarges or shrinks the
+whole window below the title bar, popups and tooltips included, from 85 % to
+140 % in steps of 5 %. At a large scale in a small window the sidebar scrolls,
+openmods cards put their buttons below their text, and button rows wrap.
+**Reset** brings both back to their defaults. Both are saved in
+`Data/settings.json` (`font`, `uiScale`).
+
 ### Translations
 
 The English text in the code is the key. Every other language is one file,
