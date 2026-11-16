@@ -47,8 +47,9 @@ public sealed class FontOption : INotifyPropertyChanged
 /// <summary>
 /// The East Asian fallback and user font choices for the interface. Palette.xaml names Microsoft YaHei UI;
 /// Traditional Chinese gets Microsoft JhengHei UI, Japanese Yu Gothic UI, and Korean Malgun Gothic.
-/// A chosen font (or the Windows font) leads the font list while keeping the language's fallback; Font.Scale
-/// scales the UI proportionally from its 100% baseline.
+/// A chosen font (or the Windows font) leads the body text and labels while keeping the language's fallback; titles
+/// keep the theme's font for their letters and take the chosen font for other scripts. Font.Scale scales the UI
+/// proportionally from its 100% baseline.
 /// </summary>
 internal static class LanguageFonts
 {
@@ -62,6 +63,9 @@ internal static class LanguageFonts
 
     /// <summary>The fonts with an East Asian fallback; DynamicResource lets views follow a language or font switch.</summary>
     private static readonly string[] Keys = ["Font.Body", "Font.Heading", "Font.Label"];
+
+    /// <summary>The titles' font: it keeps the theme's fonts first under a chosen font (see <see cref="For"/>).</summary>
+    private const string HeadingKey = "Font.Heading";
 
     private static readonly Lazy<IReadOnlyList<FontFamily>> SystemFontFamilies = new(() =>
         Fonts.SystemFontFamilies
@@ -129,7 +133,11 @@ internal static class LanguageFonts
     }
 
     /// <summary>Replaces YaHei with the Windows fallback for Traditional Chinese, Japanese or Korean, or puts a chosen font first.</summary>
-    internal static FontFamily For(FontFamily font, string language, string? choice = null)
+    /// <param name="keepTheme">
+    /// A heading: the theme's own fonts stay first, as they make each game's look, and the chosen font comes before the
+    /// language's fallback, for the scripts the theme's fonts lack, such as Chinese (2026-11-16).
+    /// </param>
+    internal static FontFamily For(FontFamily font, string language, string? choice = null, bool keepTheme = false)
     {
         if (!font.Source.Contains(Simplified, StringComparison.OrdinalIgnoreCase))
             return font;
@@ -143,7 +151,12 @@ internal static class LanguageFonts
         var chosen = choice.Equals(System, StringComparison.OrdinalIgnoreCase)
             ? SystemFonts.MessageFontFamily.Source
             : choice.Trim();
-        return new FontFamily(ContainsFamily(chosen, fallback) ? chosen : $"{chosen}, {fallback}");
+        var lead = ContainsFamily(chosen, fallback) ? chosen : $"{chosen}, {fallback}";
+        if (!keepTheme)
+            return new FontFamily(lead);
+        var theme = string.Join(", ", font.Source.Split(',').Select(part => part.Trim())
+            .Where(part => part.Length > 0 && !part.Equals(Simplified, StringComparison.OrdinalIgnoreCase)));
+        return new FontFamily(font.BaseUri, theme.Length == 0 ? lead : $"{theme}, {lead}");
     }
 
     internal static ScaleTransform ScaleFor(int percent)
@@ -252,7 +265,7 @@ internal static class LanguageFonts
         if (fonts)
         {
             foreach (var (key, font) in target.BaseFonts)
-                resources[key] = For(font, L.Current.Language, Font);
+                resources[key] = For(font, L.Current.Language, Font, keepTheme: key == HeadingKey);
         }
         if (scale)
             resources["Font.Scale"] = ScaleFor(UiScale);

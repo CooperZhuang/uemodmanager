@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace UEManager.Core.Storage;
 
 /// <summary>User choices that survive a restart.</summary>
@@ -12,37 +10,20 @@ public sealed class AppSettings
     public const int MinUiScale = 85;
     public const int MaxUiScale = 140;
     public const int UiScaleStep = 5;
-    private const int LegacyDefaultFontSize = 13;
 
     /// <summary>The chosen interface font family, or "$system" for the Windows font; null uses the theme's fonts.</summary>
     public string? Font { get; set; }
 
     private int uiScale = DefaultUiScale;
-    private bool hasUiScale;
 
-    /// <summary>The interface scale in Settings (85% to 140% in steps of 5%; 100% is the default). Old settings without it keep 100%.</summary>
+    /// <summary>The interface scale in Settings: 85 % to 140 % in steps of 5 %, 100 % by default.</summary>
     public int UiScale
     {
         get => uiScale;
-        set
-        {
-            hasUiScale = true;
-            uiScale = NormalizeUiScale(value);
-        }
+        set => uiScale = NormalizeUiScale(value);
     }
 
-    /// <summary>Migrates a legacy fontSize setting (11–18 around a 13px baseline) when reading files without uiScale.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? FontSize
-    {
-        get => null;
-        set
-        {
-            if (value is int legacy && !hasUiScale)
-                uiScale = MigrateLegacyFontSize(legacy);
-        }
-    }
-
+    /// <summary>A scale on the Settings steps: the nearest step from 85 % to 140 %; 100 % for none or a negative one.</summary>
     public static int NormalizeUiScale(int percent)
     {
         if (percent <= 0)
@@ -50,11 +31,6 @@ public sealed class AppSettings
         var snapped = (int)Math.Round(percent / (double)UiScaleStep, MidpointRounding.AwayFromZero) * UiScaleStep;
         return Math.Clamp(snapped, MinUiScale, MaxUiScale);
     }
-
-    public static int MigrateLegacyFontSize(int size) =>
-        size <= 0
-            ? DefaultUiScale
-            : NormalizeUiScale((int)Math.Round(size * 100.0 / LegacyDefaultFontSize, MidpointRounding.AwayFromZero));
 
     /// <summary>
     /// The game the app starts with, as a game profile's id; null until the player chose one, so the app asks. See

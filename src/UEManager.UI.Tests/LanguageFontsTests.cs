@@ -37,6 +37,19 @@ public class LanguageFontsTests
     public void A_custom_font_leads_the_language_fallback(string language, string expected) =>
         Assert.Equal(expected, LanguageFonts.For(new FontFamily("Segoe UI, Microsoft YaHei UI"), language, "Consolas").Source);
 
+    /// <summary>Titles keep the theme's font, the game's look; the chosen font serves the scripts it lacks.</summary>
+    [Theory]
+    [InlineData("zh-CN", "Palatino Linotype, Georgia, Consolas, Microsoft YaHei UI")]
+    [InlineData("zh-TW", "Palatino Linotype, Georgia, Consolas, Microsoft JhengHei UI")]
+    [InlineData("ko", "Palatino Linotype, Georgia, Consolas, Malgun Gothic")]
+    public void A_title_keeps_the_theme_font_before_a_custom_font(string language, string expected)
+    {
+        var heading = new FontFamily("Palatino Linotype, Georgia, Microsoft YaHei UI");
+        Assert.Equal(expected, LanguageFonts.For(heading, language, "Consolas", keepTheme: true).Source);
+        // Without a choice it is the language's font only, as before.
+        Assert.Equal("Palatino Linotype, Georgia, Microsoft JhengHei UI", LanguageFonts.For(heading, "zh-TW", null, keepTheme: true).Source);
+    }
+
     [Fact]
     public void Default_choice_uses_the_theme_font_and_system_choice_uses_the_windows_font()
     {
@@ -231,7 +244,8 @@ public class LanguageFontsTests
             Localizer.Current.SetLanguage("zh-TW");
             LanguageFonts.SetUiScale(125);
 
-            Assert.Equal("Consolas, Microsoft JhengHei UI", Assert.IsType<FontFamily>(resources["Font.Heading"]).Source);
+            // Titles keep the theme's font first (the game's look), the chosen font for other scripts.
+            Assert.Equal("Palatino Linotype, Georgia, Consolas, Microsoft JhengHei UI", Assert.IsType<FontFamily>(resources["Font.Heading"]).Source);
 
             // Calling Follow again while overridden must keep the original theme base font and never double-apply.
             LanguageFonts.Follow(resources);
