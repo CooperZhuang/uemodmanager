@@ -1231,7 +1231,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>
-    /// Takes the game back to its original files after a question that shows what changes. The player may
+    /// Takes the game back to its original files, in a view of its own: the question that shows what changes, then the
+    /// log of the work with every file and folder it touches, which stays until the player closes it. The player may
     /// also delete the mods from the manager, and reset the app's settings, after which the app starts again.
     /// </summary>
     [RelayCommand]
@@ -1242,25 +1243,52 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         ResetPreview? preview = null;
         if (!await RunAsync(L.T("Looking at the game…"), async () => preview = await Task.Run(() => manager!.PreviewReset())))
             return;
-        var dialog = new ResetModdingViewModel(GameDisplayName, preview!);
-        ResetDialog = dialog;
-        var accepted = await dialog.Result;
-        ResetDialog = null;
-        if (!accepted)
-            return;
-
-        ResetResult? result = null;
-        var done = await RunAsync(L.T("Resetting modding…"), async () => result = await Task.Run(() => manager!.ResetModding(dialog.DeleteMods)));
-        RefreshMods();
-        if (!done)
-            return;
-        if (dialog.ResetSettings)
+        var view = new ResetModdingViewModel(GameDisplayName, preview!);
+        ResetDialog = view;
+        if (!await view.Result)
         {
-            ResetAppSettings();
+            ResetDialog = null;
             return;
         }
+
+        view.Start();
+        var deleteMods = view.DeleteMods;
+        var (result, failure) = await Task.Run<(ResetResult? Result, Exception? Failure)>(() =>
+        {
+            // The view gets the lines of this work only: an update check at the same time stays out of it.
+            using var watch = Log.Watch(view.Add);
+            try
+            {
+                return (manager!.ResetModding(deleteMods), null);
+            }
+            catch (ModException ex)
+            {
+                Log.Warn(ex.Message);
+                return (null, ex);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                Log.Error("Reset modding stopped.", ex);
+                return (null, ex);
+            }
+        });
+        RefreshMods();
+        if (failure is ChangedFilesException changed)
+            view.OfferKeepVersion(() => _ = KeepChangedFilesAsync(changed.ModIds));
+        view.Finish(result is not null ? ResetSummary(result)
+            : failure is ModException ? L.Message(failure)
+            : L.F($"Something went wrong: {failure!.Message}"), failed: result is null);
+        await view.Closed;
+        ResetDialog = null;
+        if (result is not null && view.ResetSettings)
+            ResetAppSettings();
+    }
+
+    /// <summary>What a reset did, in one line.</summary>
+    private string ResetSummary(ResetResult result)
+    {
         var parts = new List<string>();
-        if (result!.ModsTurnedOff > 0)
+        if (result.ModsTurnedOff > 0)
             parts.Add(L.Plural(result.ModsTurnedOff, "{0} mod turned off", "{0} mods turned off"));
         if (result.Ue4ssRemoved)
             parts.Add(L.T("UE4SS removed"));
@@ -1268,9 +1296,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             parts.Add(L.Plural(result.FilesMovedAside, "{0} other file moved to a backup folder", "{0} other files moved to a backup folder"));
         if (result.ModsDeleted > 0)
             parts.Add(L.Plural(result.ModsDeleted, "{0} mod deleted from the manager", "{0} mods deleted from the manager"));
-        ShowToast(parts.Count == 0
+        return parts.Count == 0
             ? L.F($"{GameDisplayName} had no mods to remove.")
-            : L.F($"Modding reset: {string.Join(", ", parts)}. {GameDisplayName} is back to its original files."));
+            : L.F($"Modding reset: {string.Join(", ", parts)}. {GameDisplayName} is back to its original files.");
     }
 
     /// <summary>Puts every app setting back to its default and starts the app again, so nothing of the old ones stays.</summary>

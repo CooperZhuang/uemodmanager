@@ -933,6 +933,7 @@ public sealed class ModManager
                 if (backup is not null)
                     FileSystem.TryDeleteDirectory(backup);
             });
+            Log.Step($"Deleting the manager's copy '{LibraryFolderOf(mod)}'");
             FileSystem.TryDeleteDirectory(LibraryFolderOf(mod));
             var leftoverBackup = moveLeftovers ? MoveLeftoversToBackups(leftovers, mod.Name) : null;
             Log.Info($"Uninstalled \"{mod.Name}\"{ (leftovers.Count > 0 ? $", keeping {leftovers.Count} file(s) it left behind" : "") }.");
@@ -1472,22 +1473,31 @@ public sealed class ModManager
         lock (gate)
         {
             EnsureCanChange();
+            Log.Info($"Reset modding of '{Game.RootPath}'{(deleteMods ? ", deleting the mods from the manager" : "")}.");
             var enabled = mods.Where(m => m.Enabled).ToList();
             if (enabled.Count > 0)
+            {
+                Log.Info($"Turning off {enabled.Count} mod(s): {string.Join(", ", enabled.Select(m => $"\"{m.Name}\""))}.");
                 Commit(Undeploy(enabled));
+            }
 
             var ue4ssRemoved = IsUe4ssInstalled();
             if (ue4ssRemoved)
+            {
+                Log.Info($"Removing UE4SS from '{Game.BinariesPath}'.");
                 RemoveUe4ss();
+            }
 
             var others = OtherModFiles();
             string? backup = null;
             if (others.Count > 0)
             {
                 backup = Path.Combine(paths.BackupDir(Game.Profile.Id), $"{DateTime.Now:yyyyMMdd-HHmmss} reset");
+                Log.Info($"Moving {others.Count} file(s) the manager did not install to '{backup}'.");
                 foreach (var (file, relative) in others)
                 {
                     var target = Path.Combine(backup, relative);
+                    Log.Step($"Moving '{file}'");
                     Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                     try
                     {
@@ -1495,6 +1505,7 @@ public sealed class ModManager
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                     {
+                        Log.Warn($"'{file}' could not be moved: {ex.Message}");
                         throw new ModException($"{relative} could not be moved out of the game: a program may be using it. Close it, then reset again. ({ex.Message})");
                     }
                 }
@@ -1504,12 +1515,16 @@ public sealed class ModManager
             foreach (var folder in new[] { Game.ModsPath, Game.LogicModsPath })
             {
                 if (Directory.Exists(folder) && !Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Any())
+                {
+                    Log.Step($"Removing the empty folder '{folder}'");
                     FileSystem.TryDeleteDirectory(folder);
+                }
             }
 
             var deleted = 0;
-            if (deleteMods)
+            if (deleteMods && mods.Count > 0)
             {
+                Log.Info($"Deleting {mods.Count} mod(s) from the manager.");
                 foreach (var mod in mods.ToList())
                 {
                     Uninstall(mod.Id);
@@ -1858,6 +1873,7 @@ public sealed class ModManager
         var saved = ReplacedPath(mod, file);
         if (!File.Exists(saved))
             return;
+        Log.Step($"Putting the game's own file back at '{place}'");
         Directory.CreateDirectory(Path.GetDirectoryName(place)!);
         File.Copy(saved, place, overwrite: true);
     }
@@ -1869,6 +1885,7 @@ public sealed class ModManager
     /// <exception cref="ModException">A file could not be read, as when the game or another tool holds it: nothing has left the game then.</exception>
     private void BackUpChangedGameFiles(IEnumerable<ModFileRecord> files, IReadOnlyList<ModRecord> group)
     {
+        string? current = null;
         try
         {
             foreach (var mod in group)
@@ -1881,6 +1898,8 @@ public sealed class ModManager
                 var folder = Path.Combine(paths.BackupDir(Game.Profile.Id), $"{DateTime.Now:yyyyMMdd-HHmmss} {FileSystem.SafeName(mod.Name, mod.Id)}");
                 foreach (var file in changed)
                 {
+                    current = file.DeployedPath;
+                    Log.Step($"Backing up '{file.DeployedPath}'");
                     var target = Path.Combine(folder, Local(file.FileName));
                     Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                     File.Copy(file.DeployedPath!, target, overwrite: true);
@@ -1890,6 +1909,7 @@ public sealed class ModManager
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            Log.Warn($"'{current}' could not be backed up: {ex.Message}");
             // Reading a file the game or another tool holds used to end here as a raw IO error, which the window can
             // only show as "Something went wrong". Nothing has been moved yet, so this is the same refusal as a file
             // that cannot be moved: the player closes whatever holds it and tries again.
@@ -2029,6 +2049,7 @@ public sealed class ModManager
     {
         try
         {
+            Log.Step($"Saving the mod list '{StateFile}'");
             Save();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -2071,6 +2092,7 @@ public sealed class ModManager
         {
             foreach (var (_, moved) in parked)
             {
+                Log.Step($"Deleting '{moved}'");
                 if (Directory.Exists(moved))
                     FileSystem.TryDeleteDirectory(moved);
                 else
@@ -2164,10 +2186,13 @@ public sealed class ModManager
     private static List<(string Original, string Parked)> Park(IEnumerable<string> items)
     {
         var parked = new List<(string Original, string Parked)>();
+        string? current = null;
         try
         {
             foreach (var item in items)
             {
+                current = item;
+                Log.Step($"Moving aside '{item}'");
                 var moved = item + RemovingSuffix;
                 if (Directory.Exists(item))
                 {
@@ -2183,10 +2208,49 @@ public sealed class ModManager
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            // Windows' message often names no file, and for a folder never the file inside that holds it.
+            Log.Warn($"'{current}' could not be moved aside: {ex.Message}");
+            if (current is not null && Directory.Exists(current))
+                LogFilesInUse(current);
             Unpark(parked);
             throw new ModException($"Nothing was removed from the game, because a file is in use or protected. Close the game and try again. ({ex.Message})");
         }
         return parked;
+    }
+
+    /// <summary>
+    /// Writes into the log which files in a folder that could not be moved are open in another program: such a file
+    /// keeps the folder in place. Each file is only opened for a moment, so nothing changes.
+    /// </summary>
+    private static void LogFilesInUse(string folder)
+    {
+        const int Shown = 20;
+        var inUse = 0;
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    // Opening a file that no one may share fails while any other program has it open.
+                    using var _ = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    if (++inUse <= Shown)
+                        Log.Warn($"In use or protected: '{file}' ({ex.Message})");
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"The files in '{folder}' could not be listed: {ex.Message}");
+            return;
+        }
+        if (inUse > Shown)
+            Log.Warn($"{inUse - Shown} more file(s) in '{folder}' are in use or protected.");
+        if (inUse == 0)
+            Log.Warn($"No file in '{folder}' is open in another program. A program may have the folder itself open, such as a command window that is in it.");
     }
 
     /// <summary>Moves files and folders moved aside by <see cref="Park"/> back, the last one first.</summary>
@@ -2196,6 +2260,7 @@ public sealed class ModManager
         {
             try
             {
+                Log.Step($"Moving back '{parked[i].Original}'");
                 if (Directory.Exists(parked[i].Parked))
                     Directory.Move(parked[i].Parked, parked[i].Original);
                 else
@@ -2264,6 +2329,7 @@ public sealed class ModManager
             {
                 if (!Directory.Exists(folder) || Directory.EnumerateFileSystemEntries(folder).Any())
                     return;
+                Log.Step($"Removing the empty folder '{folder}'");
                 Directory.Delete(folder);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

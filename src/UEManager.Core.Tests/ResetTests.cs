@@ -140,4 +140,81 @@ public class ResetTests : IDisposable
         Assert.Equal(2, manager.Mods.Count(m => m.Enabled));
         Assert.Equal(new ResetPreview(2, 3, true, 3), manager.PreviewReset());
     }
+
+    /// <summary>Resets with a watcher on the log, as the reset's view does, and returns the lines it got.</summary>
+    private List<LogLine> WatchedReset(bool deleteMods, bool fails = false)
+    {
+        var lines = new List<LogLine>();
+        using (Log.Watch(lines.Add))
+        {
+            if (fails)
+                Assert.Throws<ModException>(() => manager.ResetModding(deleteMods));
+            else
+                manager.ResetModding(deleteMods);
+        }
+        return lines;
+    }
+
+    [Fact]
+    public void A_watched_reset_names_every_file_and_folder_it_touches()
+    {
+        ModdedGame();
+
+        var lines = WatchedReset(deleteMods: true);
+
+        var text = string.Join("\n", lines.Select(l => l.Message));
+        Assert.Contains($"Moving aside '{Path.Combine(game.ModsPath, "Sharp_P.pak")}'", text);
+        Assert.Contains($"Moving aside '{Path.Combine(Win64, "ue4ss")}'", text);
+        Assert.Contains($"Moving aside '{Path.Combine(Win64, "dwmapi.dll")}'", text);
+        Assert.Contains($"Moving '{Path.Combine(game.ModsPath, "Sub", "Deep_P.pak")}'", text);
+        Assert.Contains($"Moving '{Path.Combine(game.LogicModsPath, "Blue.pak")}'", text);
+        Assert.Contains($"Removing the empty folder '{game.ModsPath}'", text);
+        Assert.Contains("Deleting the manager's copy", text);
+        Assert.All(lines, l => Assert.Equal("INFO", l.Level));
+    }
+
+    [Fact]
+    public void Detail_lines_go_only_to_a_watcher()
+    {
+        ModdedGame();
+        var lines = new List<LogLine>();
+        using (Log.Watch(lines.Add)) { }
+
+        manager.ResetModding(deleteMods: false);
+
+        Assert.Empty(lines);
+    }
+
+    [Fact]
+    public void A_mod_file_in_use_is_named_in_the_watched_lines()
+    {
+        ModdedGame();
+        var pak = Path.Combine(game.ModsPath, "Sharp_P.pak");
+
+        List<LogLine> lines;
+        using (File.Open(pak, FileMode.Open, FileAccess.Read, FileShare.Read))
+            lines = WatchedReset(deleteMods: false, fails: true);
+
+        var warning = Assert.Single(lines, l => l.Level == "WARN");
+        Assert.StartsWith($"'{pak}' could not be moved aside: ", warning.Message);
+        Assert.Equal($"Moving aside '{pak}'", lines[lines.IndexOf(warning) - 1].Message);
+    }
+
+    [Fact]
+    public void A_file_in_use_inside_the_UE4SS_folder_is_named_as_well_as_the_folder()
+    {
+        ModdedGame();
+        var log = Path.Combine(Win64, "ue4ss", "UE4SS.log");
+        File.WriteAllText(log, "");
+
+        List<LogLine> lines;
+        // As UE4SS writes its log while the game runs.
+        using (new FileStream(log, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+            lines = WatchedReset(deleteMods: false, fails: true);
+
+        var warnings = lines.Where(l => l.Level == "WARN").Select(l => l.Message).ToList();
+        Assert.Contains(warnings, w => w.StartsWith($"'{Path.Combine(Win64, "ue4ss")}' could not be moved aside: ", StringComparison.Ordinal));
+        Assert.Contains(warnings, w => w.StartsWith($"In use or protected: '{log}'", StringComparison.Ordinal));
+        Assert.True(File.Exists(Path.Combine(Win64, "ue4ss", "UE4SS.dll")));
+    }
 }

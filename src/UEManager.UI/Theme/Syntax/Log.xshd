@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+  Colours for the app's log in a view, such as the one of "Reset modding" (lines from Core\Log.cs: time, level, text):
+  the time and INFO in grey, WARN and ERROR in the key colour, and the files and folders in quotes. The app puts in the
+  colours of the game's look (Color.Syntax.* in Theme\Palette.xaml, see Services\Syntax.cs); the ones written here are
+  only the fallback.
+-->
+<SyntaxDefinition name="Log" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="#7C746A" />
+  <Color name="Key" foreground="#E5485F" fontWeight="bold" />
+  <Color name="String" foreground="#D2B07A" />
+
+  <!-- The rules are read with spaces ignored, so a space is written \x20. -->
+  <RuleSet>
+    <Rule color="Comment">^\d\d:\d\d:\d\d\x20\x20INFO\b</Rule>
+    <Rule color="Comment">^\d\d:\d\d:\d\d</Rule>
+    <Rule color="Key">(?&lt;=^\d\d:\d\d:\d\d\x20\x20)(WARN|ERROR)\b</Rule>
+    <!-- A file or folder: the log writes each in single quotes. -->
+    <Rule color="String">'[A-Za-z]:\\[^'\r\n]*'</Rule>
+  </RuleSet>
+</SyntaxDefinition>

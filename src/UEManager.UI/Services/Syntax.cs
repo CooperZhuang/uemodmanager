@@ -31,6 +31,9 @@ internal static class Syntax
     /// <summary>The folder report's colours, in its view.</summary>
     public static IHighlightingDefinition Report => Named("Report");
 
+    /// <summary>The app's log in a view, such as the one of "Reset modding".</summary>
+    public static IHighlightingDefinition Log => Named("Log");
+
     private static IHighlightingDefinition Named(string name)
     {
         if (!Loaded.TryGetValue(name, out var definition))
@@ -47,7 +50,7 @@ internal static class Syntax
     };
 
     /// <summary>A syntax file's rules, with each of its colours taken from <paramref name="palette"/> where it has one.</summary>
-    /// <param name="name">The syntax file in Theme\Syntax: Ini, Json, Lua or Report.</param>
+    /// <param name="name">The syntax file in Theme\Syntax: Ini, Json, Lua, Report or Log.</param>
     /// <param name="palette">A palette key's colour, such as Color.Syntax.Key's; null keeps the syntax file's own.</param>
     internal static IHighlightingDefinition Build(string name, Func<string, Color?> palette)
     {

@@ -750,7 +750,8 @@ Ctrl+F and F5 wait while a dialog is open.
 ## Reset modding
 
 **Settings → Reset modding…** takes the game back to its original files, so the
-player can start clean. A window first shows what changes:
+player can start clean. It opens a view over the whole window below the title
+bar, which first shows what changes:
 
 - every enabled mod is turned off, all or none;
 - UE4SS is removed completely, with its settings and every mod in its folder;
@@ -766,6 +767,16 @@ Each step is saved before the next, so a step that fails (a file in use) leaves
 a consistent state, and a second reset finishes the work. Mods put straight
 into the game's `Paks` folder by hand are not found; the store's file check
 (Steam: Verify integrity of game files) catches those.
+
+Below the question, a log shows the work as it happens: every file and folder
+the reset moves, deletes or saves, one line each, and at the end what it did or
+why it stopped. The view stays open until **Close**; **Copy** and **Save as
+.txt…** take the log along. When a file is in use, the log names it: Windows'
+own message often names no file, and for a folder never the file inside that
+holds it, so the app opens each file in such a folder for a moment and lists
+the ones another program has open. These detail lines go into the app's log
+file as well (`Data/logs`), but only while the view watches: other changes keep
+their short log, with only the lines that name a file in use.
 
 ## Solution layout
 
