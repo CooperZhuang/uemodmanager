@@ -72,7 +72,11 @@
 
             <!-- ===== Sidebar ===== -->
             <Border Background="{StaticResource Brush.Sidebar}" BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,1,0">
-                <DockPanel>
+                <!-- The whole sidebar scrolls when the window is too low for it, as at a large interface scale (see
+                     Settings): the menu keeps its size instead of shrinking between the emblem and the buttons below.
+                     At least as high as the sidebar, so the buttons stay at the bottom while everything fits. -->
+                <ScrollViewer x:Name="SidebarScroll" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <DockPanel MinHeight="{Binding ViewportHeight, ElementName=SidebarScroll}">
                     <!-- The emblem and the game's name; the space below them matches the space below the menu with
                          openmods on, at the start size of the window. -->
                     <StackPanel DockPanel.Dock="Top" Margin="28,20,24,14">
@@ -190,8 +194,7 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- Scrolls when the window is too low for every entry, so none hides behind the buttons below. -->
-                    <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <!-- The menu, in the room between the emblem and the buttons below. -->
                         <StackPanel>
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Home'}" ui:Icon.Glyph="&#xE80F;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
@@ -225,8 +228,8 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-                    </ScrollViewer>
                 </DockPanel>
+                </ScrollViewer>
             </Border>
 
             <!-- ===== Content ===== -->

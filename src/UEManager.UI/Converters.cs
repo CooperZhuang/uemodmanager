@@ -19,6 +19,21 @@ public sealed class BoolToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>
+/// True while a width (or any number) is below <see cref="Limit"/>: a layout switches to its narrow form, as an openmods
+/// card at a large interface scale moves its buttons below its text.
+/// </summary>
+public sealed class LessThanConverter : IValueConverter
+{
+    public double Limit { get; set; }
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is double number && number > 0 && number < Limit;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>A value shows the element, null hides it; Invert flips that.</summary>
 public sealed class NullToVisibilityConverter : IValueConverter
 {

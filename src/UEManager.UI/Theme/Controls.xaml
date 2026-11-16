@@ -9,6 +9,8 @@
     <ui:PageConverter x:Key="Page" />
     <ui:ToneBrushConverter x:Key="Tone" />
     <ui:TrackedConverter x:Key="Tracked" />
+    <!-- An openmods card narrower than this puts its buttons below its text (see CatalogView). -->
+    <ui:LessThanConverter x:Key="NarrowCard" Limit="760" />
 
     <Style x:Key="LanguageSelector" TargetType="ComboBox">
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
@@ -103,9 +105,11 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
     </Style>
 
+    <!-- A small label over a value; ends in "…" where a large interface scale leaves too little room. -->
     <Style x:Key="Text.Caption" TargetType="TextBlock" BasedOn="{StaticResource Text.Overline}">
         <Setter Property="FontSize" Value="10.5" />
         <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
     <Style x:Key="Text.Display" TargetType="TextBlock">
