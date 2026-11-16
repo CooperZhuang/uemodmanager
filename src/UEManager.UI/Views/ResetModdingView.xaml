@@ -13,19 +13,21 @@
          folder it touches. Nothing changes before the click on Reset modding; the view stays open after the work until
          Close or Esc. -->
     <Border Background="{StaticResource Brush.PanelSolid}">
-        <DockPanel Margin="32,26,32,24">
-            <StackPanel DockPanel.Dock="Top">
-                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Start clean', Tracked=True}" />
-                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" FontSize="22" Text="{ui:Loc 'Reset modding'}" />
-            </StackPanel>
+        <ScrollViewer Style="{StaticResource ScrollViewer.Overlay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid MinHeight="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                <DockPanel Margin="32,26,32,24">
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Start clean', Tracked=True}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" FontSize="22" Text="{ui:Loc 'Reset modding'}" />
+                    </StackPanel>
 
-            <!-- The question: what the reset changes on the left, the choices and the buttons on the right. -->
-            <Grid DockPanel.Dock="Top" Margin="0,12,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="460" />
-                </Grid.ColumnDefinitions>
+                    <!-- The question: what the reset changes on the left, the choices and the buttons on the right. -->
+                    <Grid DockPanel.Dock="Top" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="0.9*" MaxWidth="460" />
+                        </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Body}" Text="{Binding Intro}" />
                     <ItemsControl Margin="0,14,0,0" ItemsSource="{Binding Changes}" Focusable="False">
@@ -147,7 +149,7 @@
                 </TextBlock>
             </DockPanel>
 
-            <Grid Margin="0,10,0,0">
+            <Grid Margin="0,10,0,0" MinHeight="180">
                 <Border BorderThickness="1" CornerRadius="2" Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
                     <avalon:TextEditor x:Name="Viewer" Document="{Binding Document}" IsReadOnly="True" Padding="10,8"
                                        FontFamily="Cascadia Mono, Consolas" FontSize="13" Background="Transparent"
@@ -159,6 +161,8 @@
                            Text="{ui:Loc 'Each step of the reset shows here, with every file and folder it touches.'}"
                            Visibility="{Binding HasLog, Converter={StaticResource Hidden}}" />
             </Grid>
-        </DockPanel>
+                </DockPanel>
+            </Grid>
+        </ScrollViewer>
     </Border>
 </UserControl>

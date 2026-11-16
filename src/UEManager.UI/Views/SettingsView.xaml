@@ -27,15 +27,59 @@
         <!-- Language switches the existing views immediately and persists with the other settings. -->
         <Border Margin="0,20,0,0" Style="{StaticResource Card}">
             <StackPanel>
-                <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Language'}" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Margin="0,-4,0,-4" Padding="10,4" FontSize="12" VerticalAlignment="Center"
+                            Content="{ui:Loc 'Reset'}" Command="{Binding ResetFontSettingsCommand}"
+                            ToolTip="{ui:Loc 'Reset font and interface scale to their defaults'}"
+                            Visibility="{Binding CanResetFontSettings, Converter={StaticResource Visible}}" />
+                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Language'}" />
+                </DockPanel>
                 <TextBlock Margin="0,6,0,18" Style="{StaticResource Text.Body}"
                            Text="{ui:Loc 'Changes take effect immediately and are saved for the next launch.'}" />
-                <DockPanel LastChildFill="False">
+                <DockPanel Style="{StaticResource Field}" LastChildFill="False">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Interface language'}" />
                     <ComboBox Width="240" Style="{StaticResource LanguageSelector}"
                               ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="Code"
                               SelectedValue="{Binding SelectedLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               AutomationProperties.Name="{ui:Loc 'Interface language'}" />
+                </DockPanel>
+                <DockPanel Style="{StaticResource Field}" LastChildFill="False">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Font'}" />
+                    <ComboBox Width="240" Style="{StaticResource LanguageSelector}"
+                              ItemsSource="{Binding Fonts}" SelectedValuePath="Code"
+                              TextSearch.TextPath="Name"
+                              SelectedValue="{Binding SelectedFont, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              AutomationProperties.Name="{ui:Loc 'Font'}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:FontOption}">
+                                <TextBlock Text="{Binding Name}" FontFamily="{Binding PreviewFont}" TextTrimming="CharacterEllipsis" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </DockPanel>
+                <DockPanel LastChildFill="False">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Interface scale'}" />
+                    <StackPanel Orientation="Horizontal">
+                        <!-- Wait until a drag or track press ends before applying Font.Scale, so scaling does not shift the slider under the pointer. -->
+                        <Slider x:Name="UiScaleSlider" Width="240" VerticalAlignment="Center"
+                                Minimum="{Binding UiScaleMin}" Maximum="{Binding UiScaleMax}"
+                                TickFrequency="{Binding UiScaleStep}" SmallChange="{Binding UiScaleStep}"
+                                LargeChange="{Binding UiScaleStep}" IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                                Value="{Binding UiScale, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
+                                Thumb.DragStarted="OnUiScaleDragStarted"
+                                Thumb.DragCompleted="OnUiScaleDragCompleted"
+                                PreviewMouseLeftButtonDown="OnUiScalePointerDown"
+                                PreviewMouseLeftButtonUp="OnUiScalePointerUp"
+                                LostMouseCapture="OnUiScaleLostMouseCapture"
+                                MouseLeave="OnUiScaleMouseLeave"
+                                PreviewKeyDown="OnUiScalePreviewKeyDown"
+                                LostKeyboardFocus="OnUiScaleLostKeyboardFocus"
+                                ValueChanged="OnUiScaleValueChanged"
+                                AutomationProperties.Name="{ui:Loc 'Interface scale'}" />
+                        <TextBlock Margin="14,0,0,0" MinWidth="44" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Brush.Text}"
+                                   Text="{Binding Value, ElementName=UiScaleSlider, StringFormat={}{0:0}%}" />
+                    </StackPanel>
                 </DockPanel>
             </StackPanel>
         </Border>
@@ -88,11 +132,11 @@
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Build', Tracked=True}" />
                     <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" Text="{Binding BuildText}" />
                 </DockPanel>
-                <WrapPanel Margin="0,10,0,0">
-                    <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Locate game folder…'}" ui:Icon.Glyph="&#xE838;"
+                <WrapPanel Margin="0,10,0,-8">
+                    <Button Margin="0,0,8,8" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Locate game folder…'}" ui:Icon.Glyph="&#xE838;"
                             Command="{Binding LocateGameCommand}" />
-                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Search again'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding DetectGameCommand}" />
-                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Open game folder'}" Command="{Binding OpenGameFolderCommand}" />
+                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Search again'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding DetectGameCommand}" />
+                    <Button Margin="0,0,0,8" Content="{ui:Loc 'Open game folder'}" Command="{Binding OpenGameFolderCommand}" />
                 </WrapPanel>
             </StackPanel>
         </Border>
@@ -146,13 +190,13 @@
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Data folder', Tracked=True}" />
                     <TextBlock Style="{StaticResource Text.Path}" Text="{Binding DataPath}" />
                 </DockPanel>
-                <WrapPanel Margin="0,10,0,0">
-                    <Button Content="{ui:Loc 'Open data folder'}" ui:Icon.Glyph="&#xE838;" Command="{Binding OpenDataFolderCommand}" />
-                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Open logs'}" ui:Icon.Glyph="&#xE8A5;" Command="{Binding OpenLogsCommand}" />
-                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Open settings backups'}" ui:Icon.Glyph="&#xE81C;" Command="{Binding OpenBackupsCommand}"
+                <WrapPanel Margin="0,10,0,-8">
+                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Open data folder'}" ui:Icon.Glyph="&#xE838;" Command="{Binding OpenDataFolderCommand}" />
+                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Open logs'}" ui:Icon.Glyph="&#xE8A5;" Command="{Binding OpenLogsCommand}" />
+                    <Button Margin="0,0,8,8" Content="{ui:Loc 'Open settings backups'}" ui:Icon.Glyph="&#xE81C;" Command="{Binding OpenBackupsCommand}"
                             ToolTip="{ui:Loc 'Mod settings you changed, saved before an update or an uninstall replaced them'}" />
                     <!-- One click, then a message: cleared, empty already, or why not (the user's wish). -->
-                    <Button Margin="8,0,0,0" Content="{ui:Loc 'Clear picture cache'}" ui:Icon.Glyph="&#xE74D;" Command="{Binding ClearPictureCacheCommand}"
+                    <Button Margin="0,0,0,8" Content="{ui:Loc 'Clear picture cache'}" ui:Icon.Glyph="&#xE74D;" Command="{Binding ClearPictureCacheCommand}"
                             ToolTip="{ui:Loc 'The openmods page keeps its pictures in the Data folder, so they are not downloaded at every start. Cleared pictures are downloaded again when the page shows them.'}" />
                 </WrapPanel>
             </StackPanel>

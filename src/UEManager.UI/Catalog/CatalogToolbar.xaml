@@ -7,12 +7,22 @@
              xmlns:vm="clr-namespace:UEManager.UI.Catalog"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:CatalogViewModel}">
-    <!-- The search, the sort, the Mods | Tools switch, the count and Refresh: one row for the openmods page and its full view. -->
-    <DockPanel>
-        <!-- At the end of the row, as on the Mods page. -->
-        <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding ReloadCommand}" />
+    <!-- The search, the sort, the Mods | Tools switch, the count and Refresh: one row when wide, wrapping onto a second row when narrow. -->
+    <Grid SizeChanged="OnToolbarSizeChanged">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="SearchBox" Grid.Row="0" Grid.Column="0" Style="{StaticResource TextBox.Search}"
+                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 Tag="{ui:Loc 'Filter: mod name, author, tag or description'}" />
         <!-- A field like the search box, so the sort buttons and the count stay readable over the cover art. -->
-        <Border DockPanel.Dock="Right" Margin="10,0,0,0" Style="{StaticResource FieldBox}">
+        <Border x:Name="ControlsBox" Grid.Row="0" Grid.Column="1" Margin="10,0,0,0" Style="{StaticResource FieldBox}">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Button VerticalAlignment="Center" Style="{StaticResource Button.SortHeader}"
                         Content="{ui:Loc 'Name', Tracked=True}" Tag="{Binding NameSortGlyph}" ToolTip="{ui:Loc 'Sort by name'}"
@@ -48,7 +58,7 @@
                 </Grid>
             </StackPanel>
         </Border>
-        <TextBox Style="{StaticResource TextBox.Search}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                 Tag="{ui:Loc 'Filter: mod name, author, tag or description'}" />
-    </DockPanel>
+        <!-- At the end of the row, as on the Mods page. -->
+        <Button Grid.Row="0" Grid.Column="2" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding ReloadCommand}" />
+    </Grid>
 </UserControl>

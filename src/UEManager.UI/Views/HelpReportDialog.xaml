@@ -7,27 +7,22 @@
              xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:HelpReportViewModel}">
-    <Border Style="{StaticResource Dialog}" Width="680">
-        <StackPanel>
-            <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Help', Tracked=True}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'Report a problem'}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
-                       Text="{ui:Loc 'Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it into the help channel on Discord.'}" />
+    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MaxWidth="680" MaxHeight="590">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Help', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'Report a problem'}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
+                           Text="{ui:Loc 'Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it into the help channel on Discord.'}" />
 
-            <TextBox Margin="0,16,0,0" Height="92" Style="{StaticResource TextBox.Multiline}"
-                     Text="{Binding Problem, UpdateSourceTrigger=PropertyChanged}"
-                     Tag="{ui:Loc 'What happened? For example: since I installed Witch 1.2, the game crashes when a fight starts.'}" />
+                <TextBox Margin="0,16,0,0" Height="86" Style="{StaticResource TextBox.Multiline}"
+                         Text="{Binding Problem, UpdateSourceTrigger=PropertyChanged}"
+                         Tag="{ui:Loc 'What happened? For example: since I installed Witch 1.2, the game crashes when a fight starts.'}" />
 
-            <TextBlock Margin="0,16,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Report', Tracked=True}" />
-            <Border Height="220" Padding="14,10" CornerRadius="2" BorderThickness="1"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="11" LineHeight="16"
-                               Foreground="{StaticResource Brush.TextMuted}" Text="{Binding ReportText}" />
-                </ScrollViewer>
-            </Border>
+                <TextBlock Margin="0,16,0,6" Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Report', Tracked=True}" />
+            </StackPanel>
 
-            <DockPanel Margin="0,20,0,0">
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,20,0,0">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Content="{ui:Loc 'Close'}" Command="{Binding CloseCommand}" IsCancel="True" />
                     <Button Margin="8,0,0,0" Style="{StaticResource Button.Discord}" Content="{ui:Loc 'Join our Discord'}"
@@ -38,6 +33,14 @@
                 <TextBlock VerticalAlignment="Center" Margin="0,0,16,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap"
                            Foreground="{StaticResource Brush.Success}" Text="{Binding CopiedText}" />
             </DockPanel>
-        </StackPanel>
+
+            <Border Padding="14,10" CornerRadius="2" BorderThickness="1"
+                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="11" LineHeight="16"
+                               Foreground="{StaticResource Brush.TextMuted}" Text="{Binding ReportText}" />
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
     </Border>
 </UserControl>

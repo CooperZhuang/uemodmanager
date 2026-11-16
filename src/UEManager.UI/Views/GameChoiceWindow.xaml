@@ -29,7 +29,7 @@
             </StackPanel>
         </Grid>
 
-        <Grid x:Name="Stage" Grid.Row="1" ClipToBounds="True">
+        <Grid x:Name="Stage" Grid.Row="1" ClipToBounds="True" LayoutTransform="{DynamicResource Font.Scale}">
             <!-- Theme\Art\backdrop.jpg, a little larger than its place: a blur fades out at its edges. A served game (see
                  ServedGame) has none: a plain dark anthracite, set in the code. -->
             <Image x:Name="Backdrop" Margin="-40" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality">

@@ -207,20 +207,25 @@
     <Border Style="{StaticResource Dialog}" Padding="18,22,18,20" VerticalAlignment="Top" Margin="0,16,0,0">
         <StackPanel>
             <Grid Margin="10,0">
-                <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
-                           Text="{ui:Loc 'Choose your game'}" />
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
                 <!-- Every game the app knows, as cards over the whole area; the highlights stay the picker's own. -->
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Content="{Binding AllGamesText}" ui:Icon.Glyph="&#xE8A9;"
+                <Button Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Content="{Binding AllGamesText}" ui:Icon.Glyph="&#xE8A9;"
                         Command="{Binding ShowAllGamesCommand}"
                         Visibility="{Binding HasMoreGames, Converter={StaticResource Visible}}" />
+                <TextBlock Grid.Column="1" Margin="12,0" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
+                           Text="{ui:Loc 'Choose your game'}" />
                 <!-- Only after "Switch game": at a start without a game, the app cannot go on without a choice. -->
-                <Button HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Icon}" Content="&#xE711;"
+                <Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Icon}" Content="&#xE711;"
                         FontFamily="{StaticResource Font.Icons}" FontSize="10" Width="28" Height="28"
                         Command="{Binding CloseCommand}" IsCancel="True" ToolTip="{ui:Loc 'Close'}"
                         Visibility="{Binding CanClose, Converter={StaticResource Visible}}" />
                 <!-- Only at a start without a chosen game: the cards and the message follow the language at once. After
                      "Switch game", Settings has it. -->
-                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal"
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal"
                             Visibility="{Binding CanChooseLanguage, Converter={StaticResource Visible}}">
                     <TextBlock Margin="0,0,10,0" Style="{StaticResource Text.Icon}" Foreground="{StaticResource Brush.TextMuted}" Text="&#xE774;" />
                     <ComboBox Width="180" MinHeight="34" FontSize="13" Style="{StaticResource LanguageSelector}"

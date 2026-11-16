@@ -8,7 +8,7 @@
              xmlns:views="clr-namespace:UEManager.UI.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:ModDetailsViewModel}">
-    <Border Style="{StaticResource Dialog}" Width="820">
+    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="820">
         <!-- The file tree takes the room that is left, up to its own height, and scrolls: Close stays in view however
              many files a mod has and however small the window is. -->
         <Grid>

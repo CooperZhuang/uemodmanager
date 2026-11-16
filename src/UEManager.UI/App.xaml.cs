@@ -135,6 +135,8 @@ public partial class App : Application
         // middle of its highlights, and in the game's look.
         var served = profile is null ? GameChoice.Served(games, ServedGame.Read(paths), settings.Game, AppInfo.CanChooseComingGames) : null;
         GameTheme.Apply(Resources, profile?.Id ?? served?.Id);
+        LanguageFonts.SetFont(settings.Font);
+        LanguageFonts.SetUiScale(settings.UiScale);
         LanguageFonts.Follow(Resources);
         try
         {

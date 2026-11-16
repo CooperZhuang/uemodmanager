@@ -13,7 +13,7 @@
         <KeyBinding Key="Escape" Command="{Binding EscapeCommand}" />
     </UserControl.InputBindings>
 
-    <Border Style="{StaticResource Dialog}" Width="900">
+    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MaxWidth="900" MaxHeight="620">
         <DockPanel>
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Mod settings', Tracked=True}" />
@@ -55,7 +55,7 @@
                 </DockPanel>
             </Grid>
 
-            <Border Height="440" BorderThickness="1" CornerRadius="2"
+            <Border BorderThickness="1" CornerRadius="2"
                     Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
                 <avalon:TextEditor x:Name="Editor" Document="{Binding Document}" SyntaxHighlighting="{Binding Highlighting}"
                                    IsReadOnly="{Binding IsReadOnly}" ShowLineNumbers="True" Padding="8,6"

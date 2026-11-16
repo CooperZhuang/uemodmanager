@@ -8,53 +8,59 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:AppUpdateViewModel}">
     <Border Style="{StaticResource Dialog}" Width="580">
-        <StackPanel>
-            <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Update', Tracked=True}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding DialogTitle}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="{Binding DialogText}" />
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Update', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding DialogTitle}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="{Binding DialogText}" />
+            </StackPanel>
 
-            <!-- What changed, as written on the release, shown as GitHub shows it. -->
-            <Border Margin="0,14,0,0" MaxHeight="230" Padding="14,10" CornerRadius="2" BorderThickness="1"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}"
-                    Visibility="{Binding Notes, Converter={StaticResource VisibleIfSet}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="0,0,0,2" TextElement.FontSize="12" TextElement.Foreground="{StaticResource Brush.TextMuted}"
-                                ui:ReleaseNotes.LinkCommand="{Binding OpenLinkCommand}" ui:ReleaseNotes.Text="{Binding Notes}" />
-                </ScrollViewer>
-            </Border>
-
-            <!-- 1: the app updates itself. -->
-            <Border Margin="0,20,0,0" Padding="18,16" CornerRadius="2" BorderThickness="1"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.LineStrong}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
-                            Content="{ui:Loc 'Update now'}" ui:Icon.Glyph="&#xE896;" Command="{Binding UpdateNowCommand}"
-                            IsEnabled="{Binding CanUpdateItself}" />
-                    <StackPanel>
-                        <TextBlock FontWeight="SemiBold" Text="{ui:Loc 'Automatic'}" />
-                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" TextTrimming="None"
-                                   Text="{Binding AutomaticText}" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-
-            <!-- 2: the user downloads it. -->
-            <Border Margin="0,10,0,0" Padding="18,16" CornerRadius="2" BorderThickness="1"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center"
-                            Content="{ui:Loc 'Open release page'}" ui:Icon.Glyph="&#xE8A7;" Command="{Binding OpenReleasePageCommand}" />
-                    <StackPanel>
-                        <TextBlock FontWeight="SemiBold" Text="{ui:Loc 'By hand'}" />
-                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" TextTrimming="None"
-                                   Text="{Binding ManualText}" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-
-            <DockPanel Margin="0,22,0,0" LastChildFill="False">
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,22,0,0" LastChildFill="False">
                 <Button DockPanel.Dock="Right" Content="{ui:Loc 'Not now'}" Command="{Binding CloseCommand}" IsCancel="True" />
             </DockPanel>
-        </StackPanel>
+
+            <ScrollViewer Margin="0,14,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <!-- What changed, as written on the release, shown as GitHub shows it. -->
+                    <Border Margin="0,0,0,20" MaxHeight="230" Padding="14,10" CornerRadius="2" BorderThickness="1"
+                            Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}"
+                            Visibility="{Binding Notes, Converter={StaticResource VisibleIfSet}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="0,0,0,2" TextElement.FontSize="12" TextElement.Foreground="{StaticResource Brush.TextMuted}"
+                                        ui:ReleaseNotes.LinkCommand="{Binding OpenLinkCommand}" ui:ReleaseNotes.Text="{Binding Notes}" />
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- 1: the app updates itself. -->
+                    <Border Padding="18,16" CornerRadius="2" BorderThickness="1"
+                            Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.LineStrong}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
+                                    Content="{ui:Loc 'Update now'}" ui:Icon.Glyph="&#xE896;" Command="{Binding UpdateNowCommand}"
+                                    IsEnabled="{Binding CanUpdateItself}" />
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold" Text="{ui:Loc 'Automatic'}" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" TextTrimming="None"
+                                           Text="{Binding AutomaticText}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- 2: the user downloads it. -->
+                    <Border Margin="0,10,0,0" Padding="18,16" CornerRadius="2" BorderThickness="1"
+                            Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center"
+                                    Content="{ui:Loc 'Open release page'}" ui:Icon.Glyph="&#xE8A7;" Command="{Binding OpenReleasePageCommand}" />
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold" Text="{ui:Loc 'By hand'}" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" TextTrimming="None"
+                                           Text="{Binding ManualText}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
     </Border>
 </UserControl>

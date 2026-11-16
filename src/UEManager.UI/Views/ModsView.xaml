@@ -270,20 +270,32 @@
         </Border>
 
         <!-- Search -->
-        <DockPanel Margin="0,20,0,12">
-            <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Test without mods'}" ui:Icon.Glyph="&#xE7E8;"
-                    Command="{Binding TestWithoutModsCommand}" IsEnabled="{Binding CanTestWithoutMods}" ToolTipService.ShowOnDisabled="True"
-                    ToolTip="{ui:Loc 'Turns every mod off and remembers which ones were on, to see whether the game runs without them. One click turns them back on.'}" />
-            <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Mod sets…'}" ui:Icon.Glyph="&#xE81E;"
-                    Command="{Binding ShowModSetsCommand}" ToolTip="{ui:Loc 'Save the mods that are on as a set, and turn on a set with one click'}" />
-            <Border DockPanel.Dock="Right" Margin="10,0,0,0" Style="{StaticResource FieldBox}">
-                <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding ModsCountText}" />
-            </Border>
-            <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;"
-                    Command="{Binding RefreshCommand}" ToolTip="F5" />
-            <TextBox x:Name="SearchBox" Style="{StaticResource TextBox.Search}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ctrl+F"
+        <Grid Margin="0,20,0,12" SizeChanged="OnToolbarSizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox" Grid.Row="0" Grid.Column="0" Style="{StaticResource TextBox.Search}"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ctrl+F"
                      Tag="{ui:Loc 'Filter: mod name, version, type, file name or tag'}" />
-        </DockPanel>
+            <Button Grid.Row="0" Grid.Column="1" Margin="10,0,0,0" Content="{ui:Loc 'Refresh'}" ui:Icon.Glyph="&#xE72C;"
+                    Command="{Binding RefreshCommand}" ToolTip="F5" />
+            <StackPanel x:Name="ToolbarActions" Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
+                <Border x:Name="ModsCountBox" Margin="10,0,0,0" Style="{StaticResource FieldBox}">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding ModsCountText}" />
+                </Border>
+                <Button Margin="10,0,0,0" Content="{ui:Loc 'Mod sets…'}" ui:Icon.Glyph="&#xE81E;"
+                        Command="{Binding ShowModSetsCommand}" ToolTip="{ui:Loc 'Save the mods that are on as a set, and turn on a set with one click'}" />
+                <Button Margin="10,0,0,0" Content="{ui:Loc 'Test without mods'}" ui:Icon.Glyph="&#xE7E8;"
+                        Command="{Binding TestWithoutModsCommand}" IsEnabled="{Binding CanTestWithoutMods}" ToolTipService.ShowOnDisabled="True"
+                        ToolTip="{ui:Loc 'Turns every mod off and remembers which ones were on, to see whether the game runs without them. One click turns them back on.'}" />
+            </StackPanel>
+        </Grid>
 
         <!-- Which mods the list shows: by their state, and by the player's tags once a mod has one. -->
         <DockPanel Margin="0,0,0,6" Visibility="{Binding HasFilterRow, Converter={StaticResource Visible}}">

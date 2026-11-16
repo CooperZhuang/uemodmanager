@@ -9,9 +9,18 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:AppUpdateViewModel}">
     <Border Style="{StaticResource Dialog}" Width="560">
-        <StackPanel>
-            <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Changelog', Tracked=True}" />
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'What changed in each version'}" />
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Changelog', Tracked=True}" />
+                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'What changed in each version'}" />
+            </StackPanel>
+
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,20,0,0" LastChildFill="False">
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                        Command="{Binding CloseChangelogCommand}" IsCancel="True" />
+                <Button DockPanel.Dock="Right" Content="{ui:Loc 'All releases on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
+                        Command="{Binding OpenAllReleasesCommand}" ToolTip="{ui:Loc 'Every release with its full notes'}" />
+            </DockPanel>
 
             <!-- Every release, newest first: its version and date, then one short line per change. -->
             <Border Margin="0,14,0,0" MaxHeight="440" Padding="16,6,16,10" CornerRadius="2" BorderThickness="1"
@@ -42,13 +51,6 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Border>
-
-            <DockPanel Margin="0,20,0,0" LastChildFill="False">
-                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
-                        Command="{Binding CloseChangelogCommand}" IsCancel="True" />
-                <Button DockPanel.Dock="Right" Content="{ui:Loc 'All releases on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
-                        Command="{Binding OpenAllReleasesCommand}" ToolTip="{ui:Loc 'Every release with its full notes'}" />
-            </DockPanel>
-        </StackPanel>
+        </DockPanel>
     </Border>
 </UserControl>

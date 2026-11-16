@@ -251,12 +251,75 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
+    public ObservableCollection<FontOption> Fonts { get; } = new(LanguageFonts.Options());
+
+    public string SelectedFont
+    {
+        get => LanguageFonts.Resolve(settings.Font);
+        set
+        {
+            if (value is null)
+                return;
+            var resolved = LanguageFonts.Resolve(value);
+            var stored = resolved == LanguageFonts.Default ? null : resolved;
+            if (stored == settings.Font)
+                return;
+            settings.Font = stored;
+            LanguageFonts.SetFont(settings.Font);
+            SaveSettings();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanResetFontSettings));
+        }
+    }
+
+    public int UiScale
+    {
+        get => settings.UiScale;
+        set
+        {
+            var normalized = AppSettings.NormalizeUiScale(value);
+            if (normalized == settings.UiScale)
+                return;
+            settings.UiScale = normalized;
+            LanguageFonts.SetUiScale(settings.UiScale);
+            SaveSettings();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanResetFontSettings));
+        }
+    }
+
+    public int UiScaleMin => AppSettings.MinUiScale;
+
+    public int UiScaleMax => AppSettings.MaxUiScale;
+
+    public int UiScaleStep => AppSettings.UiScaleStep;
+
+    public bool CanResetFontSettings => SelectedFont != LanguageFonts.Default || UiScale != AppSettings.DefaultUiScale;
+
+    [RelayCommand]
+    private void ResetFontSettings()
+    {
+        if (!CanResetFontSettings)
+            return;
+        settings.Font = null;
+        settings.UiScale = AppSettings.DefaultUiScale;
+        LanguageFonts.SetFont(null);
+        LanguageFonts.SetUiScale(AppSettings.DefaultUiScale);
+        SaveSettings();
+        OnPropertyChanged(nameof(SelectedFont));
+        OnPropertyChanged(nameof(UiScale));
+        OnPropertyChanged(nameof(CanResetFontSettings));
+    }
+
     protected override void RefreshLanguage()
     {
         DismissToast();
         OnModsChanged();
         ModsView.Refresh();
         RefreshTagFilters();
+        foreach (var font in Fonts)
+            font.Refresh();
+        LanguageFonts.SortOptions(Fonts);
         base.RefreshLanguage();
     }
 
@@ -1316,7 +1379,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         Log.Info("Reset the app's settings; starting again.");
         if (!App.Restart())
+        {
+            LanguageFonts.SetFont(null);
+            LanguageFonts.SetUiScale(AppSettings.DefaultUiScale);
             ShowToast(L.T("Modding and the app's settings are reset. Close the app and start it again."));
+        }
     }
 
     private void Ue4ssInstalled(Ue4ssInstallResult result)

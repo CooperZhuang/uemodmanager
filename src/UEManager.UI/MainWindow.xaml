@@ -45,6 +45,12 @@
             </StackPanel>
         </Grid>
 
+        <Grid Grid.Row="1" LayoutTransform="{DynamicResource Font.Scale}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="0" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
         <!-- Without cover art: a faint cinnabar bloom, like ink spreading on paper. -->
         <Ellipse Grid.Row="1" Width="1100" Height="820" HorizontalAlignment="Right" VerticalAlignment="Top"
                  Margin="0,-420,-360,0" IsHitTestVisible="False" Style="{StaticResource BlurBehindPicker}"
@@ -385,17 +391,21 @@
         <!-- ===== Pre-release ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsPreReleaseDialogOpen, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource Dialog}" Width="480">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'About this version', Tracked=True}" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'Pre-release'}" />
-                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'UE MM is at the beginning of its development. This version most likely works. If something does not, an update with a fix follows quickly.&#10;&#10;Either way, expect frequent changes: features, screens and texts can still change from one version to the next.'}" />
-                    <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Border Style="{StaticResource Dialog}" Width="480" Margin="40">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'About this version', Tracked=True}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'Pre-release'}" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Got it'}"
                                 Command="{Binding ClosePreReleaseCommand}" IsCancel="True" />
                     </StackPanel>
-                </StackPanel>
+                    <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <TextBlock Style="{StaticResource Text.Body}"
+                                   Text="{ui:Loc 'UE MM is at the beginning of its development. This version most likely works. If something does not, an update with a fix follows quickly.&#10;&#10;Either way, expect frequent changes: features, screens and texts can still change from one version to the next.'}" />
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
@@ -403,32 +413,36 @@
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsRemoteInfoOpen, Converter={StaticResource Visible}}">
             <!-- Wide, in the shape of the window. -->
-            <Border Style="{StaticResource Dialog}" Width="640">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Remote data download', Tracked=True}" />
-                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'Each time UE MM starts, it reads a small online data file. This tells the app what is new for the game, including the current UE4SS version and other details. You can get these changes without a new version of UE MM.'}" />
-                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'The file is plain text (JSON) only. It contains no executable program code and adds nothing to the app. It only tells the app which downloads are available. Nothing is installed until you click. Every download, including UE4SS and app updates, is checked against a checksum before it is used.'}" />
-                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'The data and app updates come from Cloudflare\'s worldwide network, with GitHub as a backup. If neither is available, UE MM still works as usual, but the latest information and downloads may be missing.'}" />
-                    <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
-                        <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{Binding RemoteTone, Converter={StaticResource Tone}}" />
-                        <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
-                                   FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap">
-                            <Run Text="{Binding RemoteStateBefore, Mode=OneWay}" /><Run
-                                 Text="{Binding RemoteStateHost, Mode=OneWay}" Foreground="{Binding RemoteHostTone, Converter={StaticResource Tone}}" /><Run
-                                 Text="{Binding RemoteStateAfter, Mode=OneWay}" />
-                        </TextBlock>
-                    </StackPanel>
-                    <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="640" Margin="40">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Remote data download', Tracked=True}" />
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <!-- Offline at start: read the data again without a restart. -->
                         <Button Margin="0,0,8,0" Content="{ui:Loc 'Try again'}" ui:Icon.Glyph="&#xE72C;" Command="{Binding RetryRemoteCommand}"
                                 Visibility="{Binding CanRetryRemote, Converter={StaticResource Visible}}" />
                         <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                                 Command="{Binding CloseRemoteInfoCommand}" IsCancel="True" />
                     </StackPanel>
-                </StackPanel>
+                    <ScrollViewer Margin="0,12,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}"
+                                       Text="{ui:Loc 'Each time UE MM starts, it reads a small online data file. This tells the app what is new for the game, including the current UE4SS version and other details. You can get these changes without a new version of UE MM.'}" />
+                            <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                                       Text="{ui:Loc 'The file is plain text (JSON) only. It contains no executable program code and adds nothing to the app. It only tells the app which downloads are available. Nothing is installed until you click. Every download, including UE4SS and app updates, is checked against a checksum before it is used.'}" />
+                            <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
+                                       Text="{ui:Loc 'The data and app updates come from Cloudflare\'s worldwide network, with GitHub as a backup. If neither is available, UE MM still works as usual, but the latest information and downloads may be missing.'}" />
+                            <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{Binding RemoteTone, Converter={StaticResource Tone}}" />
+                                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12"
+                                           FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap">
+                                    <Run Text="{Binding RemoteStateBefore, Mode=OneWay}" /><Run
+                                         Text="{Binding RemoteStateHost, Mode=OneWay}" Foreground="{Binding RemoteHostTone, Converter={StaticResource Tone}}" /><Run
+                                         Text="{Binding RemoteStateAfter, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
@@ -436,46 +450,56 @@
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding RecommendedNotes, Converter={StaticResource VisibleIfSet}}">
             <!-- Wide, close to 16:9. The notes come from the manifest. -->
-            <Border Style="{StaticResource Dialog}" Width="720" DataContext="{Binding RecommendedNotes}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'TECHNICAL NOTES', Tracked=True}" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding Name}" />
-                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding Notes}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Source code'}" />
-                        <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
-                                Content="{Binding Source}" Command="{Binding OpenSourceCommand}" />
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="720" Margin="40" DataContext="{Binding RecommendedNotes}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'TECHNICAL NOTES', Tracked=True}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding Name}" />
                     </StackPanel>
-                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+                    <Button DockPanel.Dock="Bottom" Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                             Command="{Binding CloseNotesCommand}" IsCancel="True" />
-                </StackPanel>
+                    <ScrollViewer Margin="0,4,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <ItemsControl Focusable="False" ItemsSource="{Binding Notes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Margin="0,18,0,0" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontFamily="{DynamicResource Font.Label}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Source code'}" />
+                                <Button Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
+                                        Content="{Binding Source}" Command="{Binding OpenSourceCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
         <!-- ===== How the update check of mods with a mod page works, for the curious ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsUpdateNotesOpen, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource Dialog}" Width="820">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'UPDATE CHECK NOTES', Tracked=True}" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'How the update check works'}" />
-                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding UpdateNotes}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="820" Margin="40">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'UPDATE CHECK NOTES', Tracked=True}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{ui:Loc 'How the update check works'}" />
+                    </StackPanel>
+                    <Button DockPanel.Dock="Bottom" Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                             Command="{Binding CloseUpdateNotesCommand}" IsCancel="True" />
-                </StackPanel>
+                    <ScrollViewer Margin="0,4,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl Focusable="False" ItemsSource="{Binding UpdateNotes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
@@ -492,35 +516,39 @@
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding RecommendedThanks, Converter={StaticResource VisibleIfSet}}">
             <!-- The text and the links come from the manifest. -->
-            <Border Style="{StaticResource Dialog}" Width="560" DataContext="{Binding RecommendedThanks}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Foreground="{StaticResource Brush.Success}" Text="{Binding ThanksBoxText, Converter={StaticResource Tracked}}" />
-                    <ItemsControl Margin="0,4,0,0" Focusable="False" ItemsSource="{Binding ThanksParagraphs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <ItemsControl x:Name="ThanksLinks" Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding ThanksLinks}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
-                                        Content="{Binding Text}" CommandParameter="{Binding Url}"
-                                        Command="{Binding DataContext.OpenThanksLinkCommand, ElementName=ThanksLinks}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="560" Margin="40" DataContext="{Binding RecommendedThanks}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Text.Overline}" Foreground="{StaticResource Brush.Success}" Text="{Binding ThanksBoxText, Converter={StaticResource Tracked}}" />
+                    <Button DockPanel.Dock="Bottom" Margin="0,22,0,0" HorizontalAlignment="Right" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Close'}"
                             Command="{Binding CloseThanksCommand}" IsCancel="True" />
-                </StackPanel>
+                    <ScrollViewer Margin="0,4,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <ItemsControl Focusable="False" ItemsSource="{Binding ThanksParagraphs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl x:Name="ThanksLinks" Margin="0,14,0,0" Focusable="False" ItemsSource="{Binding ThanksLinks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Foreground="{StaticResource Brush.Info}"
+                                                Content="{Binding Text}" CommandParameter="{Binding Url}"
+                                                Command="{Binding DataContext.OpenThanksLinkCommand, ElementName=ThanksLinks}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
         <!-- ===== A donation ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsDonationOpen, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource Dialog}" Width="520">
+            <Border Style="{StaticResource Dialog}" Width="520" Margin="40">
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Thank you for using UE MM'}" />
                     <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Body}"
@@ -538,32 +566,38 @@
         <!-- ===== Launch options: the start arguments of "Launch game" ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsLaunchOptionsOpen, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource Dialog}" Width="580">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Launch options', Tracked=True}" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding GameDisplayName}" />
-                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding LaunchOptionsIntro}" />
-                    <TextBox x:Name="LaunchArgumentsBox" Margin="0,14,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="13"
-                             Text="{Binding LaunchOptionsText, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="{ui:Loc 'Launch options'}" />
-                    <!-- The game's recommended arguments, when its profile names some. -->
-                    <Border Margin="0,12,0,0" Padding="14,10" CornerRadius="2" BorderThickness="1"
-                            Background="{StaticResource Brush.AccentWash}" BorderBrush="{StaticResource Brush.Line}"
-                            Visibility="{Binding HasRecommendedLaunchArguments, Converter={StaticResource Visible}}">
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Margin="14,0,0,0" VerticalAlignment="Center"
-                                    Content="{ui:Loc 'Use recommended'}" Command="{Binding UseRecommendedLaunchArgumentsCommand}" />
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding RecommendedLaunchText}" />
-                        </DockPanel>
-                    </Border>
-                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding LaunchOptionsStoreNote}"
-                               Visibility="{Binding LaunchOptionsStoreNote, Converter={StaticResource VisibleIfSet}}" />
-                    <StackPanel Margin="0,24,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="580" Margin="40">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Launch options', Tracked=True}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Title}" Text="{Binding GameDisplayName}" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,24,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{ui:Loc 'Cancel'}" Command="{Binding CloseLaunchOptionsCommand}" IsCancel="True" />
                         <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Save'}"
                                 Command="{Binding SaveLaunchOptionsCommand}" IsDefault="True" />
                     </StackPanel>
-                </StackPanel>
+                    <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="{Binding LaunchOptionsIntro}" />
+                            <TextBox x:Name="LaunchArgumentsBox" Margin="0,14,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                     Text="{Binding LaunchOptionsText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{ui:Loc 'Launch options'}" />
+                            <!-- The game's recommended arguments, when its profile names some. -->
+                            <Border Margin="0,12,0,0" Padding="14,10" CornerRadius="2" BorderThickness="1"
+                                    Background="{StaticResource Brush.AccentWash}" BorderBrush="{StaticResource Brush.Line}"
+                                    Visibility="{Binding HasRecommendedLaunchArguments, Converter={StaticResource Visible}}">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Margin="14,0,0,0" VerticalAlignment="Center"
+                                            Content="{ui:Loc 'Use recommended'}" Command="{Binding UseRecommendedLaunchArgumentsCommand}" />
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding RecommendedLaunchText}" />
+                                </DockPanel>
+                            </Border>
+                            <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding LaunchOptionsStoreNote}"
+                                       Visibility="{Binding LaunchOptionsStoreNote, Converter={StaticResource VisibleIfSet}}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 
@@ -571,7 +605,7 @@
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding IsUnmanagedOpen, Converter={StaticResource Visible}}">
             <!-- As in the mod details: the tree takes the room that is left and scrolls, so Close stays in view. -->
-            <Border Style="{StaticResource Dialog}" Width="820" Margin="40">
+            <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="820" Margin="40">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -632,22 +666,25 @@
         <!-- ===== Confirmation ===== -->
         <Grid Grid.Row="1" Background="{StaticResource Brush.Overlay}"
               Visibility="{Binding Confirm, Converter={StaticResource VisibleIfSet}}">
-            <Border Style="{StaticResource Dialog}" Width="{Binding Width}" DataContext="{Binding Confirm}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Text.Title}" Text="{Binding Title}" />
-                    <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding Message}" />
-                    <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Border Style="{StaticResource Dialog}" Width="{Binding Width}" Margin="40" DataContext="{Binding Confirm}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Text.Title}" Text="{Binding Title}" />
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{Binding CancelText}" Command="{Binding CancelCommand}" />
                         <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}"
                                 Content="{Binding ConfirmText}" Command="{Binding AcceptCommand}" />
                     </StackPanel>
-                </StackPanel>
+                    <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <TextBlock Style="{StaticResource Text.Body}" Text="{Binding Message}" />
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
+        </Grid>
         </Grid>
 
         <!-- ===== Busy ===== -->
         <Grid Grid.RowSpan="2" Background="{StaticResource Brush.Busy}" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" LayoutTransform="{DynamicResource Font.Scale}">
                 <Ellipse Width="34" Height="34" Stroke="{StaticResource Brush.Accent}" StrokeThickness="2.5"
                          StrokeDashArray="14 30" RenderTransformOrigin="0.5,0.5">
                     <Ellipse.RenderTransform>

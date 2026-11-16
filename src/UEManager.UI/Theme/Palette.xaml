@@ -113,5 +113,6 @@
     <FontFamily x:Key="Font.Heading">Palatino Linotype, Georgia, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="Font.Label">Bahnschrift, Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="Font.Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <ScaleTransform x:Key="Font.Scale" />
 
 </ResourceDictionary>

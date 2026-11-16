@@ -89,4 +89,79 @@ public class AppSettingsTests
 
         Assert.Equal(new WindowPlacement(120.5, 40, 1400, 900, true), AppSettings.Load(paths).Window);
     }
+
+    [Theory]
+    [InlineData("{}", 100)]
+    [InlineData("{\"uiScale\":0}", 100)]
+    [InlineData("{\"uiScale\":-5}", 100)]
+    [InlineData("{\"uiScale\":50}", 85)]
+    [InlineData("{\"uiScale\":102}", 100)]
+    [InlineData("{\"uiScale\":103}", 105)]
+    [InlineData("{\"uiScale\":125}", 125)]
+    [InlineData("{\"uiScale\":200}", 140)]
+    public void Old_or_out_of_range_ui_scale_is_normalized(string json, int expected)
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        Directory.CreateDirectory(paths.Root);
+        File.WriteAllText(paths.SettingsFile, json);
+
+        Assert.Equal(expected, AppSettings.Load(paths).UiScale);
+    }
+
+    [Theory]
+    [InlineData("{\"fontSize\":0}", 100)]
+    [InlineData("{\"fontSize\":-5}", 100)]
+    [InlineData("{\"fontSize\":8}", 85)]
+    [InlineData("{\"fontSize\":11}", 85)]
+    [InlineData("{\"fontSize\":12}", 90)]
+    [InlineData("{\"fontSize\":13}", 100)]
+    [InlineData("{\"fontSize\":14}", 110)]
+    [InlineData("{\"fontSize\":15}", 115)]
+    [InlineData("{\"fontSize\":16}", 125)]
+    [InlineData("{\"fontSize\":17}", 130)]
+    [InlineData("{\"fontSize\":18}", 140)]
+    [InlineData("{\"fontSize\":30}", 140)]
+    public void Legacy_font_size_setting_migrates_to_snapped_ui_scale(string json, int expected)
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        Directory.CreateDirectory(paths.Root);
+        File.WriteAllText(paths.SettingsFile, json);
+
+        var loaded = AppSettings.Load(paths);
+        Assert.Equal(expected, loaded.UiScale);
+
+        loaded.Save(paths);
+        var saved = File.ReadAllText(paths.SettingsFile);
+        Assert.Contains($"\"uiScale\": {expected}", saved);
+        Assert.DoesNotContain("fontSize", saved);
+    }
+
+    [Theory]
+    [InlineData("{\"uiScale\":115,\"fontSize\":16}", 115)]
+    [InlineData("{\"fontSize\":16,\"uiScale\":115}", 115)]
+    public void Explicit_ui_scale_takes_precedence_over_legacy_font_size_regardless_of_property_order(string json, int expected)
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        Directory.CreateDirectory(paths.Root);
+        File.WriteAllText(paths.SettingsFile, json);
+
+        Assert.Equal(expected, AppSettings.Load(paths).UiScale);
+    }
+
+    [Fact]
+    public void The_font_and_ui_scale_choices_survive_a_restart()
+    {
+        using var folder = new TestFolder();
+        var paths = new AppPaths(folder.Combine("Data"));
+        var settings = new AppSettings { Font = "$system", UiScale = 125 };
+
+        settings.Save(paths);
+
+        var loaded = AppSettings.Load(paths);
+        Assert.Equal("$system", loaded.Font);
+        Assert.Equal(125, loaded.UiScale);
+    }
 }

@@ -23,9 +23,12 @@ public partial class ModsView : UserControl
         ["Mods.WideOnly"] = Visibility.Collapsed,
     };
 
+    private const double MinWideToolbarWidth = 820;
+
     private readonly Dictionary<string, object> wide;
     private readonly double wideColumns;
     private bool isNarrow;
+    private bool isToolbarNarrow;
 
     public ModsView()
     {
@@ -40,6 +43,34 @@ public partial class ModsView : UserControl
     {
         SearchBox.Focus();
         SearchBox.SelectAll();
+    }
+
+    private void OnToolbarSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var narrow = e.NewSize.Width < MinWideToolbarWidth;
+        if (narrow == isToolbarNarrow)
+            return;
+        isToolbarNarrow = narrow;
+        if (narrow)
+        {
+            Grid.SetRow(ToolbarActions, 1);
+            Grid.SetColumn(ToolbarActions, 0);
+            Grid.SetColumnSpan(ToolbarActions, 3);
+            ToolbarActions.Margin = new Thickness(0, 8, 0, 0);
+            ToolbarActions.HorizontalAlignment = HorizontalAlignment.Left;
+            ModsCountBox.Margin = new Thickness(0);
+            ModsCountBox.Padding = new Thickness(16, 7, 16, 7);
+        }
+        else
+        {
+            Grid.SetRow(ToolbarActions, 0);
+            Grid.SetColumn(ToolbarActions, 2);
+            Grid.SetColumnSpan(ToolbarActions, 1);
+            ToolbarActions.Margin = new Thickness(0);
+            ToolbarActions.HorizontalAlignment = HorizontalAlignment.Stretch;
+            ModsCountBox.Margin = new Thickness(10, 0, 0, 0);
+            ModsCountBox.Padding = new Thickness(16, 0, 16, 0);
+        }
     }
 
     private void OnTableSizeChanged(object sender, SizeChangedEventArgs e)

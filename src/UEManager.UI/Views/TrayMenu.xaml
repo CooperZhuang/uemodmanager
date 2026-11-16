@@ -93,7 +93,7 @@
     </Window.Resources>
 
     <!-- The margin leaves room for the shadow. -->
-    <Border Margin="16" Width="360" CornerRadius="2" BorderThickness="1"
+    <Border Margin="16" Width="360" CornerRadius="2" BorderThickness="1" LayoutTransform="{DynamicResource Font.Scale}"
             Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}">
         <Border.Effect>
             <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.6" Color="Black" />
