@@ -13,7 +13,9 @@
         <KeyBinding Key="Escape" Command="{Binding EscapeCommand}" />
     </UserControl.InputBindings>
 
-    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MaxWidth="900" MaxHeight="620">
+    <!-- As high as its content, as before the interface scale; in a window too small for it (a large scale), the editor
+         gives up room, so the buttons stay in view. -->
+    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="900">
         <DockPanel>
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Mod settings', Tracked=True}" />
@@ -55,14 +57,19 @@
                 </DockPanel>
             </Grid>
 
-            <Border BorderThickness="1" CornerRadius="2"
-                    Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
-                <avalon:TextEditor x:Name="Editor" Document="{Binding Document}" SyntaxHighlighting="{Binding Highlighting}"
-                                   IsReadOnly="{Binding IsReadOnly}" ShowLineNumbers="True" Padding="8,6"
-                                   FontFamily="Cascadia Mono, Consolas" FontSize="13" Background="Transparent"
-                                   Foreground="{StaticResource Brush.Text}" LineNumbersForeground="{StaticResource Brush.TextDim}"
-                                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
-            </Border>
+            <!-- 440 high, as before: the spacer keeps that height while there is room, also for a short file; with less
+                 room the editor takes what is left and scrolls. -->
+            <Grid MaxHeight="440">
+                <Rectangle Height="440" />
+                <Border BorderThickness="1" CornerRadius="2"
+                        Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
+                    <avalon:TextEditor x:Name="Editor" Document="{Binding Document}" SyntaxHighlighting="{Binding Highlighting}"
+                                       IsReadOnly="{Binding IsReadOnly}" ShowLineNumbers="True" Padding="8,6"
+                                       FontFamily="Cascadia Mono, Consolas" FontSize="13" Background="Transparent"
+                                       Foreground="{StaticResource Brush.Text}" LineNumbersForeground="{StaticResource Brush.TextDim}"
+                                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+                </Border>
+            </Grid>
         </DockPanel>
     </Border>
 </UserControl>

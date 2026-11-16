@@ -45,7 +45,9 @@
                 </DockPanel>
                 <DockPanel Style="{StaticResource Field}" LastChildFill="False">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Font'}" />
+                    <!-- Every installed font joins the list when it opens or takes the keyboard (see MainViewModel.Fonts). -->
                     <ComboBox Width="240" Style="{StaticResource LanguageSelector}"
+                              DropDownOpened="OnFontListOpened" GotKeyboardFocus="OnFontListFocused"
                               ItemsSource="{Binding Fonts}" SelectedValuePath="Code"
                               TextSearch.TextPath="Name"
                               SelectedValue="{Binding SelectedFont, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"

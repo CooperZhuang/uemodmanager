@@ -7,7 +7,9 @@
              xmlns:vm="clr-namespace:UEManager.UI.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:HelpReportViewModel}">
-    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MaxWidth="680" MaxHeight="590">
+    <!-- As high as its content, as before the interface scale; in a window too small for it (a large scale), the report
+         box gives up room, so the buttons stay in view. -->
+    <Border Style="{StaticResource Dialog}" HorizontalAlignment="Stretch" MaxWidth="680">
         <DockPanel>
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock Style="{StaticResource Text.Overline}" Text="{ui:Loc 'Help', Tracked=True}" />
@@ -15,7 +17,7 @@
                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
                            Text="{ui:Loc 'Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it into the help channel on Discord.'}" />
 
-                <TextBox Margin="0,16,0,0" Height="86" Style="{StaticResource TextBox.Multiline}"
+                <TextBox Margin="0,16,0,0" Height="92" Style="{StaticResource TextBox.Multiline}"
                          Text="{Binding Problem, UpdateSourceTrigger=PropertyChanged}"
                          Tag="{ui:Loc 'What happened? For example: since I installed Witch 1.2, the game crashes when a fight starts.'}" />
 
@@ -34,7 +36,8 @@
                            Foreground="{StaticResource Brush.Success}" Text="{Binding CopiedText}" />
             </DockPanel>
 
-            <Border Padding="14,10" CornerRadius="2" BorderThickness="1"
+            <!-- 220 high, as before: the report is always longer than that. -->
+            <Border MaxHeight="220" Padding="14,10" CornerRadius="2" BorderThickness="1"
                     Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="11" LineHeight="16"

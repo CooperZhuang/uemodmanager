@@ -266,16 +266,23 @@ public class LanguageSwitchTests
 
         var tooltip = new ToolTip { Content = "Font scaling check" };
         tooltip.ApplyTemplate();
-        Assert.Equal(app.Resources["Font.Body"], tooltip.FontFamily);
+        // With no chosen font, a tooltip keeps the font it had before the font choice existed: the Windows one.
+        Assert.False(app.Resources.Contains("Font.Tip"));
+        Assert.Equal(SystemFonts.MessageFontFamily, tooltip.FontFamily);
         var tooltipBorder = Assert.IsType<Border>(VisualTreeHelper.GetChild(tooltip, 0));
         Assert.Same(app.Resources["Font.Scale"], tooltipBorder.LayoutTransform);
 
+        // The list holds every installed font only once it opens (see MainViewModel.Fonts).
+        model.LoadAllFonts();
+        FlushBindings();
+        Assert.Contains(model.Fonts, font => font.Code == "Consolas");
         fontSelector.SelectedValue = "Consolas";
         FlushBindings();
         Assert.Equal("Consolas", model.SelectedFont);
         Assert.Equal("Consolas", LanguageFonts.Font);
         Assert.Equal("Consolas", AppSettings.Load(paths).Font);
         Assert.Equal("Consolas, Microsoft YaHei UI", Assert.IsType<FontFamily>(app.Resources["Font.Body"]).Source);
+        Assert.Same(app.Resources["Font.Body"], app.Resources["Font.Tip"]);
         Assert.Equal("Consolas, Microsoft YaHei UI", Assert.IsType<FontOption>(fontSelector.SelectedItem).PreviewFont.Source);
         Assert.True(model.CanResetFontSettings);
         Assert.Equal(Visibility.Visible, resetButton.Visibility);
@@ -314,6 +321,7 @@ public class LanguageSwitchTests
         Assert.False(model.CanResetFontSettings);
         Assert.Equal(Visibility.Collapsed, resetButton.Visibility);
         Assert.Equal(1.0, Assert.IsType<ScaleTransform>(app.Resources["Font.Scale"]).ScaleX, precision: 6);
+        Assert.False(app.Resources.Contains("Font.Tip"));
     }
 
     private static void VerifyResponsiveLayoutsAtMaxScale(Action<string> stage, Application app, FrameworkElement surface,

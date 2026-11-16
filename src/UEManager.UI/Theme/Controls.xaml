@@ -1500,7 +1500,8 @@
         <Setter Property="BorderBrush" Value="{StaticResource Brush.LineStrong}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="10,6" />
-        <Setter Property="FontFamily" Value="{DynamicResource Font.Body}" />
+        <!-- Font.Tip is set only under a chosen font (LanguageFonts); without one, tooltips keep their old font. -->
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Tip}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Template">
             <Setter.Value>

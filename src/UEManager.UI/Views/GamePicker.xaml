@@ -216,7 +216,7 @@
                 <Button Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Content="{Binding AllGamesText}" ui:Icon.Glyph="&#xE8A9;"
                         Command="{Binding ShowAllGamesCommand}"
                         Visibility="{Binding HasMoreGames, Converter={StaticResource Visible}}" />
-                <TextBlock Grid.Column="1" Margin="12,0" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
+                <TextBlock Grid.Column="1" Margin="12,0" HorizontalAlignment="Center" Style="{StaticResource Text.Title}" FontSize="22"
                            Text="{ui:Loc 'Choose your game'}" />
                 <!-- Only after "Switch game": at a start without a game, the app cannot go on without a choice. -->
                 <Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Button.Icon}" Content="&#xE711;"

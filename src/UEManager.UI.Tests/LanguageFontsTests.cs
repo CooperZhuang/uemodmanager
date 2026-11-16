@@ -50,6 +50,16 @@ public class LanguageFontsTests
         Assert.Equal("Palatino Linotype, Georgia, Microsoft JhengHei UI", LanguageFonts.For(heading, "zh-TW", null, keepTheme: true).Source);
     }
 
+    /// <summary>A start lists only the fixed choices; every installed font waits for the list to open.</summary>
+    [Fact]
+    public void Before_the_list_opens_only_the_fixed_choices_are_listed()
+    {
+        Assert.Equal([LanguageFonts.Default, LanguageFonts.System], LanguageFonts.FirstOptions(null).Select(option => option.Code));
+        Assert.Equal([LanguageFonts.Default, LanguageFonts.System], LanguageFonts.FirstOptions(LanguageFonts.System).Select(option => option.Code));
+        // A chosen font must show as chosen: the whole list, which the start looked up for it anyway.
+        Assert.Equal(LanguageFonts.Options().Count, LanguageFonts.FirstOptions("Consolas").Count);
+    }
+
     [Fact]
     public void Default_choice_uses_the_theme_font_and_system_choice_uses_the_windows_font()
     {
@@ -246,6 +256,8 @@ public class LanguageFontsTests
 
             // Titles keep the theme's font first (the game's look), the chosen font for other scripts.
             Assert.Equal("Palatino Linotype, Georgia, Consolas, Microsoft JhengHei UI", Assert.IsType<FontFamily>(resources["Font.Heading"]).Source);
+            // Tooltips follow the chosen font.
+            Assert.Same(resources["Font.Body"], resources["Font.Tip"]);
 
             // Calling Follow again while overridden must keep the original theme base font and never double-apply.
             LanguageFonts.Follow(resources);
@@ -255,6 +267,8 @@ public class LanguageFontsTests
             Assert.Equal("Segoe UI, Microsoft YaHei UI", Assert.IsType<FontFamily>(resources["Font.Body"]).Source);
             Assert.Equal("Palatino Linotype, Georgia, Microsoft YaHei UI", Assert.IsType<FontFamily>(resources["Font.Heading"]).Source);
             Assert.Equal("Bahnschrift, Segoe UI, Microsoft YaHei UI", Assert.IsType<FontFamily>(resources["Font.Label"]).Source);
+            // With no chosen font, tooltips get no font from the app, as before the font choice existed.
+            Assert.False(resources.Contains("Font.Tip"));
         }
         finally
         {
@@ -262,5 +276,46 @@ public class LanguageFontsTests
             LanguageFonts.SetFont(originalFont);
             LanguageFonts.SetUiScale(originalScale);
         }
+    }
+
+    /// <summary>The tooltip style takes Font.Tip, which is set only under a chosen font. Without it, the setter must act
+    /// as if it were not there, so a tooltip keeps the font it had before the font choice existed. (A ToolTip itself
+    /// cannot sit in a tree outside a shown popup, so a Label with the same setter stands in.)</summary>
+    [Fact]
+    public void A_tooltip_without_a_chosen_font_keeps_its_old_font()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                // The same setter as the tooltip style, on a control that sits in the tree and inherits its font.
+                var style = new Style(typeof(System.Windows.Controls.Label));
+                style.Setters.Add(new Setter(System.Windows.Controls.Control.FontFamilyProperty, new DynamicResourceExtension("Font.Tip")));
+                var host = new System.Windows.Controls.StackPanel();
+                System.Windows.Documents.TextElement.SetFontFamily(host, new FontFamily("Consolas"));
+                var before = new System.Windows.Controls.Label();
+                var styled = new System.Windows.Controls.Label { Style = style };
+                host.Children.Add(before);
+                host.Children.Add(styled);
+
+                // No Font.Tip: the font the control had without the setter (here the inherited one).
+                Assert.Equal("Consolas", before.FontFamily.Source);
+                Assert.Same(before.FontFamily, styled.FontFamily);
+
+                var chosen = new FontFamily("Georgia");
+                host.Resources["Font.Tip"] = chosen;
+                Assert.Same(chosen, styled.FontFamily);
+
+                host.Resources.Remove("Font.Tip");
+                Assert.Same(before.FontFamily, styled.FontFamily);
+            }
+            catch (Exception ex) { failure = ex; }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The tooltip font check did not finish.");
+        if (failure is not null)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

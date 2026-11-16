@@ -25,7 +25,8 @@
                     <Grid DockPanel.Dock="Top" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="40" />
+                            <!-- 460 wide as before; narrower only in a window too small for it (a large interface scale). -->
                             <ColumnDefinition Width="0.9*" MaxWidth="460" />
                         </Grid.ColumnDefinitions>
                 <StackPanel>

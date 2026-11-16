@@ -119,7 +119,19 @@
                             <!-- Cover: 16:9 at least, and always the full height of the card (cropped when the card is
                                  taller). As high as a card with a two-line description, so the cover does not make
                                  the card taller. The game's picture when the mod has none. -->
-                            <Border Grid.RowSpan="2" Width="216" MinHeight="122" Margin="1" ClipToBounds="True" Background="{StaticResource Brush.Field}">
+                            <Border Width="216" MinHeight="122" Margin="1" ClipToBounds="True" Background="{StaticResource Brush.Field}">
+                                <!-- Over both rows only on a narrow card: in the wide form the empty second row must not
+                                     take a share of the cover's height (it made each card 1 px taller). -->
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Border}, Converter={StaticResource NarrowCard}}"
+                                                         Value="True">
+                                                <Setter Property="Grid.RowSpan" Value="2" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <!-- A click opens the picture viewer, when the mod has its own cover or screenshots. -->
                                 <Button Style="{StaticResource Button.Cover}" IsEnabled="{Binding HasPictures}"
                                         Command="{Binding DataContext.ShowPicturesCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

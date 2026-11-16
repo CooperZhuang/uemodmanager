@@ -12,6 +12,10 @@ public partial class SettingsView : UserControl
 
     public SettingsView() => InitializeComponent();
 
+    private void OnFontListOpened(object sender, EventArgs e) => (DataContext as ViewModels.MainViewModel)?.LoadAllFonts();
+
+    private void OnFontListFocused(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as ViewModels.MainViewModel)?.LoadAllFonts();
+
     private void OnUiScaleDragStarted(object sender, DragStartedEventArgs e) => isDraggingUiScale = true;
 
     private void OnUiScaleDragCompleted(object sender, DragCompletedEventArgs e)

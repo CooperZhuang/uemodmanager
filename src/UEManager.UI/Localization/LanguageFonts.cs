@@ -67,6 +67,10 @@ internal static class LanguageFonts
     /// <summary>The titles' font: it keeps the theme's fonts first under a chosen font (see <see cref="For"/>).</summary>
     private const string HeadingKey = "Font.Heading";
 
+    /// <summary>The tooltips' font: the body font under a chosen font; with no choice the key is absent, so tooltips
+    /// keep the font they had before the font choice existed.</summary>
+    private const string TipKey = "Font.Tip";
+
     private static readonly Lazy<IReadOnlyList<FontFamily>> SystemFontFamilies = new(() =>
         Fonts.SystemFontFamilies
             .Where(f => !string.IsNullOrWhiteSpace(f.Source) && IsTextFont(f))
@@ -170,13 +174,26 @@ internal static class LanguageFonts
     internal static FontFamily PreviewFor(string code) =>
         For(DefaultPreviewBase, L.Current.Language, string.IsNullOrEmpty(code) ? null : code);
 
+    /// <summary>
+    /// The font choices before Settings' list opens: the theme's fonts and the Windows font, and the chosen font if it is
+    /// another one. Every installed font comes with <see cref="Options"/>, only when needed: looking through them all took
+    /// 0.15 s on a PC with 83 fonts and can take a second with hundreds (2026-11-16).
+    /// </summary>
+    public static IReadOnlyList<FontOption> FirstOptions(string? chosen) =>
+        string.IsNullOrWhiteSpace(chosen) || chosen.Equals(System, StringComparison.OrdinalIgnoreCase)
+            ? Pinned()
+            // A chosen font was looked up at the start (Resolve), so the list is known already.
+            : Options();
+
+    private static FontOption[] Pinned() =>
+    [
+        new FontOption(Default, () => L.T("Theme default"), () => PreviewFor(Default)),
+        new FontOption(System, () => L.T("System font"), () => PreviewFor(System)),
+    ];
+
     public static IReadOnlyList<FontOption> Options()
     {
-        var pinned = new[]
-        {
-            new FontOption(Default, () => L.T("Theme default"), () => PreviewFor(Default)),
-            new FontOption(System, () => L.T("System font"), () => PreviewFor(System)),
-        };
+        var pinned = Pinned();
         var comparer = NameComparer(L.Current.Language);
         var fonts = SystemFontFamilies.Value
             .Select(f => new FontOption(
@@ -266,6 +283,13 @@ internal static class LanguageFonts
         {
             foreach (var (key, font) in target.BaseFonts)
                 resources[key] = For(font, L.Current.Language, Font, keepTheme: key == HeadingKey);
+            if (Font is null)
+            {
+                if (resources.Contains(TipKey))
+                    resources.Remove(TipKey);
+            }
+            else
+                resources[TipKey] = resources["Font.Body"];
         }
         if (scale)
             resources["Font.Scale"] = ScaleFor(UiScale);

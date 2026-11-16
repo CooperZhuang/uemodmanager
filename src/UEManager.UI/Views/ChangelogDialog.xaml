@@ -23,7 +23,7 @@
             </DockPanel>
 
             <!-- Every release, newest first: its version and date, then one short line per change. -->
-            <Border Margin="0,14,0,0" MaxHeight="440" Padding="16,6,16,10" CornerRadius="2" BorderThickness="1"
+            <Border Margin="0,14,0,0" MaxHeight="440" VerticalAlignment="Top" Padding="16,6,16,10" CornerRadius="2" BorderThickness="1"
                     Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding Releases}" Focusable="False">

@@ -251,7 +251,28 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
-    public ObservableCollection<FontOption> Fonts { get; } = new(LanguageFonts.Options());
+    /// <summary>
+    /// The fonts of Settings: at a start only the fixed two (and a chosen font), so a player who never opens the list
+    /// never waits for every font on the PC to be looked through; <see cref="LoadAllFonts"/> adds them when it opens.
+    /// </summary>
+    public ObservableCollection<FontOption> Fonts { get; } = new(LanguageFonts.FirstOptions(LanguageFonts.Font));
+
+    private bool allFontsLoaded;
+
+    /// <summary>Every installed text font into <see cref="Fonts"/>, once; the entries there stay, so the choice stays selected.</summary>
+    public void LoadAllFonts()
+    {
+        if (allFontsLoaded)
+            return;
+        allFontsLoaded = true;
+        var known = Fonts.Select(font => font.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var option in LanguageFonts.Options())
+        {
+            if (known.Add(option.Code))
+                Fonts.Add(option);
+        }
+        LanguageFonts.SortOptions(Fonts);
+    }
 
     public string SelectedFont
     {
