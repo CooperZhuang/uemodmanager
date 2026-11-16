@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.3.2 (2026-11-16)
+- Đặt lại mod giờ mở trên toàn cửa sổ với nhật ký trực tiếp của mọi tệp và thư mục được động đến; tệp đang được dùng làm dừng việc đặt lại sẽ được nêu tên
+- Thanh cuộn rộng hơn và cuộn bằng con lăn chuột mượt hơn; thanh cuộn của trang nằm đè lên lề, nên trang không còn bị xê dịch
+- Danh sách openmods tải nhanh hơn: ứng dụng yêu cầu dữ liệu được nén
+- openmods: trình xem ảnh hiển thị mọi ảnh trong cùng một khung 16:9, thêm viền đen khi tỉ lệ ảnh khác
+
 ## 2.3.1 (2026-11-15)
 - Stellar Blade, thử nghiệm: giao diện riêng, cài UE4SS bằng một cú nhấp (bản dựng của chúng tôi cho game) và sao lưu bản lưu
 - Mortal Shell II và WUCHANG: Fallen Feathers không còn là thử nghiệm

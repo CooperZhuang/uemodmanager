@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.3.2 (2026-11-16)
+- Reset modding opens over the whole window with a live log of every file and folder it touches; a file in use that stops it is named
+- Wider scroll bars and smooth wheel scrolling; a page's scroll bar floats over its margin, so the page no longer shifts
+- The openmods lists load faster: the app asks for compressed answers
+- openmods: the picture viewer shows every picture in the same 16:9 frame, with black bars where a picture's shape differs
+
 ## 2.3.1 (2026-11-15)
 - Stellar Blade, experimental: its own look, UE4SS with one click (our build for the game) and save backups
 - Mortal Shell II and WUCHANG: Fallen Feathers are no longer experimental

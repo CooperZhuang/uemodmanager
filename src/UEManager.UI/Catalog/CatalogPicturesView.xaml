@@ -32,10 +32,20 @@
                        Text="{Binding Name}" />
         </DockPanel>
 
-        <!-- The picture, as large as fits, never larger than it is; the arrows at its sides. -->
+        <!-- The picture in a field that keeps its shape and size for every picture (the user's wish, 2026-11-16): a 16:9
+             field as large as fits, black where a picture's shape differs, so a picture of another size neither grows
+             nor shrinks the view. The field is drawn at the pictures' decoded width (PictureWidth) and scaled as a whole;
+             its light frame stays outside the scaling, one sharp pixel at every size, so the field stands out from the
+             page. The arrows at its sides. -->
         <Grid Grid.Row="1" Margin="36,18,36,0">
-            <Image Margin="64,0" Source="{Binding Current.Image}" Stretch="Uniform" StretchDirection="DownOnly"
-                   RenderOptions.BitmapScalingMode="HighQuality" />
+            <Border Margin="64,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="1"
+                    BorderBrush="{StaticResource Brush.LineStrong}" SnapsToDevicePixels="True">
+                <Viewbox Stretch="Uniform">
+                    <Grid Width="1920" Height="1080" Background="Black">
+                        <Image Source="{Binding Current.Image}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Grid>
+                </Viewbox>
+            </Border>
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.Body}"
                        Foreground="{StaticResource Brush.TextDim}" Text="{ui:Loc 'Loading the image…'}"
                        Visibility="{Binding Current.IsLoading, Converter={StaticResource Visible}}" />
