@@ -1358,9 +1358,12 @@
     </Style>
 
     <!-- The square where both scroll bars meet takes the Windows control colour, a light grey, unless told otherwise. -->
-    <!-- Every scroll area glides on the mouse wheel (see SmoothScroll). -->
+    <!-- Every scroll area glides on the mouse wheel (see SmoothScroll). No keyboard focus frame, as for the other
+         controls: WPF's dotted default framed the whole page after a key, such as Esc closing the picture viewer, and
+         drew it above every full view. The arrow keys still scroll. -->
     <Style TargetType="ScrollViewer">
         <Setter Property="ui:SmoothScroll.IsEnabled" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Style.Resources>
             <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />
         </Style.Resources>
