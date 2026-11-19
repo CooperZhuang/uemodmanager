@@ -2,6 +2,9 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 2.4.0 (2026-11-19)
+- Cài đặt ▸ Ngôn ngữ giao diện: chọn phông chữ và tỷ lệ giao diện (85 đến 140 %); tiêu đề vẫn giữ phông chữ riêng của trò chơi (cảm ơn HumanMus1c)
+
 ## 2.3.2 (2026-11-16)
 - Đặt lại mod giờ mở trên toàn cửa sổ với nhật ký trực tiếp của mọi tệp và thư mục được động đến; tệp đang được dùng làm dừng việc đặt lại sẽ được nêu tên
 - Thanh cuộn rộng hơn và cuộn bằng con lăn chuột mượt hơn; thanh cuộn của trang nằm đè lên lề, nên trang không còn bị xê dịch

@@ -4,6 +4,9 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 2.4.0 (2026-11-19)
+- Settings ▸ Interface language: choose the font and the interface scale (85 to 140 %); titles keep the game's own font (thanks, HumanMus1c)
+
 ## 2.3.2 (2026-11-16)
 - Reset modding opens over the whole window with a live log of every file and folder it touches; a file in use that stops it is named
 - Wider scroll bars and smooth wheel scrolling; a page's scroll bar floats over its margin, so the page no longer shifts
